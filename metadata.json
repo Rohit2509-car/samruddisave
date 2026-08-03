@@ -1,0 +1,6 @@
+{
+  "name": "SamruddiSave",
+  "description": "RBI Escrow Certified Fixed Savings & Maturity Perks Platform with 12-month fixed micro-savings plans, AI OCR KYC verification, 5-day grace lifecycle, gift hamper allocations, and Maker-Checker maturity disbursal.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
