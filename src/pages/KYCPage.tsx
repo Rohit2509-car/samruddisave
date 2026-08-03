@@ -87,40 +87,40 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
       
       {/* Page Header */}
-      <div className="text-center space-y-2">
-        <span className="bg-[#4F5DFF]/10 text-[#4F5DFF] border border-[#4F5DFF]/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+      <div className="text-center space-y-2.5">
+        <span className="bg-blue-50 text-blue-600 border border-blue-200/70 text-xs font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider">
           Step-by-Step Member Verification
         </span>
-        <h1 className="font-heading font-extrabold text-3xl text-[#1F1F24]">
+        <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-slate-900">
           Customer Onboarding & AI OCR KYC
         </h1>
-        <p className="text-xs text-[#6C7285] max-w-md mx-auto">
+        <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
           Complete your e-KYC verification to open your RBI Escrow micro-savings account
         </p>
       </div>
 
       {/* Stepper Tabs */}
-      <div className="grid grid-cols-3 gap-2 bg-white p-2 rounded-2xl border border-[#E8EAF8] shadow-xs text-xs">
+      <div className="grid grid-cols-3 gap-2 bg-white p-2 rounded-2xl border border-slate-200/80 shadow-xs text-xs">
         <button
           onClick={() => setStep(1)}
-          className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-            step === 1 ? 'bg-[#4F5DFF] text-white shadow-sm' : 'text-[#6C7285] hover:bg-[#F7F8FC]'
+          className={`py-3 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+            step === 1 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
           <User className="w-4 h-4" /> 1. Personal Details
         </button>
         <button
           onClick={() => setStep(2)}
-          className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-            step === 2 ? 'bg-[#4F5DFF] text-white shadow-sm' : 'text-[#6C7285] hover:bg-[#F7F8FC]'
+          className={`py-3 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+            step === 2 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
           <FileCheck2 className="w-4 h-4" /> 2. AI OCR Upload
         </button>
         <button
           onClick={() => setStep(3)}
-          className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-            step === 3 ? 'bg-[#4F5DFF] text-white shadow-sm' : 'text-[#6C7285] hover:bg-[#F7F8FC]'
+          className={`py-3 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+            step === 3 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
           <Building className="w-4 h-4" /> 3. Bank & AutoPay
@@ -129,51 +129,51 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
 
       {/* Confirmation State if Submitted */}
       {submittedProfile ? (
-        <div className="bg-white p-8 rounded-3xl border border-amber-200 shadow-xl text-center space-y-5 animate-in fade-in duration-300">
-          <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
+        <div className="nexora-card p-8 sm:p-10 rounded-3xl border border-amber-300 shadow-xl text-center space-y-6 animate-in fade-in duration-300">
+          <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto shadow-2xs">
             <Lock className="w-8 h-8" />
           </div>
           <div>
-            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 uppercase tracking-wider">
+            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3.5 py-1 rounded-full border border-amber-200 uppercase tracking-wider">
               Status: KYC_PENDING
             </span>
-            <h2 className="font-heading font-extrabold text-2xl text-[#1F1F24] mt-2">
+            <h2 className="font-heading font-extrabold text-2xl text-slate-900 mt-2.5">
               Application Submitted & Pending Officer Sign-off
             </h2>
-            <p className="text-xs text-[#6C7285] max-w-md mx-auto mt-1">
+            <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
               Your PAN & Aadhaar AI OCR scores have been transmitted to the MRM Officer Queue. You can view your live status on your Dashboard.
             </p>
           </div>
 
-          <div className="bg-[#F7F8FC] border border-[#E8EAF8] p-4 rounded-2xl max-w-md mx-auto text-left text-xs space-y-2">
-            <div className="flex justify-between">
-              <span className="text-[#6C7285]">Applicant Name:</span>
-              <span className="font-semibold text-[#1F1F24]">{submittedProfile.full_name}</span>
+          <div className="bg-slate-50/80 border border-slate-200/70 p-5 rounded-2xl max-w-md mx-auto text-left text-xs space-y-2.5">
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500">Applicant Name:</span>
+              <span className="font-semibold text-slate-900">{submittedProfile.full_name}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[#6C7285]">PAN Number:</span>
-              <span className="font-mono font-bold text-[#1F1F24]">{submittedProfile.pan_number}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500">PAN Number:</span>
+              <span className="font-mono font-bold text-slate-900">{submittedProfile.pan_number}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[#6C7285]">OCR Confidence Score:</span>
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500">OCR Confidence Score:</span>
               <span className="font-bold text-emerald-600">99.8% Match Verified</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[#6C7285]">AutoPay Mandate Method:</span>
+            <div className="flex justify-between py-1">
+              <span className="text-slate-500">AutoPay Mandate Method:</span>
               <span className="font-semibold text-purple-600 uppercase">{submittedProfile.bank_details?.autopay_method}</span>
             </div>
           </div>
 
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3 pt-2">
             <button
               onClick={() => onNavigate('/dashboard')}
-              className="bg-[#4F5DFF] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#6A6DFF] transition-all shadow-md text-xs flex items-center gap-2"
+              className="nexora-pill-btn font-bold py-3.5 px-6 text-xs flex items-center gap-2"
             >
               Go to Member Dashboard <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => onNavigate('/employee')}
-              className="bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 font-bold py-3 px-6 rounded-xl transition-all text-xs"
+              className="nexora-pill-btn-secondary bg-amber-50 text-amber-800 border-amber-200 font-bold py-3.5 px-6 text-xs hover:bg-amber-100"
             >
               ⚡ Switch to Officer Portal to Approve
             </button>
@@ -181,67 +181,67 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
         </div>
       ) : (
         /* Multi-Step Onboarding Form */
-        <form onSubmit={handleSubmitOnboarding} className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EAF8] shadow-lg space-y-6">
+        <form onSubmit={handleSubmitOnboarding} className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-lg space-y-6">
           
           {/* STEP 1: Personal Details */}
           {step === 1 && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="border-b border-[#E8EAF8] pb-3">
-                <h3 className="font-heading font-bold text-lg text-[#1F1F24]">1. Account Registration Details</h3>
-                <p className="text-xs text-[#6C7285]">Enter your full legal name as per government records</p>
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <div className="border-b border-slate-100 pb-4">
+                <h3 className="font-heading font-bold text-lg text-slate-900">1. Account Registration Details</h3>
+                <p className="text-xs text-slate-500">Enter your full legal name as per government records</p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1F1F24] mb-1">Full Name (as per PAN):</label>
+                <label className="block text-xs font-semibold text-slate-900 mb-1.5">Full Name (as per PAN):</label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-3.5 top-3 text-[#6C7285]" />
+                  <User className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                   <input
                     type="text"
                     required
                     placeholder="e.g. Rohit Sharma"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#1F1F24] outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1F24] mb-1">Mobile Number:</label>
+                  <label className="block text-xs font-semibold text-slate-900 mb-1.5">Mobile Number:</label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3.5 top-3 text-[#6C7285]" />
+                    <Phone className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="tel"
                       required
                       placeholder="+91 98765 43210"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#1F1F24] outline-none transition-all"
+                      className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 outline-none transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1F24] mb-1">Email Address:</label>
+                  <label className="block text-xs font-semibold text-slate-900 mb-1.5">Email Address:</label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3.5 top-3 text-[#6C7285]" />
+                    <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="email"
                       required
                       placeholder="rohit@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#1F1F24] outline-none transition-all"
+                      className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 outline-none transition-all"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1F1F24] mb-1">4-Digit Account PIN:</label>
+                <label className="block text-xs font-semibold text-slate-900 mb-1.5">4-Digit Account PIN:</label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-3 text-[#6C7285]" />
+                  <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                   <input
                     type="password"
                     maxLength={4}
@@ -249,7 +249,7 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
                     placeholder="••••"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#1F1F24] outline-none font-mono tracking-widest transition-all"
+                    className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 outline-none font-mono tracking-widest transition-all"
                   />
                 </div>
               </div>
@@ -258,7 +258,7 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md text-xs flex items-center gap-2"
+                  className="nexora-pill-btn font-bold py-3.5 px-6 text-xs flex items-center gap-2"
                 >
                   Next: Upload AI OCR Documents <ArrowRight className="w-4 h-4" />
                 </button>
@@ -268,16 +268,16 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
 
           {/* STEP 2: AI OCR Document Upload */}
           {step === 2 && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="border-b border-[#E8EAF8] pb-3 flex justify-between items-center">
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <div className="border-b border-slate-100 pb-4 flex justify-between items-center">
                 <div>
-                  <h3 className="font-heading font-bold text-lg text-[#1F1F24]">2. AI OCR Identity Verification</h3>
-                  <p className="text-xs text-[#6C7285]">Automated PAN & Aadhaar OCR extraction with 99.8% match rate</p>
+                  <h3 className="font-heading font-bold text-lg text-slate-900">2. AI OCR Identity Verification</h3>
+                  <p className="text-xs text-slate-500">Automated PAN & Aadhaar OCR extraction with 99.8% match rate</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setOcrModalOpen(true)}
-                  className="bg-[#8A7BFF]/10 text-[#8A7BFF] hover:bg-[#8A7BFF]/20 border border-[#8A7BFF]/30 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors"
+                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200/70 text-xs font-bold px-3.5 py-2 rounded-full flex items-center gap-1.5 transition-colors shadow-2xs"
                 >
                   <Sparkles className="w-4 h-4" /> Open AI Scanner
                 </button>
@@ -286,7 +286,7 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
               {ocrConfidence > 0 ? (
                 <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
                     <div>
                       <p className="font-bold text-emerald-950">AI OCR Verified ({ocrConfidence}% Match)</p>
                       <p className="text-emerald-800">Extracted PAN: {panNumber} | Aadhaar: {aadhaarNumber}</p>
@@ -303,36 +303,36 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
               ) : (
                 <div
                   onClick={() => setOcrModalOpen(true)}
-                  className="border-2 border-dashed border-[#4F5DFF]/40 bg-[#F7F8FC] hover:bg-[#4F5DFF]/5 rounded-2xl p-6 text-center cursor-pointer transition-all"
+                  className="border-2 border-dashed border-blue-300/80 bg-slate-50/80 hover:bg-blue-50/40 rounded-2xl p-7 text-center cursor-pointer transition-all group"
                 >
-                  <Sparkles className="w-8 h-8 text-[#4F5DFF] mx-auto mb-2 animate-bounce" />
-                  <p className="font-bold text-sm text-[#1F1F24]">Click to Scan PAN / Aadhaar Document with AI</p>
-                  <p className="text-xs text-[#6C7285] mt-1">Extracts identity fields and calculates photo match score</p>
+                  <Sparkles className="w-8 h-8 text-blue-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <p className="font-bold text-sm text-slate-900">Click to Scan PAN / Aadhaar Document with AI</p>
+                  <p className="text-xs text-slate-500 mt-1">Extracts identity fields and calculates photo match score</p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1F24] mb-1">PAN Card Number:</label>
+                  <label className="block text-xs font-semibold text-slate-900 mb-1.5">PAN Card Number:</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. ABCDE1234F"
                     value={panNumber}
                     onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-                    className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl px-4 py-2.5 text-xs text-[#1F1F24] font-mono uppercase outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl px-4 py-3 text-xs text-slate-900 font-mono uppercase outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1F24] mb-1">Aadhaar Card Number:</label>
+                  <label className="block text-xs font-semibold text-slate-900 mb-1.5">Aadhaar Card Number:</label>
                   <input
                     type="text"
                     required
                     placeholder="9876 5432 1098"
                     value={aadhaarNumber}
                     onChange={(e) => setAadhaarNumber(e.target.value)}
-                    className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl px-4 py-2.5 text-xs text-[#1F1F24] font-mono outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl px-4 py-3 text-xs text-slate-900 font-mono outline-none transition-all"
                   />
                 </div>
               </div>
@@ -341,14 +341,14 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all text-xs"
+                  className="nexora-pill-btn-secondary font-semibold py-3 px-6 text-xs"
                 >
                   ← Back
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md text-xs flex items-center gap-2"
+                  className="nexora-pill-btn font-bold py-3.5 px-6 text-xs flex items-center gap-2"
                 >
                   Next: Bank Account Setup <ArrowRight className="w-4 h-4" />
                 </button>
@@ -358,40 +358,40 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
 
           {/* STEP 3: Bank Account & AutoPay Mandate */}
           {step === 3 && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="border-b border-[#E8EAF8] pb-3">
-                <h3 className="font-heading font-bold text-lg text-[#1F1F24]">3. Bank Account & AutoPay Setup</h3>
-                <p className="text-xs text-[#6C7285]">Linked account for monthly AutoPay deposits & year-end maturity payouts</p>
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <div className="border-b border-slate-100 pb-4">
+                <h3 className="font-heading font-bold text-lg text-slate-900">3. Bank Account & AutoPay Setup</h3>
+                <p className="text-xs text-slate-500">Linked account for monthly AutoPay deposits & year-end maturity payouts</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1F24] mb-1">Bank Account Number:</label>
+                  <label className="block text-xs font-semibold text-slate-900 mb-1.5">Bank Account Number:</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. 50100293847123"
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
-                    className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl px-4 py-2.5 text-xs text-[#1F1F24] font-mono outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl px-4 py-3 text-xs text-slate-900 font-mono outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1F24] mb-1">IFSC Code:</label>
+                  <label className="block text-xs font-semibold text-slate-900 mb-1.5">IFSC Code:</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. HDFC0001234"
                     value={ifsc}
                     onChange={(e) => setIfsc(e.target.value.toUpperCase())}
-                    className="w-full bg-[#F7F8FC] border border-[#E8EAF8] focus:border-[#4F5DFF] focus:bg-white rounded-xl px-4 py-2.5 text-xs text-[#1F1F24] font-mono uppercase outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200/80 focus:border-blue-600 focus:bg-white rounded-xl px-4 py-3 text-xs text-slate-900 font-mono uppercase outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1F1F24] mb-2">Preferred AutoPay UPI Provider:</label>
+                <label className="block text-xs font-semibold text-slate-900 mb-2">Preferred AutoPay UPI Provider:</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { id: 'gpay', name: 'Google Pay' },
@@ -403,10 +403,10 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
                       key={m.id}
                       type="button"
                       onClick={() => setAutopayMethod(m.id as any)}
-                      className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                      className={`p-3.5 rounded-2xl border text-xs font-bold transition-all ${
                         autopayMethod === m.id
-                          ? 'border-[#4F5DFF] bg-[#4F5DFF]/10 text-[#4F5DFF]'
-                          : 'border-[#E8EAF8] bg-[#F7F8FC] text-[#1F1F24]'
+                          ? 'border-blue-600 bg-blue-50 text-blue-600 ring-2 ring-blue-500/20'
+                          : 'border-slate-200/80 bg-slate-50 text-slate-800'
                       }`}
                     >
                       {m.name}
@@ -415,7 +415,7 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              <div className="bg-[#F7F8FC] p-4 rounded-2xl border border-[#E8EAF8] text-xs text-[#6C7285] flex items-center gap-2">
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/70 text-xs text-slate-600 flex items-center gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
                 <span>By submitting, you consent to NPCI AutoPay mandate registration under RBI Escrow trustee guidelines.</span>
               </div>
@@ -424,13 +424,13 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all text-xs"
+                  className="nexora-pill-btn-secondary font-semibold py-3 px-6 text-xs"
                 >
                   ← Back
                 </button>
                 <button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-emerald-600/30 text-xs flex items-center gap-2"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-8 rounded-full transition-all shadow-lg shadow-emerald-600/30 text-xs flex items-center gap-2"
                 >
                   Submit KYC & Complete Setup <CheckCircle2 className="w-4 h-4" />
                 </button>
@@ -451,3 +451,4 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
     </div>
   );
 };
+

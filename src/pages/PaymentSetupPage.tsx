@@ -41,41 +41,41 @@ export const PaymentSetupPage: React.FC<PaymentSetupPageProps> = ({ onNavigate }
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
       
       {/* Header */}
-      <div className="text-center space-y-2">
-        <span className="bg-[#4F5DFF]/10 text-[#4F5DFF] border border-[#4F5DFF]/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+      <div className="text-center space-y-2.5">
+        <span className="bg-blue-50 text-blue-600 border border-blue-200/70 text-xs font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider">
           AutoPay Mandate Setup
         </span>
-        <h1 className="font-heading font-extrabold text-3xl text-[#1F1F24]">
+        <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-slate-900">
           Monthly NPCI AutoPay Authorization
         </h1>
-        <p className="text-xs text-[#6C7285] max-w-md mx-auto">
+        <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
           Manage your standing instructions for seamless monthly micro-savings
         </p>
       </div>
 
-      <form onSubmit={handleSaveMandate} className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EAF8] shadow-lg space-y-6">
+      <form onSubmit={handleSaveMandate} className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-lg space-y-6">
         
         {/* Linked Bank Card */}
-        <div className="bg-[#F7F8FC] border border-[#E8EAF8] p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#4F5DFF]/10 text-[#4F5DFF] flex items-center justify-center font-bold">
-              <Building className="w-5 h-5" />
+        <div className="bg-slate-50/80 border border-slate-200/70 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold border border-blue-100 shadow-2xs">
+              <Building className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="font-bold text-[#1F1F24] text-sm">{user.bank_details?.bank_name || 'HDFC Bank'}</p>
-              <p className="text-xs text-[#6C7285] font-mono">
+              <p className="font-bold text-slate-900 text-sm">{user.bank_details?.bank_name || 'HDFC Bank'}</p>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">
                 A/C: {user.bank_details?.account_number || '50100293847123'} • IFSC: {user.bank_details?.ifsc || 'HDFC0001234'}
               </p>
             </div>
           </div>
-          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
+          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3.5 py-1 rounded-full border border-emerald-200">
             Mandate Active
           </span>
         </div>
 
         {/* Choose Method */}
         <div>
-          <label className="block text-xs font-semibold text-[#1F1F24] mb-3 uppercase tracking-wider">
+          <label className="block text-xs font-semibold text-slate-900 mb-3 uppercase tracking-wider">
             Select Preferred AutoPay Provider:
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -91,11 +91,11 @@ export const PaymentSetupPage: React.FC<PaymentSetupPageProps> = ({ onNavigate }
                 onClick={() => setAutopayMethod(m.id as any)}
                 className={`p-4 rounded-2xl border text-xs font-bold transition-all flex flex-col items-center justify-center gap-2 ${
                   autopayMethod === m.id
-                    ? 'border-[#4F5DFF] bg-[#4F5DFF]/10 text-[#4F5DFF] ring-2 ring-[#4F5DFF]/20'
-                    : 'border-[#E8EAF8] bg-[#F7F8FC] text-[#1F1F24]'
+                    ? 'border-blue-600 bg-blue-50 text-blue-600 ring-2 ring-blue-500/20 shadow-2xs'
+                    : 'border-slate-200/80 bg-slate-50 text-slate-800'
                 }`}
               >
-                <Smartphone className="w-5 h-5" />
+                <Smartphone className="w-5 h-5 text-blue-600" />
                 <span>{m.name}</span>
               </button>
             ))}
@@ -103,8 +103,8 @@ export const PaymentSetupPage: React.FC<PaymentSetupPageProps> = ({ onNavigate }
         </div>
 
         {saved && (
-          <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs font-bold text-emerald-900 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl text-xs font-bold text-emerald-900 flex items-center gap-2">
+            <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
             AutoPay Standing Instructions Updated Successfully!
           </div>
         )}
@@ -112,7 +112,7 @@ export const PaymentSetupPage: React.FC<PaymentSetupPageProps> = ({ onNavigate }
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-md text-xs"
+            className="nexora-pill-btn font-bold py-3.5 px-8 text-xs shadow-md"
           >
             Update AutoPay Mandate
           </button>
@@ -123,3 +123,4 @@ export const PaymentSetupPage: React.FC<PaymentSetupPageProps> = ({ onNavigate }
     </div>
   );
 };
+

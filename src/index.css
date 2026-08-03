@@ -2,25 +2,107 @@
 
 @layer base {
   :root {
-    --primary-blue: #4F5DFF;
-    --secondary-blue: #6A6DFF;
-    --accent-purple: #8A7BFF;
-    --dark-text: #1F1F24;
-    --body-text: #6C7285;
-    --light-border: #E8EAF8;
+    --primary-blue: #2563EB;
+    --primary-blue-hover: #1D4ED8;
+    --secondary-blue: #3B82F6;
+    --light-blue-bg: #EFF6FF;
+    --accent-indigo: #4F46E5;
+    --dark-heading: #0F172A;
+    --body-text: #475569;
+    --muted-text: #64748B;
+    --light-border: #E2E8F0;
     --card-bg: #FFFFFF;
-    --site-bg: #F7F8FC;
+    --site-bg: #F8FAFC;
   }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--site-bg);
-    color: var(--dark-text);
+    color: var(--dark-heading);
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
-    font-family: 'Sora', sans-serif;
+    font-family: 'Sora', 'Inter', sans-serif;
+    letter-spacing: -0.02em;
   }
+}
+
+/* Nexora Hero & Atmospheric Glow Utilities */
+.nexora-hero-bg {
+  background-image: 
+    radial-gradient(ellipse 90% 70% at 50% -20%, rgba(59, 130, 246, 0.14) 0%, rgba(239, 246, 255, 0.05) 60%, transparent 100%),
+    radial-gradient(circle at 85% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 15% 50%, rgba(37, 99, 235, 0.05) 0%, transparent 40%);
+}
+
+.nexora-grid-pattern {
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+}
+
+.nexora-dot-grid {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.22) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+.nexora-card {
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+}
+
+.nexora-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nexora-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(147, 197, 253, 0.9);
+  box-shadow: 0 20px 40px -12px rgba(37, 99, 235, 0.14), 0 8px 16px -4px rgba(37, 99, 235, 0.06);
+}
+
+.nexora-glow-box {
+  position: relative;
+}
+.nexora-glow-box::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(99, 102, 241, 0.2), transparent);
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Custom Pill Buttons matching reference UI */
+.nexora-pill-btn {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.38);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nexora-pill-btn:hover {
+  background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+  box-shadow: 0 14px 32px -4px rgba(37, 99, 235, 0.48);
+  transform: translateY(-1.5px);
+}
+
+.nexora-pill-btn-secondary {
+  background: #ffffff;
+  color: #0F172A;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease-in-out;
+}
+.nexora-pill-btn-secondary:hover {
+  background: #F8FAFC;
+  border-color: #93C5FD;
+  color: #2563EB;
+  transform: translateY(-1px);
 }
 
 /* Custom scrollbar */
@@ -29,7 +111,7 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F7F8FC;
+  background: #F8FAFC;
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
@@ -38,3 +120,4 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+

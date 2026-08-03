@@ -47,65 +47,66 @@ export const MakePaymentPage: React.FC<MakePaymentPageProps> = ({ onNavigate }) 
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
       
       {/* Header */}
-      <div className="text-center space-y-2">
-        <span className="bg-[#4F5DFF]/10 text-[#4F5DFF] border border-[#4F5DFF]/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+      <div className="text-center space-y-2.5">
+        <span className="bg-blue-50 text-blue-600 border border-blue-200/70 text-xs font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider">
           Monthly Micro-Deposit Execution
         </span>
-        <h1 className="font-heading font-extrabold text-3xl text-[#1F1F24]">
+        <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-slate-900">
           Execute Month {nextCycle} Contribution
         </h1>
-        <p className="text-xs text-[#6C7285] max-w-md mx-auto">
+        <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
           Deposited directly into your Tripartite RBI Escrow Custody Account
         </p>
       </div>
 
       {/* Main Payment Card */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EAF8] shadow-xl space-y-6">
+      <div className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xl space-y-6">
         
         {/* Deposit Info */}
-        <div className="bg-gradient-to-r from-[#1F1F24] to-[#4F5DFF] text-white p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950 text-white p-6 sm:p-7 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-slate-800">
           <div>
-            <span className="text-xs text-slate-300">Cycle {nextCycle} of 12</span>
-            <h3 className="font-heading font-extrabold text-3xl text-white mt-0.5">
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Cycle {nextCycle} of 12</span>
+            <h3 className="font-heading font-extrabold text-3xl sm:text-4xl text-white mt-1">
               ₹{(membership?.monthly_amount || plan.monthly_amount).toLocaleString('en-IN')}
             </h3>
-            <p className="text-xs text-blue-200 mt-1">
+            <p className="text-xs text-blue-200 mt-1 font-medium">
               {plan.name} • {plan.cash_bonus_pct}% Year-End Cash Bonus
             </p>
           </div>
 
           <button
             onClick={() => setPaymentModalOpen(true)}
-            className="w-full sm:w-auto bg-white text-[#4F5DFF] hover:bg-slate-100 font-extrabold py-3.5 px-8 rounded-2xl transition-all shadow-lg text-xs flex items-center justify-center gap-2"
+            className="w-full sm:w-auto bg-white text-blue-600 hover:bg-slate-50 font-extrabold py-3.5 px-8 rounded-full transition-all shadow-lg text-xs flex items-center justify-center gap-2.5 group"
           >
-            Pay Now via Razorpay <ArrowRight className="w-4 h-4" />
+            <span>Pay Now via Razorpay</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
 
         {/* 5-Day Grace Period Safeguard Note */}
-        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl space-y-2 text-xs text-emerald-950">
+        <div className="bg-emerald-50 border border-emerald-200 p-4.5 rounded-2xl space-y-2 text-xs text-emerald-950">
           <div className="flex items-center gap-2 font-bold text-sm">
-            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
             5-Day Grace Window Safeguard Active
           </div>
           <p className="text-emerald-800 leading-relaxed">
-            If a due date is missed, your account enters a penalty-free 5-day grace window. Paying within Days 1–5 preserves your savings streak (<strong className="text-emerald-900">current streak: {membership?.current_streak || 0} months</strong>).
+            If a due date is missed, your account enters a penalty-free 5-day grace window. Paying within Days 1–5 preserves your savings streak (<strong className="text-emerald-950">current streak: {membership?.current_streak || 0} months</strong>).
           </p>
         </div>
 
         {/* Payment History */}
-        <div>
-          <h4 className="font-heading font-bold text-sm text-[#1F1F24] mb-3">Escrow Deposit Breakdown:</h4>
-          <div className="space-y-2 text-xs">
+        <div className="space-y-3">
+          <h4 className="font-heading font-bold text-sm text-slate-900">Escrow Deposit Breakdown:</h4>
+          <div className="space-y-2.5 text-xs">
             {contributions.map((c) => (
-              <div key={c.id} className="bg-[#F7F8FC] border border-[#E8EAF8] p-3 rounded-xl flex items-center justify-between">
+              <div key={c.id} className="bg-slate-50/80 border border-slate-200/70 p-3.5 rounded-2xl flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-[#1F1F24]">Cycle {c.cycle_number}</span>
-                  <span className="text-[11px] text-[#6C7285] ml-2 font-mono">Ref: {c.transaction_ref}</span>
+                  <span className="font-bold text-slate-900">Cycle {c.cycle_number}</span>
+                  <span className="text-[11px] text-slate-500 ml-3 font-mono">Ref: {c.transaction_ref}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-[#1F1F24]">₹{c.amount.toLocaleString('en-IN')}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                  <span className="font-mono font-bold text-slate-900">₹{c.amount.toLocaleString('en-IN')}</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                     c.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                   }`}>
                     {c.status}
@@ -131,3 +132,4 @@ export const MakePaymentPage: React.FC<MakePaymentPageProps> = ({ onNavigate }) 
     </div>
   );
 };
+

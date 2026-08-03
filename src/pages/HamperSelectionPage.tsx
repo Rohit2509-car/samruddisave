@@ -30,30 +30,30 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
     <div className="max-w-7xl mx-auto py-8 px-4 space-y-8">
       
       {/* Header */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EAF8] shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <span className="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+          <span className="bg-purple-50 text-purple-600 border border-purple-200/70 text-xs font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider">
             Curated Festival Rewards
           </span>
-          <h1 className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-1">
+          <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-slate-900 mt-2">
             Month 12 Maturity Gift Catalogue
           </h1>
-          <p className="text-xs text-[#6C7285] mt-1 max-w-xl">
+          <p className="text-xs text-slate-500 mt-1 max-w-xl font-medium leading-relaxed">
             As part of your 12-month savings commitment, you receive a ₹4,500 retail-value curated gift hamper delivered to your doorstep upon maturity.
           </p>
         </div>
 
         {user.allocated_hamper_id ? (
-          <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-xs text-emerald-950 flex items-center gap-3">
+          <div className="bg-emerald-50 border border-emerald-200 p-4.5 rounded-2xl text-xs text-emerald-950 flex items-center gap-3 shadow-2xs">
             <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
             <div>
               <p className="font-bold">✓ Included Gift / Assigned to Your Maturity Payout</p>
-              <p className="text-emerald-800 text-[11px]">Allocated by MRM Officer {user.allocated_by_admin || 'Staff'}</p>
+              <p className="text-emerald-800 text-[11px] font-medium">Allocated by MRM Officer {user.allocated_by_admin || 'Staff'}</p>
             </div>
           </div>
         ) : (
-          <div className="bg-[#F7F8FC] border border-[#E8EAF8] p-4 rounded-2xl text-xs text-[#6C7285]">
-            <span className="font-bold text-[#1F1F24]">Allocation Policy:</span> Gift hampers are assigned by your MRM Officer prior to Month 12 maturity disbursal.
+          <div className="bg-slate-50 border border-slate-200/70 p-4.5 rounded-2xl text-xs text-slate-500 font-medium">
+            <span className="font-bold text-slate-900">Allocation Policy:</span> Gift hampers are assigned by your MRM Officer prior to Month 12 maturity disbursal.
           </div>
         )}
       </div>
@@ -66,8 +66,8 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
           return (
             <div
               key={hamper.id}
-              className={`bg-white rounded-3xl border overflow-hidden shadow-xs hover:shadow-xl transition-all flex flex-col justify-between ${
-                isAssigned ? 'border-emerald-400 ring-2 ring-emerald-300' : 'border-[#E8EAF8]'
+              className={`nexora-card nexora-card-hover rounded-3xl border overflow-hidden shadow-xs flex flex-col justify-between ${
+                isAssigned ? 'border-emerald-400 ring-4 ring-emerald-400/20' : 'border-slate-200/80'
               }`}
             >
               <div>
@@ -75,31 +75,31 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
                   <img
                     src={hamper.image}
                     alt={hamper.name}
-                    className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-500"
                   />
-                  <span className="absolute top-3 left-3 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-xs">
+                  <span className="absolute top-3 left-3 bg-slate-900/80 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md border border-white/20">
                     {hamper.tier}
                   </span>
                   
                   {isAssigned && (
-                    <span className="absolute top-3 right-3 bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Assigned Gift
+                    <span className="absolute top-3 right-3 bg-emerald-600 text-white font-bold text-[10px] px-3 py-1 rounded-full shadow-md flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Assigned Gift
                     </span>
                   )}
 
-                  <div className="absolute bottom-3 left-3 bg-[#1F1F24]/90 text-white font-mono font-bold text-xs px-2.5 py-1 rounded-xl backdrop-blur-xs">
+                  <div className="absolute bottom-3 left-3 bg-slate-900/90 text-white font-mono font-bold text-xs px-3 py-1 rounded-xl backdrop-blur-md">
                     ₹{hamper.retail_value.toLocaleString('en-IN')} Value
                   </div>
                 </div>
 
                 <div className="p-5 space-y-3">
-                  <h3 className="font-heading font-bold text-lg text-[#1F1F24]">{hamper.name}</h3>
-                  <p className="text-xs text-[#6C7285] line-clamp-2">{hamper.description}</p>
+                  <h3 className="font-heading font-bold text-lg text-slate-900">{hamper.name}</h3>
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{hamper.description}</p>
                   
-                  <div className="bg-[#F7F8FC] p-3 rounded-xl border border-[#E8EAF8] text-xs space-y-1">
-                    <p className="font-semibold text-[#1F1F24]">Top Items Included:</p>
+                  <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/70 text-xs space-y-1">
+                    <p className="font-semibold text-slate-900">Top Items Included:</p>
                     {hamper.included_items.slice(0, 2).map((item, idx) => (
-                      <p key={idx} className="text-[11px] text-[#6C7285] flex items-center gap-1">
+                      <p key={idx} className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
                         • {item.name}
                       </p>
                     ))}
@@ -110,7 +110,7 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
               <div className="p-5 pt-0">
                 <button
                   onClick={() => handleOpenDetail(hamper)}
-                  className="w-full bg-[#F7F8FC] hover:bg-[#4F5DFF] text-[#1F1F24] hover:text-white font-bold py-3 px-4 rounded-xl border border-[#E8EAF8] transition-all text-xs flex items-center justify-center gap-2"
+                  className="w-full bg-slate-50 hover:bg-blue-600 text-slate-800 hover:text-white font-bold py-3 px-4 rounded-xl border border-slate-200/80 hover:border-blue-600 transition-all text-xs flex items-center justify-center gap-2"
                 >
                   <Eye className="w-4 h-4" /> View Included Gift Items
                 </button>
@@ -131,3 +131,4 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
     </div>
   );
 };
+

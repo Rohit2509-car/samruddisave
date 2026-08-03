@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { stateStore } from './store/StateStore';
 import { UserRole } from './types';
-import { TopHeader } from './components/TopHeader';
 import { Navbar } from './components/Navbar';
-import { BottomNavDock } from './components/BottomNavDock';
 import { RoleGuard } from './components/RoleGuard';
 
 // Pages
@@ -114,12 +112,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] pb-24 md:pb-12">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-body flex flex-col justify-between selection:bg-blue-600/20 selection:text-blue-600 pb-12">
       <div>
-        {/* Sticky Top Header */}
-        <TopHeader onNavigate={handleNavigate} />
-
-        {/* Navigation Navbar */}
+        {/* Single Unified Header Navigation Bar */}
         <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
 
         {/* Main Content Area */}
@@ -129,31 +124,29 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[#E8EAF8] py-8 px-4 mt-12 text-center text-xs text-[#6C7285] space-y-3">
+      <footer className="bg-white border-t border-slate-200/80 py-8 px-4 mt-12 text-center text-xs text-slate-500 space-y-3">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#4F5DFF] text-white font-heading font-extrabold flex items-center justify-center text-xs">
+            <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-heading font-extrabold flex items-center justify-center text-xs shadow-2xs">
               S
             </div>
-            <span className="font-heading font-extrabold text-[#1F1F24]">SamruddiSave™</span>
-            <span className="text-[10px] text-[#6C7285]">© 2026 All Rights Reserved</span>
+            <span className="font-heading font-extrabold text-slate-900">SamruddiSave™</span>
+            <span className="text-[10px] text-slate-400">© 2026 All Rights Reserved</span>
           </div>
 
           <div className="flex flex-wrap justify-center gap-4 text-[11px] font-semibold">
-            <button onClick={() => handleNavigate('/')} className="hover:text-[#4F5DFF]">RBI Escrow Disclosures</button>
-            <button onClick={() => handleNavigate('/plans')} className="hover:text-[#4F5DFF]">Savings Plans</button>
-            <button onClick={() => handleNavigate('/hampers')} className="hover:text-[#4F5DFF]">Gift Perks</button>
-            <button onClick={() => handleNavigate('/support')} className="hover:text-[#4F5DFF]">Help Desk</button>
+            <button onClick={() => handleNavigate('/')} className="hover:text-blue-600 transition-colors">RBI Escrow Disclosures</button>
+            <button onClick={() => handleNavigate('/plans')} className="hover:text-blue-600 transition-colors">Savings Plans</button>
+            <button onClick={() => handleNavigate('/hampers')} className="hover:text-blue-600 transition-colors">Gift Perks</button>
+            <button onClick={() => handleNavigate('/support')} className="hover:text-blue-600 transition-colors">Help Desk</button>
           </div>
         </div>
 
-        <p className="text-[10px] text-slate-400 max-w-4xl mx-auto">
+        <p className="text-[10px] text-slate-400 max-w-4xl mx-auto font-medium">
           SamruddiSave is an RBI Escrow certified fixed micro-savings & maturity perks platform. All member principal contributions are deposited directly into HDFC Escrow Trustee Account #9182374619 under 256-bit encrypted audit trails.
         </p>
       </footer>
-
-      {/* Mobile Bottom Dock Navigation */}
-      <BottomNavDock currentPath={currentPath} onNavigate={handleNavigate} />
     </div>
   );
 }
+
