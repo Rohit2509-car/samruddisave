@@ -18,35 +18,17 @@ export const BottomNavDock: React.FC<BottomNavDockProps> = ({ currentPath, onNav
     return unsubscribe;
   }, []);
 
-  // Role-based bottom icons
-  const getDockItems = () => {
-    if (user.role === 'member') {
-      return [
-        { label: 'Home', path: '/', icon: Home },
-        { label: 'KYC', path: '/kyc', icon: FileCheck2 },
-        { label: 'Wallet', path: '/dashboard', icon: LayoutDashboard },
-        { label: 'Deposit', path: '/pay', icon: CreditCard },
-        { label: 'Hampers', path: '/hampers', icon: Gift },
-      ];
-    } else if (user.role === 'employee') {
-      return [
-        { label: 'MRM Queue', path: '/employee', icon: FileCheck2 },
-        { label: 'Support', path: '/support', icon: Users },
-      ];
-    } else if (user.role === 'finance_admin') {
-      return [
-        { label: 'Escrow', path: '/finance', icon: Building },
-        { label: 'Support', path: '/support', icon: Users },
-      ];
-    }
-    return [
-      { label: 'Governance', path: '/admin', icon: LayoutDashboard },
-      { label: 'MRM', path: '/employee', icon: FileCheck2 },
-      { label: 'Escrow', path: '/finance', icon: Building },
-    ];
-  };
+  if (user.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console') {
+    return null;
+  }
 
-  const dockItems = getDockItems();
+  const dockItems = [
+    { label: 'Home', path: '/', icon: Home },
+    { label: 'KYC', path: '/kyc', icon: FileCheck2 },
+    { label: 'Wallet', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Deposit', path: '/pay', icon: CreditCard },
+    { label: 'Hampers', path: '/hampers', icon: Gift },
+  ];
 
   return (
     <div className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-[#1F1F24]/90 backdrop-blur-md text-white rounded-full px-4 py-2 border border-white/10 shadow-2xl flex items-center gap-4">

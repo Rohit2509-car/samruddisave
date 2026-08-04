@@ -41,37 +41,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate }) => {
     { label: 'KYC Verification', path: '/kyc', icon: FileText, badge: isKYCPending ? 'Action Needed' : undefined },
     { label: 'Wallet Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Monthly Deposit', path: '/pay', icon: CreditCard, locked: isKYCPending },
-    { label: 'AutoPay Setup', path: '/payment-setup', icon: Lock, locked: isKYCPending },
-    { label: 'Escrow Ledger', path: '/ledger', icon: History },
     { label: 'Gift Hampers', path: '/hampers', icon: Gift },
-    { label: 'Savings Circles', path: '/circles', icon: Users },
   ];
 
-  const employeeTabs = [
-    { label: 'MRM Verification Queue', path: '/employee', icon: UserCheck },
-    { label: 'Customer Support Desk', path: '/support', icon: HelpCircle },
-  ];
+  if (user.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login') {
+    return null;
+  }
 
-  const supportTabs = [
-    { label: 'Support Ticket Portal', path: '/support', icon: HelpCircle },
-  ];
-
-  const financeTabs = [
-    { label: 'Escrow Trustee Disbursals', path: '/finance', icon: Building },
-  ];
-
-  const superAdminTabs = [
-    { label: 'Platform Governance', path: '/admin', icon: Settings },
-    { label: 'MRM Verification Queue', path: '/employee', icon: UserCheck },
-    { label: 'Escrow Trustee Portal', path: '/finance', icon: Building },
-    { label: 'Support Desk Queue', path: '/support', icon: HelpCircle },
-  ];
-
-  let currentTabs = memberTabs;
-  if (user.role === 'employee') currentTabs = employeeTabs;
-  else if (user.role === 'support_agent') currentTabs = supportTabs;
-  else if (user.role === 'finance_admin') currentTabs = financeTabs;
-  else if (user.role === 'super_admin') currentTabs = superAdminTabs;
+  const currentTabs = memberTabs;
 
   return (
     <nav className="bg-white border-b border-[#E8EAF8] shadow-2xs sticky top-16 z-30">

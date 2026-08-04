@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { stateStore } from './store/StateStore';
-import { UserRole } from './types';
 import { TopHeader } from './components/TopHeader';
 import { Navbar } from './components/Navbar';
 import { BottomNavDock } from './components/BottomNavDock';
 import { RoleGuard } from './components/RoleGuard';
 
-// Pages
+// Member Pages
 import { LandingPage } from './pages/LandingPage';
 import { PlansPage } from './pages/PlansPage';
 import { KYCPage } from './pages/KYCPage';
@@ -17,21 +16,31 @@ import { LedgerPage } from './pages/LedgerPage';
 import { HamperSelectionPage } from './pages/HamperSelectionPage';
 import { SavingsCirclesPage } from './pages/SavingsCirclesPage';
 
-// Staff & Admin Portals
-import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
-import { FinanceAdminPortalPage } from './pages/finance/FinanceAdminPortalPage';
-import { SupportPortalPage } from './pages/support/SupportPortalPage';
-import { AdminPanelPage } from './pages/admin/AdminPanelPage';
+// Admin Portal Pages
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 
 export default function App() {
-  const [currentPath, setCurrentPath] = useState<string>('/');
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    return window.location.pathname || '/';
+  });
 
-  // Scroll to top on navigation change
+  // Sync with browser history and scroll to top on navigation change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname || '/');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [currentPath]);
 
   const handleNavigate = (path: string) => {
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
     setCurrentPath(path);
   };
 
@@ -80,31 +89,20 @@ export default function App() {
       case '/circles':
         return <SavingsCirclesPage onNavigate={handleNavigate} />;
 
+      // Admin Login Portal Routes (/console or /login)
+      case '/console':
+      case '/login':
+      case '/admin-login':
+        return <AdminLoginPage onNavigate={handleNavigate} />;
+
+      // Single Admin Operations Dashboard
+      case '/admin':
       case '/employee':
-        return (
-          <RoleGuard currentPath={currentPath} allowedRoles={['employee', 'super_admin']} onNavigate={handleNavigate}>
-            <EmployeeDashboard onNavigate={handleNavigate} />
-          </RoleGuard>
-        );
-
       case '/finance':
-        return (
-          <RoleGuard currentPath={currentPath} allowedRoles={['finance_admin', 'super_admin']} onNavigate={handleNavigate}>
-            <FinanceAdminPortalPage onNavigate={handleNavigate} />
-          </RoleGuard>
-        );
-
       case '/support':
         return (
-          <RoleGuard currentPath={currentPath} allowedRoles={['member', 'support_agent', 'employee', 'super_admin']} onNavigate={handleNavigate}>
-            <SupportPortalPage onNavigate={handleNavigate} />
-          </RoleGuard>
-        );
-
-      case '/admin':
-        return (
-          <RoleGuard currentPath={currentPath} allowedRoles={['super_admin']} onNavigate={handleNavigate}>
-            <AdminPanelPage onNavigate={handleNavigate} />
+          <RoleGuard currentPath={currentPath} allowedRoles={['admin']} onNavigate={handleNavigate}>
+            <AdminDashboard onNavigate={handleNavigate} />
           </RoleGuard>
         );
 
@@ -117,7 +115,7 @@ export default function App() {
     <div className="min-h-screen bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] pb-24 md:pb-12">
       <div>
         {/* Sticky Top Header */}
-        <TopHeader onNavigate={handleNavigate} />
+        <TopHeader currentPath={currentPath} onNavigate={handleNavigate} />
 
         {/* Navigation Navbar */}
         <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
@@ -143,7 +141,6 @@ export default function App() {
             <button onClick={() => handleNavigate('/')} className="hover:text-[#4F5DFF]">RBI Escrow Disclosures</button>
             <button onClick={() => handleNavigate('/plans')} className="hover:text-[#4F5DFF]">Savings Plans</button>
             <button onClick={() => handleNavigate('/hampers')} className="hover:text-[#4F5DFF]">Gift Perks</button>
-            <button onClick={() => handleNavigate('/support')} className="hover:text-[#4F5DFF]">Help Desk</button>
           </div>
         </div>
 
