@@ -34,28 +34,22 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
         <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h2 className="font-heading font-bold text-xl text-[#1F1F24] mb-2">Access Restricted (RBAC Route Guard)</h2>
+        <h2 className="font-heading font-bold text-xl text-[#1F1F24] mb-2">Access Restricted (Admin Portal Guard)</h2>
         <p className="text-sm text-[#6C7285] max-w-md mx-auto mb-6">
           Your current account role (<span className="font-semibold text-rose-600">{user.role}</span>) does not have permission to view route <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-800">{currentPath}</code>.
         </p>
         <div className="flex justify-center gap-3">
           <button
             onClick={() => onNavigate('/')}
-            className="bg-[#4F5DFF] text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-[#4F5DFF]/90 transition-all shadow-md"
+            className="bg-slate-100 text-slate-800 text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-slate-200 transition-colors"
           >
             Return to Home
           </button>
           <button
-            onClick={() => {
-              // Switch persona helper for demo convenience
-              if (currentPath === '/employee') stateStore.switchRole('employee');
-              else if (currentPath === '/finance') stateStore.switchRole('finance_admin');
-              else if (currentPath === '/support') stateStore.switchRole('support_agent');
-              else if (currentPath === '/admin') stateStore.switchRole('super_admin');
-            }}
-            className="bg-slate-100 text-slate-800 hover:bg-slate-200 text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors"
+            onClick={() => onNavigate('/console')}
+            className="bg-[#4F5DFF] text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-[#4F5DFF]/90 transition-all shadow-md flex items-center gap-2"
           >
-            Switch to Required Role
+            Admin Portal Login (/console) <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

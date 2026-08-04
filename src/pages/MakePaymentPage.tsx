@@ -40,7 +40,17 @@ export const MakePaymentPage: React.FC<MakePaymentPageProps> = ({ onNavigate }) 
   const nextCycle = paidCount + 1;
 
   const handlePaymentSuccess = (paymentId: string) => {
-    stateStore.processMonthlyDeposit(user.id, membership?.monthly_amount || plan.monthly_amount);
+    if (membership) {
+      stateStore.recordPaymentWithMembership(
+        membership.id,
+        paymentId,
+        'razorpay',
+        undefined,
+        `Razorpay order payment processed for membership ${membership.id}`
+      );
+    } else {
+      stateStore.processMonthlyDeposit(user.id, plan.monthly_amount);
+    }
   };
 
   return (

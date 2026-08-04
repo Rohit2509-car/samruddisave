@@ -1,4 +1,4 @@
-import {
+  import {
   UserProfile,
   UserRole,
   KYCStatus,
@@ -55,28 +55,38 @@ class StateStore {
   private loadFromStorage() {
     try {
       const storedProfiles = localStorage.getItem(STORAGE_KEYS.PROFILES);
-      this.profiles = storedProfiles ? JSON.parse(storedProfiles) : INITIAL_PROFILES;
+      let loadedProfiles: UserProfile[] = storedProfiles ? JSON.parse(storedProfiles) : INITIAL_PROFILES;
+
+      // Sanitize: If localStorage contains legacy multi-member dataset or unknown roles, reset to clean single-member dataset
+      const isLegacy = loadedProfiles.length > 2 || loadedProfiles.some((p) => p.id === 'user-member-2' || (p.role as string) === 'employee');
+      if (isLegacy) {
+        localStorage.clear();
+        loadedProfiles = INITIAL_PROFILES;
+      }
+
+      this.profiles = loadedProfiles;
 
       const storedMemberships = localStorage.getItem(STORAGE_KEYS.MEMBERSHIPS);
-      this.memberships = storedMemberships ? JSON.parse(storedMemberships) : INITIAL_MEMBERSHIPS;
+      this.memberships = storedMemberships && !isLegacy ? JSON.parse(storedMemberships) : INITIAL_MEMBERSHIPS;
 
       const storedContributions = localStorage.getItem(STORAGE_KEYS.CONTRIBUTIONS);
-      this.contributions = storedContributions ? JSON.parse(storedContributions) : INITIAL_CONTRIBUTIONS;
+      this.contributions =   storedContributions && !isLegacy ? JSON.parse(storedContributions) : INITIAL_CONTRIBUTIONS;
 
       const storedPayouts = localStorage.getItem(STORAGE_KEYS.PAYOUTS);
-      this.payouts = storedPayouts ? JSON.parse(storedPayouts) : INITIAL_MATURITY_PAYOUTS;
+      this.payouts = storedPayouts && !isLegacy ? JSON.parse(storedPayouts) : INITIAL_MATURITY_PAYOUTS;
 
       const storedTickets = localStorage.getItem(STORAGE_KEYS.TICKETS);
-      this.tickets = storedTickets ? JSON.parse(storedTickets) : INITIAL_TICKETS;
+      this.tickets = storedTickets && !isLegacy ? JSON.parse(storedTickets) : INITIAL_TICKETS;
 
       const storedCircles = localStorage.getItem(STORAGE_KEYS.CIRCLES);
-      this.circles = storedCircles ? JSON.parse(storedCircles) : INITIAL_SAVINGS_CIRCLES;
+      this.circles = storedCircles && !isLegacy ? JSON.parse(storedCircles) : INITIAL_SAVINGS_CIRCLES;
 
       const storedLogs = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-      this.auditLogs = storedLogs ? JSON.parse(storedLogs) : INITIAL_AUDIT_LOGS;
+      this.auditLogs = storedLogs && !isLegacy ? JSON.parse(storedLogs) : INITIAL_AUDIT_LOGS;
 
       const storedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
-      this.currentUserId = storedUserId || 'user-member-1';
+      const validUserIds = this.profiles.map((p) => p.id);
+      this.currentUserId = storedUserId && validUserIds.includes(storedUserId) ? storedUserId : 'user-member-1';
     } catch (e) {
       console.error('Failed to parse state from localStorage, using initial mock data', e);
       this.profiles = INITIAL_PROFILES;
@@ -141,6 +151,10 @@ class StateStore {
     return this.contributions.filter((c) => c.user_id === userId);
   }
 
+  public getContributions(): ContributionRecord[] {
+    return this.contributions;
+  }
+
   public getPayouts(): MaturityPayout[] {
     return this.payouts;
   }
@@ -164,319 +178,249 @@ class StateStore {
   // --- Actions ---
   public setCurrentUser(userId: string) {
     this.currentUserId = userId;
-    this.addAuditLog('PERSONA_SWITCH', `Switched active session to user ID ${userId}`);
     this.saveToStorage();
   }
 
+  public adminLogin(email: string, _password: string): boolean {
+    const admin = this.profiles.find((p) => p.email.toLowerCase() === email.toLowerCase() && p.role === 'admin');
+    if (admin) {
+      this.currentUserId = admin.id;
+      this.recordAuditLog({
+        admin_id: admin.id,
+        action: 'ADMIN_LOGIN',
+        notes: `Admin ${admin.full_name} logged into Admin Console`,
+        details: { email, timestamp: new Date().toISOString() }
+      });
+      this.saveToStorage();
+      return true;
+    }
+    return false;
+  }
+
   public switchRole(role: UserRole) {
-    // Find representative user for this role
     const rep = this.profiles.find((p) => p.role === role);
     if (rep) {
       this.currentUserId = rep.id;
     }
-    this.addAuditLog('ROLE_SWITCH', `Switched active RBAC role to ${role}`);
-    this.saveToStorage();
-  }
-
-  public registerMember(data: {
-    full_name: string;
-    email: string;
-    phone: string;
-    pan_number: string;
-    aadhaar_number: string;
-    ocr_confidence?: number;
-    ocr_details?: UserProfile['ocr_details'];
-    bank_details?: UserProfile['bank_details'];
-  }): UserProfile {
-    const newId = `user-member-${Date.now().toString().slice(-4)}`;
-    const newProfile: UserProfile = {
-      id: newId,
-      full_name: data.full_name,
-      email: data.email,
-      phone: data.phone,
-      pan_number: data.pan_number.toUpperCase(),
-      aadhaar_number: data.aadhaar_number,
-      role: 'member',
-      kyc_status: 'pending',
-      pipeline_stage: 'KYC_PENDING',
-      ocr_confidence: data.ocr_confidence || 99.8,
-      ocr_details: data.ocr_details || {
-        pan_name_match: true,
-        photo_match_pct: 99.8,
-        extracted_pan: data.pan_number.toUpperCase(),
-        extracted_aadhaar: data.aadhaar_number,
-        document_type: 'PAN & Aadhaar OCR Verification',
-      },
-      bank_details: data.bank_details,
-      created_at: new Date().toISOString(),
-    };
-
-    this.profiles.unshift(newProfile);
-    this.currentUserId = newId;
-    this.addAuditLog('KYC_SUBMITTED', `New member registration for ${data.full_name} (${data.email})`);
-    this.saveToStorage();
-    return newProfile;
-  }
-
-  public updateKYCStatus(userId: string, status: KYCStatus, officerName: string) {
-    const profile = this.profiles.find((p) => p.id === userId);
-    if (profile) {
-      profile.kyc_status = status;
-      if (status === 'approved') {
-        profile.pipeline_stage = 'PAYMENT_ACTIVE';
-      }
-      this.addAuditLog('KYC_UPDATE', `Officer ${officerName} updated KYC status for ${profile.full_name} to ${status}`);
-      this.saveToStorage();
-    }
-  }
-
-  public selectPlanAndCreateMembership(
-    userId: string,
-    planId: string,
-    bankDetails: NonNullable<UserProfile['bank_details']>
-  ) {
-    const profile = this.profiles.find((p) => p.id === userId);
-    if (profile) {
-      profile.bank_details = bankDetails;
-    }
-
-    const plan = SAVINGS_PLANS.find((p) => p.id === planId) || SAVINGS_PLANS[0];
-    const membershipId = `m-${userId.slice(-6)}-${Date.now().toString().slice(-4)}`;
-
-    const newMembership: Membership = {
-      id: membershipId,
-      user_id: userId,
-      plan_id: plan.id,
-      monthly_amount: plan.monthly_amount,
-      current_streak: 1,
-      bonus_amount: plan.bonus_amount,
-      status: 'active',
-      due_day: 5,
-      grace_days_remaining: 5,
-      next_due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      created_at: new Date().toISOString(),
-    };
-
-    // Remove existing membership for this user if any
-    this.memberships = this.memberships.filter((m) => m.user_id !== userId);
-    this.memberships.push(newMembership);
-
-    // Create Cycle 1 deposit record
-    const cycle1Ref = `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`;
-    const newContrib: ContributionRecord = {
-      id: `c-${userId.slice(-4)}-1`,
-      user_id: userId,
-      membership_id: membershipId,
-      amount: plan.monthly_amount,
-      cycle_number: 1,
-      due_date: new Date().toISOString().split('T')[0],
-      paid_date: new Date().toISOString(),
-      status: 'PAID',
-      transaction_ref: cycle1Ref,
-      escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
-    };
-
-    this.contributions.push(newContrib);
-    this.escrowBalance += plan.monthly_amount;
-
-    this.addAuditLog(
-      'PLAN_ACTIVATED',
-      `Member activated ${plan.name} (₹${plan.monthly_amount}/mo). Month 1 contribution logged with ref ${cycle1Ref}`
-    );
-
     this.saveToStorage();
   }
 
   public processMonthlyDeposit(userId: string, amount: number) {
-    const membership = this.memberships.find((m) => m.user_id === userId);
-    if (!membership) return;
-
-    const userContribs = this.contributions.filter((c) => c.user_id === userId);
-    const paidCount = userContribs.filter((c) => c.status === 'PAID').length;
-    const nextCycle = paidCount + 1;
-
-    if (nextCycle <= 12) {
-      const txRef = `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`;
-      const newContrib: ContributionRecord = {
-        id: `c-${userId.slice(-4)}-${nextCycle}`,
-        user_id: userId,
-        membership_id: membership.id,
-        amount: amount,
-        cycle_number: nextCycle,
-        due_date: new Date().toISOString().split('T')[0],
-        paid_date: new Date().toISOString(),
-        status: 'PAID',
-        transaction_ref: txRef,
-        escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
-      };
-
-      this.contributions.push(newContrib);
-      membership.current_streak += 1;
-      membership.status = 'active';
-      membership.grace_days_remaining = 5;
-      this.escrowBalance += amount;
-
-      if (nextCycle === 12) {
-        membership.status = 'matured';
-        const profile = this.profiles.find((p) => p.id === userId);
-        if (profile) profile.pipeline_stage = 'MATURITY_REACHED';
-
-        // Create maturity payout record
-        const hamper = GIFT_HAMPERS.find((h) => h.id === profile?.allocated_hamper_id) || GIFT_HAMPERS[0];
-        const newPayout: MaturityPayout = {
-          id: `pay-${userId.slice(-4)}-12`,
-          user_id: userId,
-          user_name: profile?.full_name || 'Member',
-          user_email: profile?.email || '',
-          membership_id: membership.id,
-          principal_amount: amount * 12,
-          bonus_amount: membership.bonus_amount,
-          total_disbursal_amount: amount * 12 + membership.bonus_amount,
-          maker_status: 'PENDING_MAKER',
-          checker_status: 'PENDING_CHECKER',
-          hamper_id: hamper.id,
-          hamper_name: hamper.name,
-          hamper_dispatch_status: 'PREPARING',
-        };
-        this.payouts.push(newPayout);
-      }
-
-      this.addAuditLog(
-        'PAYMENT_SUCCESS',
-        `Processed Month ${nextCycle} deposit of ₹${amount} for member. Streak updated to ${membership.current_streak}`
+    const membership = this.getUserMembership(userId);
+    if (membership) {
+      this.recordPaymentWithMembership(
+        membership.id,
+        `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`,
+        'razorpay',
+        undefined,
+        `Monthly deposit of ₹${amount}`
       );
+    }
+  }
+
+  // Task 2 & Task 7: Record Payment Linked to Membership ID (Online & Offline Manual Reconciliation)
+  public recordPaymentWithMembership(
+    membershipId: string,
+    paymentRef: string,
+    method: 'razorpay' | 'offline_cash' | 'offline_upi' = 'razorpay',
+    adminId?: string,
+    notes?: string
+  ): ContributionRecord | null {
+    const membership = this.memberships.find((m) => m.id === membershipId);
+    if (!membership) return null;
+
+    const userContribs = this.contributions.filter((c) => c.membership_id === membershipId);
+    const paidCount = userContribs.filter((c) => c.status === 'PAID').length;
+    const nextCycle = Math.min(paidCount + 1, 12);
+
+    const txRef = paymentRef || `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const newContrib: ContributionRecord = {
+      id: `c-${membership.user_id.slice(-4)}-${nextCycle}-${Date.now().toString().slice(-4)}`,
+      user_id: membership.user_id,
+      membership_id: membership.id,
+      amount: membership.monthly_amount,
+      cycle_number: nextCycle,
+      due_date: new Date().toISOString().split('T')[0],
+      paid_date: new Date().toISOString(),
+      status: 'PAID',
+      transaction_ref: txRef,
+      payment_method: method,
+      reconciled_by_admin: adminId,
+      escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+      created_at: new Date().toISOString(),
+    };
+
+    this.contributions.push(newContrib);
+    membership.current_streak += 1;
+    membership.status = 'active';
+    membership.grace_days_remaining = 5;
+    membership.next_due_date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    this.escrowBalance += membership.monthly_amount;
+
+    const profile = this.profiles.find((p) => p.id === membership.user_id);
+    if (profile) {
+      profile.pipeline_stage = 'ACTIVE_SAVING';
+    }
+
+    if (nextCycle === 12) {
+      membership.status = 'matured';
+      if (profile) profile.pipeline_stage = 'MATURED';
+
+      const hamper = GIFT_HAMPERS.find((h) => h.id === profile?.allocated_hamper_id) || GIFT_HAMPERS[0];
+      const newPayout: MaturityPayout = {
+        id: `pay-${membership.user_id.slice(-4)}-12`,
+        user_id: membership.user_id,
+        user_name: profile?.full_name || 'Member',
+        user_email: profile?.email || '',
+        membership_id: membership.id,
+        principal_amount: membership.monthly_amount * 12,
+        bonus_amount: membership.bonus_amount,
+        total_disbursal_amount: membership.monthly_amount * 12 + membership.bonus_amount,
+        maker_status: 'PENDING_MAKER',
+        checker_status: 'PENDING_CHECKER',
+        hamper_id: hamper.id,
+        hamper_name: hamper.name,
+        hamper_dispatch_status: 'PREPARING',
+      };
+      this.payouts.push(newPayout);
+    }
+
+    // Task 7: Log audit trail if manual admin reconciliation
+    if (adminId) {
+      this.recordAuditLog({
+        admin_id: adminId,
+        member_id: membership.user_id,
+        action: 'MANUAL_PAYMENT_RECONCILIATION',
+        notes: notes || `Admin manually reconciled offline payment (${method})`,
+        details: {
+          membership_id: membershipId,
+          transaction_ref: txRef,
+          cycle_number: nextCycle,
+          amount: membership.monthly_amount,
+          payment_method: method
+        }
+      });
+    } else {
+      this.recordAuditLog({
+        admin_id: 'system',
+        member_id: membership.user_id,
+        action: 'RAZORPAY_WEBHOOK_PAYMENT',
+        notes: `Automated Razorpay order payment verified for membership ${membershipId}`,
+        details: { membership_id: membershipId, transaction_ref: txRef, cycle_number: nextCycle }
+      });
+    }
+
+    this.saveToStorage();
+    return newContrib;
+  }
+
+  public updateKYCStatus(userId: string, status: KYCStatus, adminId: string, notes?: string) {
+    const profile = this.profiles.find((p) => p.id === userId);
+    if (profile) {
+      profile.kyc_status = status;
+      if (status === 'approved') {
+        profile.pipeline_stage = 'ACTIVE_SAVING';
+      }
+      this.recordAuditLog({
+        admin_id: adminId,
+        member_id: userId,
+        action: 'KYC_APPROVAL_UPDATE',
+        notes: notes || `Admin updated KYC status to ${status}`,
+        details: { user_id: userId, new_status: status }
+      });
       this.saveToStorage();
     }
   }
 
-  public allocateHamper(userId: string, hamperId: string, adminName: string) {
+  public updateMemberPipelineStage(userId: string, newStage: string, adminId: string, notes?: string) {
+    const profile = this.profiles.find((p) => p.id === userId);
+    if (profile) {
+      (profile as any).pipeline_stage = newStage;
+      this.recordAuditLog({
+        admin_id: adminId,
+        member_id: userId,
+        action: 'PIPELINE_STAGE_UPDATE',
+        notes: notes || `Admin moved member ${profile.full_name} to stage: ${newStage}`,
+        details: { user_id: userId, new_stage: newStage }
+      });
+      this.saveToStorage();
+    }
+  }
+
+  public allocateHamper(userId: string, hamperId: string, adminId: string) {
     const profile = this.profiles.find((p) => p.id === userId);
     const hamper = GIFT_HAMPERS.find((h) => h.id === hamperId);
     if (profile && hamper) {
       profile.allocated_hamper_id = hamperId;
-      profile.allocated_by_admin = adminName;
+      profile.allocated_by_admin = adminId;
 
-      // Update payout record if exists
       const payout = this.payouts.find((p) => p.user_id === userId);
       if (payout) {
         payout.hamper_id = hamperId;
         payout.hamper_name = hamper.name;
       }
 
-      this.addAuditLog(
-        'HAMPER_ALLOCATED',
-        `${adminName} allocated gift hamper "${hamper.name}" to ${profile.full_name}`
-      );
+      this.recordAuditLog({
+        admin_id: adminId,
+        member_id: userId,
+        action: 'HAMPER_ALLOCATED',
+        notes: `Admin allocated gift hamper "${hamper.name}" to ${profile.full_name}`,
+        details: { hamper_id: hamperId, hamper_name: hamper.name }
+      });
       this.saveToStorage();
     }
   }
 
-  public verifyMakerPayout(payoutId: string, officerName: string) {
-    const payout = this.payouts.find((p) => p.id === payoutId);
-    if (payout) {
-      payout.maker_status = 'VERIFIED_BY_MAKER';
-      payout.maker_verified_by = officerName;
-      payout.maker_verified_at = new Date().toISOString();
-
-      this.addAuditLog(
-        'MAKER_VERIFIED',
-        `MRM Officer ${officerName} verified MAKER-step for ${payout.user_name} (Amount: ₹${payout.total_disbursal_amount})`
-      );
-      this.saveToStorage();
-    }
-  }
-
-  public disburseCheckerPayout(payoutId: string, bankRef: string, adminName: string) {
-    const payout = this.payouts.find((p) => p.id === payoutId);
-    if (payout) {
-      payout.checker_status = 'DISBURSED';
-      payout.checker_disbursed_by = adminName;
-      payout.checker_disbursed_at = new Date().toISOString();
-      payout.bank_transaction_ref = bankRef;
-      payout.hamper_dispatch_status = 'DISPATCHED';
-
-      const membership = this.memberships.find((m) => m.id === payout.membership_id);
-      if (membership) membership.status = 'disbursed';
-
-      const profile = this.profiles.find((p) => p.id === payout.user_id);
-      if (profile) profile.pipeline_stage = 'DISBURSED';
-
-      this.escrowBalance -= payout.total_disbursal_amount;
-
-      this.addAuditLog(
-        'CHECKER_DISBURSED',
-        `Finance Admin ${adminName} executed CHECKER final disbursal for ${payout.user_name}. Bank Ref: ${bankRef}. Escrow disbursed: ₹${payout.total_disbursal_amount}`
-      );
-      this.saveToStorage();
-    }
-  }
-
-  public createSupportTicket(subject: string, category: SupportTicket['category'], initialMessage: string) {
-    const user = this.getCurrentUser();
-    const newTicket: SupportTicket = {
-      id: `TICK-${Math.floor(1000 + Math.random() * 9000)}`,
-      user_id: user.id,
-      user_name: user.full_name,
-      subject,
-      category,
-      status: 'OPEN',
-      priority: 'MEDIUM',
-      messages: [
-        {
-          id: `msg-${Date.now()}`,
-          sender: user.full_name,
-          sender_role: user.role,
-          text: initialMessage,
-          timestamp: new Date().toISOString(),
-        },
-      ],
-      created_at: new Date().toISOString(),
+  public recordAuditLog(logData: {
+    admin_id: string;
+    member_id?: string;
+    action: string;
+    notes?: string;
+    details?: Record<string, any>;
+  }) {
+    const newLog: AuditLog = {
+      id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+      admin_id: logData.admin_id,
+      member_id: logData.member_id,
+      action: logData.action,
+      notes: logData.notes,
+      details: logData.details || {},
+      ip_address: '10.14.0.1'
     };
-
-    this.tickets.unshift(newTicket);
-    this.addAuditLog('TICKET_CREATED', `Support ticket ${newTicket.id} opened by ${user.full_name}`);
+    this.auditLogs.unshift(newLog);
     this.saveToStorage();
   }
 
-  public replySupportTicket(ticketId: string, text: string) {
-    const ticket = this.tickets.find((t) => t.id === ticketId);
-    const user = this.getCurrentUser();
-    if (ticket) {
-      ticket.messages.push({
-        id: `msg-${Date.now()}`,
-        sender: user.full_name,
-        sender_role: user.role,
-        text,
-        timestamp: new Date().toISOString(),
-      });
+  // Task 6: Export CSV Helper
+  public exportLedgerCSV(): string {
+    const headers = ['Contribution ID', 'Member ID', 'Membership ID', 'Amount (INR)', 'Cycle #', 'Due Date', 'Paid Date', 'Status', 'Txn Ref', 'Payment Method'];
+    const rows = this.contributions.map((c) => [
+      c.id,
+      c.user_id,
+      c.membership_id,
+      c.amount,
+      c.cycle_number,
+      c.due_date,
+      c.paid_date || 'N/A',
+      c.status,
+      c.transaction_ref,
+      c.payment_method || 'razorpay'
+    ]);
 
-      if (user.role === 'support_agent' || user.role === 'employee' || user.role === 'super_admin') {
-        ticket.status = 'IN_PROGRESS';
-      }
-      this.saveToStorage();
-    }
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    return csvContent;
   }
 
-  public updateTicketStatus(ticketId: string, status: SupportTicket['status']) {
-    const ticket = this.tickets.find((t) => t.id === ticketId);
-    if (ticket) {
-      ticket.status = status;
-      this.saveToStorage();
-    }
-  }
-
-  public addAuditLog(action: string, details: string) {
-    const user = this.getCurrentUser();
-    const newLog: AuditLog = {
-      id: `log-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      user_id: user.id,
-      user_role: user.role,
-      action,
-      details,
-      ip_address: '10.14.0.1',
-    };
-    this.auditLogs.unshift(newLog);
+  public downloadCSV(csvText: string, filename: string = 'samruddisave_ledger.csv') {
+    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   public resetToDefaults() {

@@ -22,49 +22,21 @@ interface TopHeaderProps {
 
 export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate }) => {
   const [user, setUser] = useState<UserProfile>(stateStore.getCurrentUser());
-  const [profiles, setProfiles] = useState<UserProfile[]>(stateStore.getProfiles());
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [personaOpen, setPersonaOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
       setUser(stateStore.getCurrentUser());
-      setProfiles(stateStore.getProfiles());
     });
     return unsubscribe;
   }, []);
-
-  const handleSwitchPersona = (targetUser: UserProfile) => {
-    stateStore.setCurrentUser(targetUser.id);
-    setPersonaOpen(false);
-    setDropdownOpen(false);
-
-    // Auto navigate to role default path
-    if (targetUser.role === 'member') {
-      onNavigate('/dashboard');
-    } else if (targetUser.role === 'employee') {
-      onNavigate('/employee');
-    } else if (targetUser.role === 'support_agent') {
-      onNavigate('/support');
-    } else if (targetUser.role === 'finance_admin') {
-      onNavigate('/finance');
-    } else if (targetUser.role === 'super_admin') {
-      onNavigate('/admin');
-    }
-  };
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'member':
         return <span className="bg-[#4F5DFF]/10 text-[#4F5DFF] border border-[#4F5DFF]/20 px-2 py-0.5 rounded-full text-xs font-semibold">Member</span>;
-      case 'employee':
-        return <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">MRM Officer</span>;
-      case 'support_agent':
-        return <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">Support Desk</span>;
-      case 'finance_admin':
-        return <span className="bg-purple-500/10 text-purple-600 border border-purple-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">Escrow Finance</span>;
-      case 'super_admin':
-        return <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">Super Admin</span>;
+      case 'admin':
+        return <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">Admin</span>;
     }
   };
 
@@ -93,63 +65,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </div>
         </div>
 
-        {/* Persona Switcher & User Profile Pill */}
+        {/* User Profile Pill */}
         <div className="flex items-center gap-3">
-          
-          {/* Persona Switcher Button */}
-          <div className="relative">
-            <button
-              onClick={() => setPersonaOpen(!personaOpen)}
-              className="flex items-center gap-2 bg-[#F7F8FC] hover:bg-[#E8EAF8]/50 border border-[#E8EAF8] text-[#1F1F24] text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-              title="Switch between RBAC personas (Member, MRM Officer, Support, Escrow Admin, Super Admin)"
-            >
-              <Building2 className="w-3.5 h-3.5 text-[#4F5DFF]" />
-              <span className="hidden md:inline">Test Role:</span>
-              <span className="font-semibold text-[#4F5DFF]">
-                {user.role === 'member' ? 'Customer' : user.role === 'employee' ? 'MRM Officer' : user.role === 'support_agent' ? 'Support Desk' : user.role === 'finance_admin' ? 'Finance Admin' : 'Super Admin'}
-              </span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#6C7285]" />
-            </button>
-
-            {/* Persona Switcher Dropdown */}
-            {personaOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-[#E8EAF8] py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-3 py-2 border-b border-[#E8EAF8] bg-[#F7F8FC]">
-                  <p className="font-semibold text-[#1F1F24]">Switch RBAC Access Tier</p>
-                  <p className="text-[11px] text-[#6C7285]">Simulate any of the 5 platform personas</p>
-                </div>
-                <div className="py-1 max-h-64 overflow-y-auto">
-                  {profiles.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => handleSwitchPersona(p)}
-                      className={`w-full text-left px-3 py-2 hover:bg-[#F7F8FC] flex items-center justify-between transition-colors ${
-                        user.id === p.id ? 'bg-[#4F5DFF]/5 text-[#4F5DFF] font-medium' : 'text-[#1F1F24]'
-                      }`}
-                    >
-                      <div>
-                        <p className="font-medium">{p.full_name}</p>
-                        <p className="text-[10px] text-[#6C7285]">{p.email}</p>
-                      </div>
-                      {getRoleBadge(p.role)}
-                    </button>
-                  ))}
-                </div>
-                <div className="border-t border-[#E8EAF8] pt-1 px-2">
-                  <button
-                    onClick={() => {
-                      stateStore.resetToDefaults();
-                      setPersonaOpen(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1.5 rounded hover:bg-slate-100"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    Reset All Demo Data
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* User Account Dropdown */}
           <div className="relative">

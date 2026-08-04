@@ -1,8 +1,13 @@
-export type UserRole = 'member' | 'employee' | 'support_agent' | 'finance_admin' | 'super_admin';
+export type UserRole = 'member' | 'admin';
 
 export type KYCStatus = 'unsubmitted' | 'pending' | 'approved' | 'rejected' | 'resubmit_requested';
 
-export type PipelineStage = 'REGISTRATION' | 'KYC_PENDING' | 'PAYMENT_ACTIVE' | 'MATURITY_REACHED' | 'DISBURSED';
+export type PipelineStage = 
+  | 'ACTIVE_SAVING'
+  | 'PAYMENT_DUE'
+  | 'GRACE_PERIOD'
+  | 'MATURED'
+  | 'PAYOUT_COMPLETED';
 
 export interface UserProfile {
   id: string;
@@ -71,7 +76,27 @@ export interface ContributionRecord {
   paid_date?: string;
   status: 'PAID' | 'MISSING' | 'GRACE_PERIOD' | 'DEFAULTED';
   transaction_ref: string;
-  escrow_batch_id: string;
+  payment_method?: 'razorpay' | 'offline_cash' | 'offline_upi' | 'bank_transfer';
+  reconciled_by_admin?: string;
+  escrow_batch_id?: string;
+  created_at?: string;
+}
+
+export interface RazorpayOrder {
+  id: string;
+  razorpay_order_id: string;
+  razorpay_payment_id?: string;
+  membership_id: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  status: 'created' | 'paid' | 'failed';
+  notes: {
+    membership_id: string;
+    user_id: string;
+    [key: string]: any;
+  };
+  created_at: string;
 }
 
 export interface HamperItem {
@@ -154,9 +179,12 @@ export interface SavingsCircle {
 export interface AuditLog {
   id: string;
   timestamp: string;
-  user_id: string;
-  user_role: UserRole;
+  admin_id: string;
+  member_id?: string;
   action: string;
-  details: string;
-  ip_address: string;
+  notes?: string;
+  details?: Record<string, any>;
+  ip_address?: string;
 }
+
+

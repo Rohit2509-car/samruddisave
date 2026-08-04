@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Activity,
   FileText,
-  Check
+  Check,
+  Download
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -56,6 +57,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   // Latest paid transaction
   const paidContribs = contributions.filter(c => c.status === 'PAID');
   const latestPaid = paidContribs.length > 0 ? paidContribs[paidContribs.length - 1] : null;
+
+  // Generate and Download Payment Receipt
+  const handleDownloadReceipt = (contrib: ContributionRecord) => {
+    const receiptContent = `================================================
+SAMRUDDISAVE RBI ESCROW OFFICIAL RECEIPT
+================================================
+Receipt ID: ${contrib.id}
+Date: ${contrib.paid_date ? new Date(contrib.paid_date).toLocaleString() : new Date().toLocaleString()}
+Member Name: ${user.full_name}
+Member Email: ${user.email}
+Membership ID: ${contrib.membership_id}
+Cycle Number: Month #${contrib.cycle_number} of 12
+Deposit Amount: INR ${contrib.amount.toLocaleString('en-IN')}
+Payment Method: ${(contrib.payment_method || 'razorpay').toUpperCase()}
+Transaction Ref: ${contrib.transaction_ref}
+Escrow Batch ID: ${contrib.escrow_batch_id || 'ESC_TRUSTEE_91823'}
+Escrow Bank: HDFC Escrow Trustee Account #9182374619
+Status: VERIFIED & DEPOSITED
+================================================
+Thank you for saving with SamruddiSave Escrow!
+`;
+    const blob = new Blob([receiptContent], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `SamruddiSave_Receipt_${contrib.transaction_ref}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 space-y-8">
@@ -95,21 +126,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           {!isKYCPending && (
             <button
               onClick={() => onNavigate('/pay')}
-              className="w-full sm:w-auto bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-[#4F5DFF]/40 flex items-center justify-center gap-2 text-xs"
+              className="w-full sm:w-auto bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-[#4F5DFF]/40 flex items-center justify-center gap-2 text-xs cursor-pointer"
             >
               <CreditCard className="w-4 h-4" /> Make Monthly Deposit
             </button>
           )}
           <button
             onClick={() => onNavigate('/ledger')}
-            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-semibold py-3.5 px-5 rounded-2xl border border-white/20 transition-colors text-xs text-center"
+            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-semibold py-3.5 px-5 rounded-2xl border border-white/20 transition-colors text-xs text-center cursor-pointer"
           >
-            Escrow Ledger
+            Personal Ledger
           </button>
         </div>
       </div>
 
-      {/* COMPLIANCE LOCK WARNING CARD (Step 4 & Section 3.1 PDF) */}
+      {/* COMPLIANCE LOCK WARNING CARD */}
       {isKYCPending && (
         <div className="bg-amber-50 border-2 border-amber-300 p-6 rounded-3xl shadow-md space-y-4">
           <div className="flex items-start justify-between">
@@ -122,7 +153,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   Compliance Guard Active
                 </span>
                 <h3 className="font-heading font-extrabold text-xl text-amber-950 mt-0.5">
-                  Pending Officer Sign-off
+                  Pending Admin Approval
                 </h3>
                 <p className="text-xs text-amber-800 font-medium">
                   Your PAN/Aadhaar OCR documents are pending manual review by an MRM Officer on <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-amber-900 font-semibold">/employee</code> portal.
@@ -132,22 +163,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             
             <button
               onClick={() => {
-                stateStore.updateKYCStatus(user.id, 'approved', 'Demo MRM Officer');
+                stateStore.updateKYCStatus(user.id, 'approved', 'system', 'Demo Admin Sign-off');
               }}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 hidden sm:block"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 hidden sm:block cursor-pointer"
             >
-              ⚡ Officer Approval Simulation
-            </button>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-amber-200 text-xs text-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <span>OCR Confidence: <strong className="text-emerald-600">99.8% Match Verified</strong></span>
-            <span>Pipeline Stage: <strong className="text-amber-700">{user.pipeline_stage}</strong></span>
-            <button
-              onClick={() => onNavigate('/kyc')}
-              className="text-[#4F5DFF] font-bold underline text-xs"
-            >
-              Review Uploaded KYC Files →
+              ⚡ Demo Action: Simulate Admin Approval
             </button>
           </div>
         </div>
@@ -196,8 +216,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        {/* Metric 1 */}
         <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs text-[#6C7285]">
             <span>Total Escrow Saved</span>
@@ -227,7 +245,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </p>
         </div>
 
-        {/* Metric 3 */}
         <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs text-[#6C7285]">
             <span>Accrued Cash Bonus</span>
@@ -241,7 +258,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </p>
         </div>
 
-        {/* Metric 4 */}
         <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs text-[#6C7285]">
             <span>Savings Streak</span>
@@ -254,7 +270,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             5-Day Grace Period Safeguard Active
           </p>
         </div>
-
       </div>
 
       {/* LATEST LEDGER ENTRY CARD */}
@@ -367,6 +382,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                     ? 'DUE NEXT'
                     : 'UPCOMING'}
                 </p>
+
+                {isPaid && contrib && (
+                  <button
+                    onClick={() => handleDownloadReceipt(contrib)}
+                    className="mt-2 text-[10px] font-bold text-[#4F5DFF] hover:underline flex items-center justify-center gap-1 w-full cursor-pointer"
+                  >
+                    <Download className="w-3 h-3" /> Receipt
+                  </button>
+                )}
               </div>
             );
           })}
@@ -384,14 +408,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </h3>
           <p className="text-xs text-slate-300 max-w-md leading-relaxed font-medium">
             {allocatedHamper
-              ? `Assigned by MRM Officer (${user.allocated_by_admin || 'Staff'}). Delivered at Month 12 maturity.`
-              : 'Your MRM Officer will allocate a ₹4,500 luxury gift hamper before maturity.'}
+              ? `Assigned by Admin. Delivered at Month 12 maturity.`
+              : 'Your Admin will allocate a luxury gift hamper before maturity.'}
           </p>
         </div>
 
         <button
           onClick={() => onNavigate('/hampers')}
-          className="bg-[#8A7BFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-purple-900/40 text-xs shrink-0 flex items-center gap-2"
+          className="bg-[#8A7BFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-purple-900/40 text-xs shrink-0 flex items-center gap-2 cursor-pointer"
         >
           <Gift className="w-4 h-4" /> Browse Gift Catalogue
         </button>
