@@ -169,8 +169,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E8EAF8] shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         
-        {/* Left Corner (Mobile Hamburger Toggle & Left Badge) */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Left Side: Logo & Mobile Hamburger Menu Toggle */}
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#6C7285] hover:text-[#1F1F24] bg-[#F7F8FC] border border-[#E8EAF8] transition-all cursor-pointer shrink-0 active:scale-95"
@@ -178,10 +178,29 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
+
+          {/* Website Logo (Positioned on the LEFT side) */}
+          <div
+            onClick={() => handleNavClick('/', 'Overview')}
+            className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95"
+            title="SamruddiSave - RBI Certified Escrow Platform"
+          >
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
+              S
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-heading font-extrabold text-base tracking-tight text-[#1F1F24] leading-none">
+                Samruddi<span className="text-[#4F5DFF]">Save</span>
+              </span>
+              <span className="hidden sm:inline-block text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5">
+                RBI Escrow Certified
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Center Navigation Bar (Icon-Only Animated Pill Bar by Default, Expands Page Name on Hover/Focus/Tap) */}
-        <div className="flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 max-w-2xl justify-center mx-auto group/navbar">
+        {/* Center Navigation Bar (Centered in the Middle) */}
+        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 max-w-2xl justify-center mx-auto group/navbar">
           
           <button
             onClick={() => handleScroll('left')}
@@ -248,7 +267,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </button>
         </div>
 
-        {/* Far Right Corner: Quick Role Switcher + Notifications + User Profile + WEBSITE LOGO */}
+        {/* Right Section: Role Switcher + Notifications + User Profile */}
         <div className="flex items-center gap-2 shrink-0">
           
           {/* Quick Role Switcher Button */}
@@ -387,25 +406,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                 </div>
               </div>
             )}
-          </div>
-
-          {/* WEBSITE LOGO AT THE FAR RIGHT CORNER */}
-          <div
-            onClick={() => handleNavClick('/', 'Overview')}
-            className="flex items-center gap-2 cursor-pointer shrink-0 ml-1 group/logo transition-all hover:scale-105 active:scale-95"
-            title="SamruddiSave - RBI Certified Escrow Platform"
-          >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
-              S
-            </div>
-            <div className="hidden xl:flex flex-col text-left">
-              <span className="font-heading font-extrabold text-base tracking-tight text-[#1F1F24] leading-none">
-                Samruddi<span className="text-[#4F5DFF]">Save</span>
-              </span>
-              <span className="text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5">
-                RBI Escrow Certified
-              </span>
-            </div>
           </div>
 
         </div>
