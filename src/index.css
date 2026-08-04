@@ -12,15 +12,36 @@
     --site-bg: #F7F8FC;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    touch-action: manipulation;
+  }
+
   body {
     font-family: 'Inter', sans-serif;
     background-color: var(--site-bg);
     color: var(--dark-text);
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  button, a, input, select {
+    touch-action: manipulation;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
     font-family: 'Sora', sans-serif;
   }
+}
+
+/* Scrollbar Utility for smooth horizontal scrolling */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom scrollbar */
