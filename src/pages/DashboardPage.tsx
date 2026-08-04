@@ -16,8 +16,11 @@ import {
   Calendar,
   Award,
   TrendingUp,
-  Download,
-  FileText
+  AlertCircle,
+  Activity,
+  FileText,
+  Check,
+  Download
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -44,9 +47,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   const isKYCPending = user.kyc_status !== 'approved';
   const paidCount = contributions.filter((c) => c.status === 'PAID').length;
-  const totalSavedSoFar = paidCount * (membership?.monthly_amount || 1000);
+  const monthlyAmount = membership?.monthly_amount || plan.monthly_amount;
+  const totalSavedSoFar = paidCount * monthlyAmount;
+  const totalGoalTarget = monthlyAmount * 12;
+  const remainingAmount = Math.max(0, totalGoalTarget - totalSavedSoFar);
+  const goalProgressPct = Math.round((paidCount / 12) * 100);
   const accruedBonus = Math.round((totalSavedSoFar * plan.cash_bonus_pct) / 100);
   const offlineContribs = contributions.filter((c) => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer');
+
+  // Latest paid transaction
+  const paidContribs = contributions.filter(c => c.status === 'PAID');
+  const latestPaid = paidContribs.length > 0 ? paidContribs[paidContribs.length - 1] : null;
 
   // Generate and Download Payment Receipt
   const handleDownloadReceipt = (contrib: ContributionRecord) => {
@@ -168,6 +179,47 @@ Thank you for saving with SamruddiSave Escrow!
         </div>
       )}
 
+      {/* REALTIME GOAL SUMMARY & PROGRESS BAR CARD */}
+      <div className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <span className="bg-blue-50 text-blue-600 text-xs font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider border border-blue-200/70 inline-flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5" /> Supabase Realtime Progress
+            </span>
+            <h2 className="font-heading font-extrabold text-2xl text-slate-900 mt-1">
+              Goal Progress Summary ({goalProgressPct}% Achieved)
+            </h2>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-slate-500 font-medium">Target 12-Month Goal:</p>
+            <p className="font-heading font-extrabold text-xl text-slate-900">
+              ₹{totalGoalTarget.toLocaleString('en-IN')}
+            </p>
+          </div>
+        </div>
+
+        {/* Supabase Realtime Animated Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+            <span>Total Saved: <strong className="text-blue-600">₹{totalSavedSoFar.toLocaleString('en-IN')}</strong></span>
+            <span>Remaining Target: <strong className="text-slate-500">₹{remainingAmount.toLocaleString('en-IN')}</strong></span>
+          </div>
+
+          <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/80">
+            <div
+              className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-md shadow-blue-500/20"
+              style={{ width: `${Math.max(5, goalProgressPct)}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
+            <span>Month 1 Started</span>
+            <span>{paidCount} of 12 Cycles Paid</span>
+            <span>Month 12 Maturity</span>
+          </div>
+        </div>
+      </div>
+
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
@@ -183,16 +235,19 @@ Thank you for saving with SamruddiSave Escrow!
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#6C7285]">
-            <span>Monthly Commitment</span>
-            <Calendar className="w-4 h-4 text-emerald-600" />
+        {/* Metric 2 */}
+        <div className="nexora-card nexora-card-hover p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Next Due Date</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Calendar className="w-4 h-4" />
+            </div>
           </div>
-          <p className="font-heading font-extrabold text-3xl text-[#1F1F24]">
-            ₹{membership?.monthly_amount.toLocaleString('en-IN') || 1000}
+          <p className="font-heading font-extrabold text-2xl text-slate-900">
+            {membership?.next_due_date || '2026-08-05'}
           </p>
           <p className="text-[11px] text-emerald-600 font-semibold">
-            Next Due Date: {membership?.next_due_date || '2026-08-05'}
+            ₹{monthlyAmount.toLocaleString('en-IN')} Monthly AutoPay
           </p>
         </div>
 
@@ -223,88 +278,50 @@ Thank you for saving with SamruddiSave Escrow!
         </div>
       </div>
 
-      {/* OFFLINE PAYMENT RECORDING STATUS FOR CUSTOMER */}
-      <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E8EAF8] pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 text-emerald-800 rounded-2xl flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                Backend Offline Payment Sync
-              </span>
-              <h3 className="font-heading font-extrabold text-lg text-[#1F1F24] mt-0.5">
-                Offline Payments Status
-              </h3>
-            </div>
+      {/* LATEST LEDGER ENTRY CARD */}
+      <div className="nexora-card p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-600" />
+            <h3 className="font-heading font-extrabold text-base text-slate-900">Latest Ledger Payment Entry</h3>
           </div>
-
-          <span className="text-xs text-[#6C7285] font-semibold">
-            {offlineContribs.length > 0 ? `${offlineContribs.length} Offline Payment(s) Verified` : 'No Offline Payments Recorded'}
-          </span>
+          <button
+            onClick={() => onNavigate('/ledger')}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700"
+          >
+            View Complete Ledger →
+          </button>
         </div>
 
-        {offlineContribs.length > 0 ? (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-600">
-              The Admin has manually entered and verified the following offline cash/UPI payments for your account:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {offlineContribs.map((c) => (
-                <div key={c.id} className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200/70 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Month #{c.cycle_number} • {c.payment_method === 'offline_cash' ? '💵 Offline Cash' : '📱 Offline UPI'}
-                    </span>
-                    <span className="font-mono font-bold text-xs text-emerald-950">₹{c.amount.toLocaleString('en-IN')}</span>
-                  </div>
-
-                  <div className="text-xs space-y-1">
-                    <p className="text-slate-700 font-semibold">
-                      Ref: <span className="font-mono text-purple-900 font-bold">{c.transaction_ref}</span>
-                    </p>
-                    <p className="text-slate-600 text-[11px]">
-                      Reconciled By Admin: <span className="font-bold text-slate-900">{c.reconciled_by_admin_name || 'Admin'}</span>
-                    </p>
-                    {c.admin_notes && (
-                      <p className="text-[11px] text-emerald-900 italic bg-emerald-100/70 p-2 rounded-xl">
-                        "{c.admin_notes}"
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="pt-1 flex justify-between items-center border-t border-emerald-200 text-[10px]">
-                    <span className="text-emerald-700 font-medium">
-                      Verified Date: {c.paid_date ? new Date(c.paid_date).toLocaleDateString() : 'Recorded'}
-                    </span>
-                    <button
-                      onClick={() => handleDownloadReceipt(c)}
-                      className="font-bold text-[#4F5DFF] hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Download className="w-3 h-3" /> Receipt
-                    </button>
-                  </div>
-                </div>
-              ))}
+        {latestPaid ? (
+          <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div>
+              <p className="text-slate-400 font-medium">Payment Date:</p>
+              <p className="font-bold text-slate-900 mt-0.5">{latestPaid.payment_date || '2026-08-01'}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 font-medium">Amount Paid:</p>
+              <p className="font-heading font-extrabold text-base text-slate-900 mt-0.5">₹{latestPaid.amount.toLocaleString('en-IN')}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 font-medium">Payment Status:</p>
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full mt-1">
+                <Check className="w-3 h-3" /> PAID
+              </span>
+            </div>
+            <div>
+              <p className="text-slate-400 font-medium">Transaction ID / Ref:</p>
+              <p className="font-mono text-slate-700 text-[11px] font-semibold truncate mt-0.5">
+                {latestPaid.escrow_ref || `TXN-${latestPaid.id.substring(0, 10)}`}
+              </p>
             </div>
           </div>
         ) : (
-          <div className="bg-[#F7F8FC] p-4 rounded-2xl border border-[#E8EAF8] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
-            <p>
-              Paid in offline cash or via branch QR code? Once your Branch Admin enters your offline payment manually into the backend, it will automatically reflect here as <strong>Verified by Admin</strong>.
-            </p>
-            <button
-              onClick={() => onNavigate('/ledger')}
-              className="bg-[#4F5DFF]/10 text-[#4F5DFF] font-bold px-4 py-2 rounded-xl text-xs shrink-0 cursor-pointer"
-            >
-              View Full Ledger &rarr;
-            </button>
-          </div>
+          <p className="text-xs text-slate-500 py-2">No completed payment records found yet.</p>
         )}
       </div>
 
-      {/* VISUAL GOAL JOURNEY & RECENT RECEIPTS */}
+      {/* VISUAL GOAL JOURNEY (Month 1 to 12 Progress Grid) */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8EAF8] pb-4">
           <div>
@@ -358,8 +375,8 @@ Thank you for saving with SamruddiSave Escrow!
                   )}
                 </div>
 
-                <p className="font-heading font-extrabold text-sm text-[#1F1F24]">
-                  ₹{plan.monthly_amount.toLocaleString('en-IN')}
+                <p className="font-heading font-extrabold text-sm text-slate-900">
+                  ₹{monthlyAmount.toLocaleString('en-IN')}
                 </p>
 
                 <p className="text-[10px] mt-1 font-semibold">
@@ -395,7 +412,7 @@ Thank you for saving with SamruddiSave Escrow!
           <h3 className="font-heading font-extrabold text-2xl text-white">
             {allocatedHamper ? allocatedHamper.name : 'Maturity Gift Hamper Unassigned'}
           </h3>
-          <p className="text-xs text-slate-300 max-w-md">
+          <p className="text-xs text-slate-300 max-w-md leading-relaxed font-medium">
             {allocatedHamper
               ? `Assigned by Admin. Delivered at Month 12 maturity.`
               : 'Your Admin will allocate a luxury gift hamper before maturity.'}
@@ -413,3 +430,4 @@ Thank you for saving with SamruddiSave Escrow!
     </div>
   );
 };
+
