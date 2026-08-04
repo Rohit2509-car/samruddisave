@@ -16,7 +16,10 @@ import {
   Calendar,
   Award,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Activity,
+  FileText,
+  Check
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -43,8 +46,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   const isKYCPending = user.kyc_status !== 'approved';
   const paidCount = contributions.filter((c) => c.status === 'PAID').length;
-  const totalSavedSoFar = paidCount * (membership?.monthly_amount || 1000);
+  const monthlyAmount = membership?.monthly_amount || plan.monthly_amount;
+  const totalSavedSoFar = paidCount * monthlyAmount;
+  const totalGoalTarget = monthlyAmount * 12;
+  const remainingAmount = Math.max(0, totalGoalTarget - totalSavedSoFar);
+  const goalProgressPct = Math.round((paidCount / 12) * 100);
   const accruedBonus = Math.round((totalSavedSoFar * plan.cash_bonus_pct) / 100);
+
+  // Latest paid transaction
+  const paidContribs = contributions.filter(c => c.status === 'PAID');
+  const latestPaid = paidContribs.length > 0 ? paidContribs[paidContribs.length - 1] : null;
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 space-y-8">
@@ -58,7 +69,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <span className="bg-white/10 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-xs border border-white/20">
               Account ID: {user.id}
             </span>
-            <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+
+            {/* Membership Status Badge */}
+            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold px-3.5 py-1 rounded-full flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Membership: {membership?.status ? membership.status.replace(/_/g, ' ').toUpperCase() : 'ACTIVE'}
+            </span>
+
+            <span className={`text-xs font-bold px-3.5 py-1 rounded-full border ${
               isKYCPending ? 'bg-amber-500/20 text-amber-300 border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
             }`}>
               KYC {user.kyc_status.toUpperCase()}
@@ -67,8 +85,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-white">
             Welcome back, {user.full_name}!
           </h1>
-          <p className="text-xs text-slate-300">
-            RBI Escrow Custody Account • {plan.name} (₹{plan.monthly_amount.toLocaleString('en-IN')}/mo)
+          <p className="text-xs text-slate-300 font-medium">
+            RBI Escrow Custody Account • {plan.name} (₹{monthlyAmount.toLocaleString('en-IN')}/mo)
           </p>
         </div>
 
@@ -106,8 +124,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <h3 className="font-heading font-extrabold text-xl text-amber-950 mt-0.5">
                   Pending Officer Sign-off
                 </h3>
-                <p className="text-xs text-amber-800">
-                  Your PAN/Aadhaar OCR documents are pending manual review by an MRM Officer on <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-amber-900">/employee</code> portal.
+                <p className="text-xs text-amber-800 font-medium">
+                  Your PAN/Aadhaar OCR documents are pending manual review by an MRM Officer on <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-amber-900 font-semibold">/employee</code> portal.
                 </p>
               </div>
             </div>
@@ -135,6 +153,47 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
       )}
 
+      {/* REALTIME GOAL SUMMARY & PROGRESS BAR CARD */}
+      <div className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <span className="bg-blue-50 text-blue-600 text-xs font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider border border-blue-200/70 inline-flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5" /> Supabase Realtime Progress
+            </span>
+            <h2 className="font-heading font-extrabold text-2xl text-slate-900 mt-1">
+              Goal Progress Summary ({goalProgressPct}% Achieved)
+            </h2>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-slate-500 font-medium">Target 12-Month Goal:</p>
+            <p className="font-heading font-extrabold text-xl text-slate-900">
+              ₹{totalGoalTarget.toLocaleString('en-IN')}
+            </p>
+          </div>
+        </div>
+
+        {/* Supabase Realtime Animated Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+            <span>Total Saved: <strong className="text-blue-600">₹{totalSavedSoFar.toLocaleString('en-IN')}</strong></span>
+            <span>Remaining Target: <strong className="text-slate-500">₹{remainingAmount.toLocaleString('en-IN')}</strong></span>
+          </div>
+
+          <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/80">
+            <div
+              className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-md shadow-blue-500/20"
+              style={{ width: `${Math.max(5, goalProgressPct)}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
+            <span>Month 1 Started</span>
+            <span>{paidCount} of 12 Cycles Paid</span>
+            <span>Month 12 Maturity</span>
+          </div>
+        </div>
+      </div>
+
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
@@ -153,16 +212,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#6C7285]">
-            <span>Monthly Commitment</span>
-            <Calendar className="w-4 h-4 text-emerald-600" />
+        <div className="nexora-card nexora-card-hover p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Next Due Date</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Calendar className="w-4 h-4" />
+            </div>
           </div>
-          <p className="font-heading font-extrabold text-3xl text-[#1F1F24]">
-            ₹{membership?.monthly_amount.toLocaleString('en-IN') || 1000}
+          <p className="font-heading font-extrabold text-2xl text-slate-900">
+            {membership?.next_due_date || '2026-08-05'}
           </p>
           <p className="text-[11px] text-emerald-600 font-semibold">
-            Next Due: {membership?.next_due_date || '2026-08-05'}
+            ₹{monthlyAmount.toLocaleString('en-IN')} Monthly AutoPay
           </p>
         </div>
 
@@ -194,6 +255,49 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </p>
         </div>
 
+      </div>
+
+      {/* LATEST LEDGER ENTRY CARD */}
+      <div className="nexora-card p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-600" />
+            <h3 className="font-heading font-extrabold text-base text-slate-900">Latest Ledger Payment Entry</h3>
+          </div>
+          <button
+            onClick={() => onNavigate('/ledger')}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700"
+          >
+            View Complete Ledger →
+          </button>
+        </div>
+
+        {latestPaid ? (
+          <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div>
+              <p className="text-slate-400 font-medium">Payment Date:</p>
+              <p className="font-bold text-slate-900 mt-0.5">{latestPaid.payment_date || '2026-08-01'}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 font-medium">Amount Paid:</p>
+              <p className="font-heading font-extrabold text-base text-slate-900 mt-0.5">₹{latestPaid.amount.toLocaleString('en-IN')}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 font-medium">Payment Status:</p>
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full mt-1">
+                <Check className="w-3 h-3" /> PAID
+              </span>
+            </div>
+            <div>
+              <p className="text-slate-400 font-medium">Transaction ID / Ref:</p>
+              <p className="font-mono text-slate-700 text-[11px] font-semibold truncate mt-0.5">
+                {latestPaid.escrow_ref || `TXN-${latestPaid.id.substring(0, 10)}`}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500 py-2">No completed payment records found yet.</p>
+        )}
       </div>
 
       {/* VISUAL GOAL JOURNEY (Month 1 to 12 Progress Grid) */}
@@ -250,8 +354,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   )}
                 </div>
 
-                <p className="font-heading font-extrabold text-sm text-[#1F1F24]">
-                  ₹{plan.monthly_amount.toLocaleString('en-IN')}
+                <p className="font-heading font-extrabold text-sm text-slate-900">
+                  ₹{monthlyAmount.toLocaleString('en-IN')}
                 </p>
 
                 <p className="text-[10px] mt-1 font-semibold">
@@ -278,7 +382,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <h3 className="font-heading font-extrabold text-2xl text-white">
             {allocatedHamper ? allocatedHamper.name : 'Maturity Gift Hamper Unassigned'}
           </h3>
-          <p className="text-xs text-slate-300 max-w-md">
+          <p className="text-xs text-slate-300 max-w-md leading-relaxed font-medium">
             {allocatedHamper
               ? `Assigned by MRM Officer (${user.allocated_by_admin || 'Staff'}). Delivered at Month 12 maturity.`
               : 'Your MRM Officer will allocate a ₹4,500 luxury gift hamper before maturity.'}
@@ -296,3 +400,4 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     </div>
   );
 };
+
