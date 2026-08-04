@@ -20,8 +20,14 @@ import {
   Activity,
   FileText,
   Check,
-  Download
+  Download,
+  User,
+  FileSpreadsheet,
+  Settings
 } from 'lucide-react';
+import { UserProfileEditModal } from '../components/UserProfileEditModal';
+import { PrintableReceiptModal } from '../components/PrintableReceiptModal';
+import { MemberLedgerView } from '../components/MemberLedgerView';
 
 interface DashboardPageProps {
   onNavigate: (path: string) => void;
@@ -31,6 +37,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [user, setUser] = useState<UserProfile>(stateStore.getCurrentUser());
   const [membership, setMembership] = useState<Membership | undefined>(stateStore.getUserMembership(user.id));
   const [contributions, setContributions] = useState<ContributionRecord[]>(stateStore.getUserContributions(user.id));
+  
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [viewReceiptRecord, setViewReceiptRecord] = useState<ContributionRecord | null>(null);
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'ledger'>('dashboard');
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -126,21 +136,34 @@ Thank you for saving with SamruddiSave Escrow!
           </div>
         </div>
 
-        {/* Deposit Quick Action */}
-        <div className="z-10 flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+        {/* Deposit & Profile Quick Actions */}
+        <div className="z-10 flex flex-wrap items-center gap-3 w-full md:w-auto">
           {!isKYCPending && (
             <button
               onClick={() => onNavigate('/pay')}
-              className="w-full sm:w-auto bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-[#4F5DFF]/40 flex items-center justify-center gap-2 text-xs cursor-pointer"
+              className="w-full sm:w-auto bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-[#4F5DFF]/40 flex items-center justify-center gap-2 text-xs cursor-pointer min-h-[44px]"
             >
               <CreditCard className="w-4 h-4" /> Make Monthly Deposit
             </button>
           )}
+          
           <button
-            onClick={() => onNavigate('/ledger')}
-            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 px-5 rounded-2xl transition-all border border-white/20 flex items-center justify-center gap-2 text-xs cursor-pointer"
+            onClick={() => setActiveSection(activeSection === 'dashboard' ? 'ledger' : 'dashboard')}
+            className={`w-full sm:w-auto font-bold py-3.5 px-5 rounded-2xl transition-all border flex items-center justify-center gap-2 text-xs cursor-pointer min-h-[44px] ${
+              activeSection === 'ledger'
+                ? 'bg-white text-[#4F5DFF] border-white'
+                : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+            }`}
           >
-            <History className="w-4 h-4" /> View Ledger
+            <FileSpreadsheet className="w-4 h-4" /> {activeSection === 'dashboard' ? 'View Passbook Statement' : 'View Main Dashboard'}
+          </button>
+
+          <button
+            onClick={() => setIsProfileModalOpen(true)}
+            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 px-4 rounded-2xl transition-all border border-white/20 flex items-center justify-center gap-2 text-xs cursor-pointer min-h-[44px]"
+            title="Edit Profile Details"
+          >
+            <User className="w-4 h-4" /> Edit Profile
           </button>
         </div>
       </div>
@@ -450,7 +473,31 @@ Thank you for saving with SamruddiSave Escrow!
         </button>
       </div>
 
+      {/* MEMBER LEDGER VIEW (Toggled via header action) */}
+      {activeSection === 'ledger' && (
+        <MemberLedgerView userId={user.id} />
+      )}
+
+      {/* MODAL: Edit Profile */}
+      {isProfileModalOpen && (
+        <UserProfileEditModal
+          user={user}
+          onClose={() => setIsProfileModalOpen(false)}
+          onSuccess={() => {
+            setUser(stateStore.getCurrentUser());
+          }}
+        />
+      )}
+
+      {/* MODAL: Printable Receipt */}
+      {viewReceiptRecord && (
+        <PrintableReceiptModal
+          record={viewReceiptRecord}
+          member={user}
+          onClose={() => setViewReceiptRecord(null)}
+        />
+      )}
+
     </div>
   );
 };
-

@@ -8,7 +8,9 @@
   SupportTicket,
   SavingsCircle,
   AuditLog,
-  GiftHamper
+  GiftHamper,
+  NotificationItem,
+  MemberLedgerEntry
 } from '../types';
 import {
   INITIAL_PROFILES,
@@ -954,6 +956,265 @@ class StateStore {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  // Search Members by Member ID, Name, Phone, Email, or Login ID
+  public searchMembers(query: string): UserProfile[] {
+    if (!query || !query.trim()) return this.profiles.filter((p) => p.role === 'member');
+    const q = query.toLowerCase().trim();
+    return this.profiles.filter(
+      (p) =>
+        p.role === 'member' &&
+        (p.id.toLowerCase().includes(q) ||
+          p.full_name.toLowerCase().includes(q) ||
+          p.email.toLowerCase().includes(q) ||
+          p.phone.toLowerCase().includes(q) ||
+          (p.login_id && p.login_id.toLowerCase().includes(q)))
+    );
+  }
+
+  // Record Admin Cash / Offline Collection with complete validation & automatic ledger updates
+  public recordAdminCashCollection(params: {
+    memberId: string;
+    amount: number;
+    paymentDate: string;
+    paymentType: 'cash' | 'upi' | 'bank_transfer';
+    referenceNumber?: string;
+    remarks?: string;
+    adminId?: string;
+  }): { success: boolean; message: string; record?: ContributionRecord } {
+    const { memberId, amount, paymentDate, paymentType, referenceNumber, remarks, adminId } = params;
+
+    const profile = this.profiles.find((p) => p.id === memberId);
+    if (!profile) {
+      return { success: false, message: 'Selected member does not exist in platform database.' };
+    }
+
+    if (amount <= 0) {
+      return { success: false, message: 'Payment amount must be greater than zero.' };
+    }
+
+    const membership = this.getUserMembership(memberId);
+    const plan = SAVINGS_PLANS.find((p) => p.id === membership?.plan_id) || SAVINGS_PLANS[0];
+    const totalGoal = (membership?.monthly_amount || plan.monthly_amount) * 12;
+    const paidContribs = this.getUserContributions(memberId).filter((c) => c.status === 'PAID');
+    const currentPaidSum = paidContribs.reduce((acc, c) => acc + c.amount, 0);
+    const remainingBalance = Math.max(0, totalGoal - currentPaidSum);
+
+    if (amount > remainingBalance && remainingBalance > 0) {
+      return {
+        success: false,
+        message: `Payment amount (₹${amount.toLocaleString()}) cannot exceed member remaining balance (₹${remainingBalance.toLocaleString()}).`,
+      };
+    }
+
+    // Check duplicate reference number if provided
+    if (referenceNumber && referenceNumber.trim()) {
+      const isDuplicate = this.contributions.some(
+        (c) => c.transaction_ref && c.transaction_ref.toLowerCase() === referenceNumber.trim().toLowerCase()
+      );
+      if (isDuplicate) {
+        return {
+          success: false,
+          message: `Reference Number "${referenceNumber}" has already been submitted for a previous payment.`,
+        };
+      }
+    }
+
+    const paidCount = paidContribs.length;
+    const nextCycle = Math.min(paidCount + 1, 12);
+    const adminUser = this.profiles.find((p) => p.id === (adminId || this.currentUserId)) || this.getCurrentUser();
+
+    const txRef = referenceNumber && referenceNumber.trim()
+      ? referenceNumber.trim()
+      : paymentType === 'cash'
+      ? `CASH_REC_${Math.floor(100000 + Math.random() * 900000)}`
+      : `UPI_REF_${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const receiptNum = `REC-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    const newRemainingBalance = Math.max(0, remainingBalance - amount);
+
+    const newContrib: ContributionRecord = {
+      id: `c-${memberId.slice(-4)}-${nextCycle}-${Date.now().toString().slice(-4)}`,
+      user_id: memberId,
+      membership_id: membership?.id || `m-${memberId}`,
+      amount,
+      cycle_number: nextCycle,
+      due_date: paymentDate || new Date().toISOString().split('T')[0],
+      paid_date: new Date(paymentDate || Date.now()).toISOString(),
+      status: 'PAID',
+      transaction_ref: txRef,
+      payment_method: paymentType === 'cash' ? 'offline_cash' : paymentType === 'upi' ? 'offline_upi' : 'bank_transfer',
+      payment_type: paymentType,
+      reconciled_by_admin: adminUser.id,
+      reconciled_by_admin_name: adminUser.full_name,
+      remarks: remarks || `Month ${nextCycle} Installment recorded by Admin`,
+      admin_notes: remarks,
+      reference_number: txRef,
+      receipt_number: receiptNum,
+      remaining_balance_after: newRemainingBalance,
+      is_offline: true,
+      escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+      created_at: new Date().toISOString(),
+    };
+
+    this.contributions.push(newContrib);
+
+    if (membership) {
+      membership.current_streak += 1;
+      membership.status = 'active';
+      membership.grace_days_remaining = 5;
+      membership.next_due_date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    }
+
+    profile.pipeline_stage = 'ACTIVE_SAVING';
+    this.escrowBalance += amount;
+
+    // Send automatic notification to member
+    this.sendNotification({
+      user_id: memberId,
+      type: 'payment_success',
+      title: 'Payment Confirmation Received',
+      message: `₹${amount.toLocaleString()} cash/UPI deposit recorded for Installment #${nextCycle} (${receiptNum}).`,
+    });
+
+    this.recordAuditLog({
+      admin_id: adminUser.id,
+      member_id: memberId,
+      action: 'ADMIN_CASH_COLLECTION',
+      notes: `Admin ${adminUser.full_name} collected ₹${amount.toLocaleString()} (${paymentType.toUpperCase()}) for ${profile.full_name}`,
+      details: {
+        receipt_number: receiptNum,
+        reference_number: txRef,
+        amount,
+        payment_type: paymentType,
+        remarks: remarks || '',
+      },
+    });
+
+    this.saveToStorage();
+    return { success: true, message: `Payment of ₹${amount.toLocaleString()} successfully recorded for ${profile.full_name}!`, record: newContrib };
+  }
+
+  // Delete Contribution (Admin only)
+  public deleteContribution(contribId: string, adminId: string): boolean {
+    const idx = this.contributions.findIndex((c) => c.id === contribId);
+    if (idx !== -1) {
+      const contrib = this.contributions[idx];
+      this.contributions.splice(idx, 1);
+      this.recordAuditLog({
+        admin_id: adminId,
+        member_id: contrib.user_id,
+        action: 'CONTRIBUTION_DELETED',
+        notes: `Admin deleted contribution entry ${contribId} (₹${contrib.amount})`,
+        details: { contribId, amount: contrib.amount, user_id: contrib.user_id },
+      });
+      this.saveToStorage();
+      return true;
+    }
+    return false;
+  }
+
+  // Compute Member Ledger View with Opening, Installments, Credits, Debits, Remaining & Closing Balance
+  public getMemberLedger(userId: string): MemberLedgerEntry[] {
+    const contribs = this.getUserContributions(userId).filter((c) => c.status === 'PAID');
+    const membership = this.getUserMembership(userId);
+    const plan = SAVINGS_PLANS.find((p) => p.id === membership?.plan_id) || SAVINGS_PLANS[0];
+    const monthlyAmount = membership?.monthly_amount || plan.monthly_amount;
+    const totalGoal = monthlyAmount * 12;
+
+    let currentBalance = 0;
+    const ledger: MemberLedgerEntry[] = [];
+
+    contribs.forEach((c, index) => {
+      const opening = currentBalance;
+      const credit = c.amount;
+      const closing = opening + credit;
+      currentBalance = closing;
+      const remaining = Math.max(0, totalGoal - closing);
+
+      ledger.push({
+        id: `ledger-${c.id}`,
+        membership_id: c.membership_id,
+        user_id: c.user_id,
+        date: c.paid_date ? new Date(c.paid_date).toLocaleDateString() : c.due_date,
+        description: `Installment #${c.cycle_number} Deposit (${(c.payment_method || 'razorpay').replace(/_/g, ' ').toUpperCase()})`,
+        opening_balance: opening,
+        installment_amount: monthlyAmount,
+        credit,
+        debit: 0,
+        remaining_balance: remaining,
+        closing_balance: closing,
+        payment_method: c.payment_method,
+        receipt_ref: c.receipt_number || c.transaction_ref,
+      });
+    });
+
+    return ledger;
+  }
+
+  // Notifications Storage & Methods
+  private notifications: NotificationItem[] = [
+    {
+      id: 'notif-1',
+      user_id: 'user-member-1',
+      type: 'due_date',
+      title: 'Upcoming Installment Due',
+      message: 'Your Month 5 savings deposit of ₹10,000 is due in 3 days. Pay on time to maintain your 4-month streak!',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+      read: false,
+    },
+    {
+      id: 'notif-2',
+      user_id: 'user-member-1',
+      type: 'payment_success',
+      title: 'Payment Receipt Verified',
+      message: 'Escrow deposit of ₹10,000 for Month 4 verified by HDFC Escrow Trustee.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+      read: true,
+    },
+  ];
+
+  public getUserNotifications(userId: string): NotificationItem[] {
+    return this.notifications.filter((n) => n.user_id === userId);
+  }
+
+  public sendNotification(data: { user_id: string; type: NotificationItem['type']; title: string; message: string }) {
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      user_id: data.user_id,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    this.notifications.unshift(newNotif);
+    this.notify();
+  }
+
+  public markNotificationAsRead(id: string) {
+    const notif = this.notifications.find((n) => n.id === id);
+    if (notif) {
+      notif.read = true;
+      this.notify();
+    }
+  }
+
+  public markAllNotificationsAsRead(userId: string) {
+    this.notifications.forEach((n) => {
+      if (n.user_id === userId) n.read = true;
+    });
+    this.notify();
+  }
+
+  // Update Member User Profile
+  public updateUserProfile(userId: string, data: Partial<UserProfile>) {
+    const profile = this.profiles.find((p) => p.id === userId);
+    if (profile) {
+      Object.assign(profile, data);
+      this.saveToStorage();
+    }
   }
 
   public resetToDefaults() {

@@ -23,6 +23,8 @@ import {
   Zap
 } from 'lucide-react';
 import { GIFT_HAMPERS } from '../../data/mockData';
+import { AdminCashCollectionModal } from '../../components/AdminCashCollectionModal';
+import { PrintableReceiptModal } from '../../components/PrintableReceiptModal';
 
 interface AdminDashboardProps {
   onNavigate: (path: string) => void;
@@ -114,8 +116,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     alert(`Member ${member.full_name} successfully moved to ${targetStage.name}! Update synced to Supabase.`);
   };
 
-  // Offline Payment Reconciliation Modal
+  // Offline Payment Reconciliation & Cash Collection Modal
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
+  const [isCashCollectionModalOpen, setIsCashCollectionModalOpen] = useState(false);
+  const [viewReceiptRecord, setViewReceiptRecord] = useState<ContributionRecord | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [offlineAmount, setOfflineAmount] = useState<number>(1000);
   const [offlineMethod, setOfflineMethod] = useState<'offline_cash' | 'offline_upi'>('offline_upi');
@@ -291,18 +295,24 @@ End of Official Member Passbook & Escrow Ledger
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsCashCollectionModalOpen(true)}
+              className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] focus-visible:ring-offset-2 active:scale-95"
+            >
+              <DollarSign className="w-4 h-4" /> Record Cash Collection
+            </button>
             <button
               onClick={() => setIsReconcileModalOpen(true)}
-              className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] focus-visible:ring-offset-2"
+              className="min-h-[44px] bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-800 focus-visible:ring-offset-2 active:scale-95"
             >
-              <PlusCircle className="w-4 h-4" /> Record Offline Payment
+              <PlusCircle className="w-4 h-4" /> Offline Reconcile
             </button>
             <button
               onClick={handleExportCSV}
-              className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+              className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 active:scale-95"
             >
-              <Download className="w-4 h-4" /> Export Ledger CSV
+              <Download className="w-4 h-4" /> Export CSV
             </button>
           </div>
         </div>
@@ -1253,6 +1263,27 @@ End of Official Member Passbook & Escrow Ledger
 
             </div>
           </div>
+        )}
+
+        {/* MODAL: Admin Cash Collection */}
+        {isCashCollectionModalOpen && (
+          <AdminCashCollectionModal
+            onClose={() => setIsCashCollectionModalOpen(false)}
+            onSuccess={() => {
+              setContributions(stateStore.getContributions());
+              setProfiles(stateStore.getProfiles());
+              setMemberships(stateStore.getMemberships());
+            }}
+          />
+        )}
+
+        {/* MODAL: View Receipt */}
+        {viewReceiptRecord && (
+          <PrintableReceiptModal
+            record={viewReceiptRecord}
+            member={profiles.find((p) => p.id === viewReceiptRecord.user_id)}
+            onClose={() => setViewReceiptRecord(null)}
+          />
         )}
 
       </div>
