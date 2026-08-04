@@ -1,18 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { stateStore } from '../store/StateStore';
 import { UserRole, UserProfile } from '../types';
 import {
   ShieldCheck,
   User,
   ChevronDown,
-  Sparkles,
+  ChevronLeft,
+  ChevronRight,
   LogOut,
   Building2,
-  CheckCircle2,
   HelpCircle,
   FileCheck2,
+  Menu,
+  X,
+  Home,
+  Calculator,
+  LayoutDashboard,
+  CreditCard,
+  Gift,
+  Users,
   Lock,
-  RotateCcw
+  UserCheck,
+  FileText,
+  Activity,
+  DollarSign,
+  Settings,
+  UserCog
 } from 'lucide-react';
 
 interface TopHeaderProps {
@@ -23,6 +36,11 @@ interface TopHeaderProps {
 export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate }) => {
   const [user, setUser] = useState<UserProfile>(stateStore.getCurrentUser());
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeHash, setActiveHash] = useState(window.location.hash);
+  const [tappedLabel, setTappedLabel] = useState<string | null>(null);
+  const navContainerRef = useRef<HTMLDivElement>(null);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -31,67 +49,259 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveHash(window.location.hash);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const isKYCPending = user.role === 'member' && user.kyc_status !== 'approved';
+  const isAdminPage = user.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login' || user.role === 'employee' || user.role === 'finance_admin';
+
+  const memberNavItems = [
+    { label: 'Overview', path: '/', icon: Home },
+    { label: 'Maturity Plans', path: '/plans', icon: Calculator },
+    { label: 'KYC Verification', path: '/kyc', icon: FileCheck2, badge: isKYCPending ? 'Action' : undefined },
+    { label: 'Wallet Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Monthly Deposit', path: '/pay', icon: CreditCard, locked: isKYCPending },
+    { label: 'Gift Hampers', path: '/hampers', icon: Gift },
+    { label: 'Savings Circles', path: '/circles', icon: Users },
+  ];
+
+  const adminNavItems = [
+    { label: 'Overview', path: '/admin', icon: Home },
+    { label: 'Pending Member KYC Approvals', path: '/admin#kyc_queue', icon: UserCheck, badge: 'Queue' },
+    { label: 'All Members Directory', path: '/admin#members', icon: Users },
+    { label: 'Payments Management', path: '/admin#payments', icon: CreditCard },
+    { label: 'Contribution Ledger', path: '/admin#ledger', icon: FileText },
+    { label: 'Financial Reports', path: '/admin#reports', icon: Activity },
+    { label: 'Hamper Allocations', path: '/admin#hampers', icon: Gift },
+    { label: 'Maturity Disbursals', path: '/admin#payouts', icon: DollarSign },
+    { label: 'Help & Support Desk', path: '/support', icon: HelpCircle },
+    { label: 'Admin Settings', path: '/admin#settings', icon: Settings },
+  ];
+
+  const currentNavItems = isAdminPage ? adminNavItems : memberNavItems;
+
+  // Strict 1:1 single active item check: Only the exact item explicitly clicked is active
+  const checkIsActive = (item: { path: string }) => {
+    if (isAdminPage) {
+      if (item.path.includes('#')) {
+        const itemHash = '#' + item.path.split('#')[1];
+        return currentPath === '/admin' && activeHash === itemHash;
+      }
+      if (item.path === '/admin') {
+        return currentPath === '/admin' && (!activeHash || activeHash === '#' || activeHash === '#overview');
+      }
+    }
+    return currentPath === item.path;
+  };
+
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'member':
         return <span className="bg-[#4F5DFF]/10 text-[#4F5DFF] border border-[#4F5DFF]/20 px-2 py-0.5 rounded-full text-xs font-semibold">Member</span>;
       case 'admin':
         return <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">Admin</span>;
+      default:
+        return <span className="bg-[#4F5DFF]/10 text-[#4F5DFF] border border-[#4F5DFF]/20 px-2 py-0.5 rounded-full text-xs font-semibold">Staff</span>;
+    }
+  };
+
+  const handleNavClick = (path: string, label?: string, locked?: boolean) => {
+    if (locked) return;
+
+    if (label) {
+      setTappedLabel(label);
+      setTimeout(() => setTappedLabel(null), 2500);
+    }
+
+    if (path.includes('#')) {
+      const [basePath, hash] = path.split('#');
+      if (currentPath !== basePath) {
+        onNavigate(basePath);
+      }
+      window.location.hash = hash;
+      setActiveHash('#' + hash);
+    } else {
+      window.location.hash = '';
+      setActiveHash('');
+      onNavigate(path);
+    }
+
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+  };
+
+  const handleSwitchRole = (targetRole: UserRole) => {
+    stateStore.switchRole(targetRole);
+    if (targetRole === 'admin') {
+      window.location.hash = '';
+      setActiveHash('');
+      onNavigate('/admin');
+    } else {
+      window.location.hash = '';
+      setActiveHash('');
+      onNavigate('/');
+    }
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+  };
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (navContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -180 : 180;
+      navContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (navContainerRef.current && e.deltaY !== 0) {
+      navContainerRef.current.scrollLeft += e.deltaY;
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#E8EAF8] shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E8EAF8] shadow-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         
-        {/* Brand Logo & Escrow Badge */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate('/')}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-bold text-xl shadow-md shadow-[#4F5DFF]/20">
-            S
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-heading font-extrabold text-lg tracking-tight text-[#1F1F24]">
+        {/* Left Side (Desktop: Logo | Mobile: User Avatar & Mobile Drawer Toggle) */}
+        <div className="flex items-center gap-2 shrink-0 lg:order-1">
+          {/* Mobile Drawer Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#6C7285] hover:text-[#1F1F24] bg-[#F7F8FC] border border-[#E8EAF8] transition-all cursor-pointer shrink-0 active:scale-95"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+
+          {/* Desktop Logo (Shown on left for lg+ screens) */}
+          <div className="hidden lg:flex items-center gap-2.5 shrink-0 cursor-pointer" onClick={() => handleNavClick('/', 'Overview')}>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-bold text-lg shadow-md shadow-[#4F5DFF]/20 shrink-0">
+              S
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-heading font-extrabold text-base sm:text-lg tracking-tight text-[#1F1F24]">
                 Samruddi<span className="text-[#4F5DFF]">Save</span>
               </span>
-              <span className="hidden sm:inline-flex items-center gap-1 bg-[#4F5DFF]/10 text-[#4F5DFF] text-[11px] font-medium px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
-                <ShieldCheck className="w-3 h-3 text-[#4F5DFF]" />
+              <span className="hidden xl:inline-flex items-center gap-1 bg-[#4F5DFF]/10 text-[#4F5DFF] text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[#4F5DFF]/20 shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#4F5DFF]" />
                 RBI Escrow Certified
               </span>
             </div>
-            <p className="text-[11px] text-[#6C7285] hidden sm:block">
-              12-Month Micro-Savings & Maturity Perks Platform
-            </p>
           </div>
         </div>
 
-        {/* User Profile Pill */}
-        <div className="flex items-center gap-3">
+        {/* Center Navigation Bar (Desktop Pill Bar & Animated Mobile Icon Strip) */}
+        {/* Desktop Navigation Pill Bar */}
+        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1 rounded-2xl border border-[#E8EAF8] flex-1 min-w-0 max-w-3xl relative group lg:order-2">
+          
+          <button
+            onClick={() => handleScroll('left')}
+            className="p-1 rounded-lg hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover:flex items-center justify-center min-h-[36px] min-w-[36px]"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <nav
+            ref={navContainerRef}
+            onWheel={handleWheel}
+            className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-start"
+          >
+            {currentNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = checkIsActive(item);
+              const isLocked = (item as any).locked;
+
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => handleNavClick(item.path, item.label, isLocked)}
+                  disabled={isLocked}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 min-h-[44px] ${
+                    isActive
+                      ? 'bg-[#4F5DFF] text-white shadow-sm shadow-[#4F5DFF]/25 font-bold scale-[1.02]'
+                      : isLocked
+                      ? 'text-slate-300 cursor-not-allowed bg-slate-100/50'
+                      : 'text-[#6C7285] hover:text-[#1F1F24] hover:bg-white'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#6C7285]'}`} />
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full animate-pulse">
+                      {item.badge}
+                    </span>
+                  )}
+                  {isLocked && (
+                    <Lock className="w-3 h-3 text-slate-300" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          <button
+            onClick={() => handleScroll('right')}
+            className="p-1 rounded-lg hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover:flex items-center justify-center min-h-[36px] min-w-[36px]"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Right Section: Mobile Logo (Positioned on Right Side) & User Profile Button */}
+        <div className="flex items-center gap-2 shrink-0 lg:order-3">
+          
+          {/* Quick Role Switcher Button */}
+          {user.role === 'member' ? (
+            <button
+              onClick={() => handleSwitchRole('admin')}
+              className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-[#4F5DFF] to-[#8A7BFF] hover:opacity-95 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer shrink-0 min-h-[44px]"
+              title="Switch to Admin Console"
+            >
+              <UserCog className="w-4 h-4" />
+              <span>Admin Mode</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => handleSwitchRole('member')}
+              className="hidden sm:flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0 min-h-[44px]"
+              title="Switch to Member App"
+            >
+              <User className="w-4 h-4 text-emerald-600" />
+              <span>Member Mode</span>
+            </button>
+          )}
 
           {/* User Account Dropdown */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 bg-white hover:bg-[#F7F8FC] border border-[#E8EAF8] p-1.5 sm:px-3 sm:py-1.5 rounded-full sm:rounded-xl transition-all shadow-xs"
+              className="flex items-center gap-2 bg-white hover:bg-[#F7F8FC] border border-[#E8EAF8] p-1.5 sm:px-2.5 sm:py-1.5 rounded-full sm:rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px] min-w-[44px]"
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
                 {user.full_name.charAt(0)}
               </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-xs font-semibold text-[#1F1F24] leading-tight">{user.full_name}</p>
-                <p className="text-[10px] text-[#6C7285] leading-none">{user.email}</p>
+              <div className="hidden sm:block text-left max-w-[100px] md:max-w-[120px] truncate">
+                <p className="text-xs font-semibold text-[#1F1F24] leading-tight truncate">{user.full_name}</p>
+                <p className="text-[10px] text-[#6C7285] leading-none truncate">{user.email}</p>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-[#6C7285] hidden sm:block" />
+              <ChevronDown className={`w-3.5 h-3.5 text-[#6C7285] hidden sm:block shrink-0 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-[#E8EAF8] py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-2 border-b border-[#E8EAF8]">
-                  <p className="font-semibold text-[#1F1F24]">{user.full_name}</p>
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-[#E8EAF8] py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2.5 border-b border-[#E8EAF8]">
+                  <p className="font-bold text-[#1F1F24] text-sm">{user.full_name}</p>
                   <div className="flex items-center gap-1.5 mt-1">
                     {getRoleBadge(user.role)}
                     {user.role === 'member' && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                         user.kyc_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                       }`}>
                         KYC {user.kyc_status.toUpperCase()}
@@ -100,45 +310,63 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                   </div>
                 </div>
 
-                <div className="py-1">
+                <div className="py-1 space-y-0.5">
+                  {user.role === 'member' ? (
+                    <button
+                      onClick={() => handleSwitchRole('admin')}
+                      className="w-full text-left px-4 py-3 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-[#4F5DFF] font-bold cursor-pointer min-h-[44px]"
+                    >
+                      <UserCog className="w-4 h-4 text-[#4F5DFF]" /> Switch to Admin Portal
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSwitchRole('member')}
+                      className="w-full text-left px-4 py-3 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-emerald-700 font-bold cursor-pointer min-h-[44px]"
+                    >
+                      <User className="w-4 h-4 text-emerald-600" /> Switch to Member Portal
+                    </button>
+                  )}
+
+                  <div className="border-t border-[#E8EAF8] my-1" />
+
                   {user.role === 'member' && (
                     <>
                       <button
-                        onClick={() => { onNavigate('/dashboard'); setDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                        onClick={() => handleNavClick('/dashboard', 'Wallet Dashboard')}
+                        className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
                       >
                         <User className="w-4 h-4 text-[#4F5DFF]" /> My Wallet Dashboard
                       </button>
                       <button
-                        onClick={() => { onNavigate('/kyc'); setDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                        onClick={() => handleNavClick('/kyc', 'KYC Verification')}
+                        className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
                       >
                         <FileCheck2 className="w-4 h-4 text-[#4F5DFF]" /> KYC Verification Status
                       </button>
                     </>
                   )}
 
-                  {user.role === 'employee' && (
+                  {(user.role === 'admin' || user.role === 'employee') && (
                     <button
-                      onClick={() => { onNavigate('/employee'); setDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                      onClick={() => handleNavClick('/employee', 'MRM Approval Queue')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
                     >
-                      <FileCheck2 className="w-4 h-4 text-amber-600" /> MRM Approval Queue
+                      <UserCheck className="w-4 h-4 text-amber-600" /> MRM Approval Queue
                     </button>
                   )}
 
-                  {user.role === 'finance_admin' && (
+                  {(user.role === 'admin' || user.role === 'finance_admin') && (
                     <button
-                      onClick={() => { onNavigate('/finance'); setDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                      onClick={() => handleNavClick('/finance', 'Escrow Queue')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
                     >
                       <Building2 className="w-4 h-4 text-purple-600" /> Escrow Disbursal Queue
                     </button>
                   )}
 
                   <button
-                    onClick={() => { onNavigate('/support'); setDropdownOpen(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                    onClick={() => handleNavClick('/support', 'Help & Support')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
                   >
                     <HelpCircle className="w-4 h-4 text-emerald-600" /> Help & Support Desk
                   </button>
@@ -146,11 +374,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
                 <div className="border-t border-[#E8EAF8] pt-1 px-2">
                   <button
-                    onClick={() => {
-                      onNavigate('/');
-                      setDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2 font-medium"
+                    onClick={() => handleNavClick('/', 'Sign Out')}
+                    className="w-full text-left px-3 py-2.5 text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 font-bold cursor-pointer min-h-[44px]"
                   >
                     <LogOut className="w-4 h-4" /> Sign Out
                   </button>
@@ -159,9 +384,126 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
             )}
           </div>
 
-        </div>
+          {/* Mobile Logo (Positioned on RIGHT side of header for Mobile) */}
+          <div
+            className="lg:hidden flex items-center gap-1.5 cursor-pointer shrink-0 ml-1"
+            onClick={() => handleNavClick('/', 'Overview')}
+          >
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-base shadow-md shadow-[#4F5DFF]/20 shrink-0">
+              S
+            </div>
+          </div>
 
+        </div>
       </div>
+
+      {/* Mobile / Tablet Full Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-white/98 backdrop-blur-xl border-b border-[#E8EAF8] px-4 pt-3 pb-6 space-y-4 animate-in fade-in slide-in-from-top-3 duration-200 shadow-2xl">
+          
+          {/* Quick Role Switcher on Mobile */}
+          <div className="flex items-center justify-between bg-[#F7F8FC] p-2.5 rounded-2xl border border-[#E8EAF8]">
+            <span className="text-xs font-bold text-[#6C7285] px-2">Active View:</span>
+            {user.role === 'member' ? (
+              <button
+                onClick={() => handleSwitchRole('admin')}
+                className="bg-[#4F5DFF] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-95 transition-all min-h-[44px]"
+              >
+                <UserCog className="w-4 h-4" /> Switch to Admin Portal
+              </button>
+            ) : (
+              <button
+                onClick={() => handleSwitchRole('member')}
+                className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-95 transition-all min-h-[44px]"
+              >
+                <User className="w-4 h-4" /> Switch to Member Portal
+              </button>
+            )}
+          </div>
+
+          {/* Card matching reference screenshot */}
+          <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
+            
+            {/* Category Header */}
+            <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
+                {isAdminPage ? 'ADMIN FUNCTIONAL MODULES' : 'MEMBER FUNCTIONAL MODULES'}
+              </span>
+              <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
+                RBI Escrow Certified
+              </span>
+            </div>
+
+            {/* Nav Module Items List */}
+            <div className="space-y-1 pt-1">
+              {currentNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = checkIsActive(item);
+                const isLocked = (item as any).locked;
+
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => handleNavClick(item.path, item.label, isLocked)}
+                    disabled={isLocked}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
+                      isActive
+                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
+                        : isLocked
+                        ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
+                        : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className={`w-4 h-4 shrink-0 ${
+                        isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
+                      }`} />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isLocked && (
+                        <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-medium border border-amber-200 flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> KYC Required
+                        </span>
+                      )}
+                      {item.badge && (
+                        <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                          {item.badge}
+                        </span>
+                      )}
+                      <ChevronRight className={`w-4 h-4 ${
+                        isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
+                      }`} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* User Profile Summary Card in Drawer */}
+          <div className="bg-[#F7F8FC] p-3 rounded-2xl border border-[#E8EAF8] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                {user.full_name.charAt(0)}
+              </div>
+              <div className="truncate">
+                <p className="text-xs font-bold text-[#1F1F24] truncate">{user.full_name}</p>
+                <p className="text-[10px] text-[#6C7285] truncate">{user.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleNavClick('/', 'Sign Out')}
+              className="text-rose-600 hover:bg-rose-50 p-2.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 min-h-[44px] min-w-[44px] justify-center"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+
+        </div>
+      )}
     </header>
   );
 };

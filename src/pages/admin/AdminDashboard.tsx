@@ -39,6 +39,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     'overview' | 'kyc_queue' | 'members' | 'payments' | 'ledger' | 'reports' | 'hampers' | 'payouts' | 'audit' | 'settings'
   >('overview');
 
+  useEffect(() => {
+    const updateTabFromLocation = () => {
+      const hash = window.location.hash.replace('#', '');
+      const path = window.location.pathname;
+
+      if (hash && ['overview', 'kyc_queue', 'members', 'payments', 'ledger', 'reports', 'hampers', 'payouts', 'audit', 'settings'].includes(hash)) {
+        setActiveTab(hash as any);
+      } else if (path === '/employee') {
+        setActiveTab('kyc_queue');
+      } else if (path === '/finance') {
+        setActiveTab('payouts');
+      } else if (path === '/ledger') {
+        setActiveTab('ledger');
+      } else if (path === '/admin') {
+        if (!hash || hash === 'overview') setActiveTab('overview');
+      }
+    };
+
+    updateTabFromLocation();
+    window.addEventListener('hashchange', updateTabFromLocation);
+    return () => window.removeEventListener('hashchange', updateTabFromLocation);
+  }, []);
+
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -299,167 +322,8 @@ End of Official Member Passbook & Escrow Ledger
           </div>
         </div>
 
-        {/* Dashboard Grid Layout (Sidebar Navigation + Main Area) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          
-          {/* Sidebar Navigation */}
-          <div className="md:col-span-1 bg-white p-4 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-1.5 h-fit">
-            <div className="px-3 py-2 text-[11px] font-bold text-[#6C7285] uppercase tracking-wider border-b border-[#E8EAF8] mb-2">
-              Admin Functional Modules
-            </div>
-
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'overview'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <TrendingUp className="w-4 h-4" /> Overview
-              </div>
-              <ChevronRight className="w-4 h-4 opacity-70" />
-            </button>
-
-            <button
-              onClick={() => setActiveTab('kyc_queue')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'kyc_queue'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <UserCheck className="w-4 h-4 text-amber-500" /> Pending Member KYC Approvals
-              </div>
-              {pendingKYCMembers.length > 0 ? (
-                <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                  {pendingKYCMembers.length}
-                </span>
-              ) : (
-                <ChevronRight className="w-4 h-4 opacity-70" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('members')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'members'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4" /> All Members Directory
-              </div>
-              {pendingKYCMembers.length > 0 && (
-                <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                  {pendingKYCMembers.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('payments')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'payments'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <CreditCard className="w-4 h-4" /> Payments Management
-              </div>
-              {gracePeriodMembers.length > 0 && (
-                <span className="bg-rose-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                  {gracePeriodMembers.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('ledger')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'ledger'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <FileSpreadsheet className="w-4 h-4" /> Contribution Ledger
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'reports'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <PieChart className="w-4 h-4" /> Financial Reports
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('hampers')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'hampers'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Gift className="w-4 h-4" /> Hamper Allocations
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('payouts')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'payouts'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <DollarSign className="w-4 h-4" /> Maturity Disbursals
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'audit'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <FileText className="w-4 h-4" /> Audit Logs
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                activeTab === 'settings'
-                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
-                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Settings className="w-4 h-4" /> Admin Settings
-              </div>
-            </button>
-
-          </div>
-
-          {/* Main Module Display Area */}
-          <div className="md:col-span-2 lg:col-span-3 space-y-6">
+        {/* Main Module Display Area (Full Width, Sidebar Moved to Top Navbar) */}
+        <div className="w-full space-y-6">
             
             {/* OVERVIEW TAB */}
             {activeTab === 'overview' && (
@@ -1014,9 +878,7 @@ End of Official Member Passbook & Escrow Ledger
                 </div>
               </div>
             )}
-
           </div>
-        </div>
 
         {/* MODAL: Record Offline Payment Reconciliation */}
         {isReconcileModalOpen && (
