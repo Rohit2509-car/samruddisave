@@ -3,8 +3,9 @@
 -- RBI Escrow Certified Monthly Gold & Appliance Savings Platform
 -- ====================================================================
 
--- Enable UUID extension
+-- Enable UUID and PGCrypto extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ====================================================================
 -- 1. SAFE ENUM TYPE CREATIONS
@@ -56,6 +57,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     bank_name TEXT,
     autopay_method TEXT DEFAULT 'gpay',
     allocated_hamper_id TEXT,
+    avatar_url TEXT,
+    submitted_at TIMESTAMPTZ,
+    auto_approval_due_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -129,7 +133,9 @@ CREATE TABLE IF NOT EXISTS public.contributions (
     status payment_status DEFAULT 'PENDING'::payment_status NOT NULL,
     transaction_ref TEXT UNIQUE,
     payment_method payment_method DEFAULT 'razorpay'::payment_method,
+    is_offline BOOLEAN DEFAULT false,
     reconciled_by_admin UUID REFERENCES public.profiles(id),
+    admin_notes TEXT,
     escrow_batch_id TEXT DEFAULT 'ESC_BATCH_2026',
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -248,8 +254,8 @@ INSERT INTO public.profiles (
 ) VALUES 
 (
     '00000000-0000-0000-0000-000000000001'::uuid,
-    'Rohit Sharma',
-    'rohitxcvmhss@gmail.com',
+    'karthickeyan M',
+    'karthickeyan@gmail.com',
     '+91 98765 43210',
     'ABCDE1234F',
     '9876 5432 1098',
@@ -264,7 +270,7 @@ INSERT INTO public.profiles (
 ),
 (
     '00000000-0000-0000-0000-000000000002'::uuid,
-    'Admin',
+    'Operations Admin',
     'admin@samruddisave.com',
     '+91 98765 00000',
     'ADM000000A',
@@ -277,9 +283,118 @@ INSERT INTO public.profiles (
     NULL,
     NULL,
     NULL
+),
+(
+    '00000000-0000-0000-0000-000000000003'::uuid,
+    'Sneha Roy',
+    'sneha.roy@example.com',
+    '+91 98111 22334',
+    'BNKPI9876K',
+    '4321 8765 2109',
+    'member'::user_role,
+    'pending'::kyc_status,
+    'pending'::pipeline_stage,
+    99.80,
+    '9182374619028',
+    'HDFC0001234',
+    'HDFC Bank',
+    NULL
+),
+(
+    '00000000-0000-0000-0000-000000000004'::uuid,
+    'Arjun Deshmukh',
+    'arjun.deshmukh@example.com',
+    '+91 98765 11223',
+    'ARJPD9876M',
+    '1234 5678 9012',
+    'member'::user_role,
+    'unsubmitted'::kyc_status,
+    'signup'::pipeline_stage,
+    0.00,
+    NULL, NULL, NULL, NULL
+),
+(
+    '00000000-0000-0000-0000-000000000005'::uuid,
+    'Vikas Sharma',
+    'vikas.sharma@example.com',
+    '+91 91234 56789',
+    'VIKPS1234K',
+    '2345 6789 0123',
+    'member'::user_role,
+    'approved'::kyc_status,
+    'approved'::pipeline_stage,
+    99.80,
+    NULL, NULL, NULL, NULL
+),
+(
+    '00000000-0000-0000-0000-000000000006'::uuid,
+    'Ananya Rao',
+    'ananya.rao@example.com',
+    '+91 90422 85132',
+    'ANAPR4321R',
+    '3456 7890 1234',
+    'member'::user_role,
+    'approved'::kyc_status,
+    'active'::pipeline_stage,
+    99.80,
+    NULL, NULL, NULL, NULL
+),
+(
+    '00000000-0000-0000-0000-000000000007'::uuid,
+    'Rajesh Kumar',
+    'rajesh.kumar@example.com',
+    '+91 99887 76655',
+    'RAJPK5678L',
+    '4567 8901 2345',
+    'member'::user_role,
+    'approved'::kyc_status,
+    'grace'::pipeline_stage,
+    99.80,
+    NULL, NULL, NULL, NULL
+),
+(
+    '00000000-0000-0000-0000-000000000008'::uuid,
+    'Vikramaditya S.',
+    'vikramaditya@example.com',
+    '+91 97654 32109',
+    'VIKPV9012S',
+    '5678 9012 3456',
+    'member'::user_role,
+    'approved'::kyc_status,
+    'hamper'::pipeline_stage,
+    99.80,
+    NULL, NULL, NULL, 'hamper-1'
+),
+(
+    '00000000-0000-0000-0000-000000000009'::uuid,
+    'Meera Deshmukh',
+    'meera.deshmukh@example.com',
+    '+91 98111 99887',
+    'MEEPM3456D',
+    '6789 0123 4567',
+    'member'::user_role,
+    'approved'::kyc_status,
+    'payout'::pipeline_stage,
+    99.80,
+    NULL, NULL, NULL, NULL
+),
+(
+    '00000000-0000-0000-0000-000000000010'::uuid,
+    'Priya Patel',
+    'priya.patel@example.com',
+    '+91 97654 88776',
+    'PRYPP7890P',
+    '7890 1234 5678',
+    'member'::user_role,
+    'approved'::kyc_status,
+    'matured'::pipeline_stage,
+    99.80,
+    NULL, NULL, NULL, NULL
 )
-ON CONFLICT (email) DO UPDATE SET
+ON CONFLICT (id) DO UPDATE SET
     full_name = EXCLUDED.full_name,
+    email = EXCLUDED.email,
+    role = EXCLUDED.role,
     kyc_status = EXCLUDED.kyc_status,
     pipeline_stage = EXCLUDED.pipeline_stage;
 
@@ -334,6 +449,107 @@ INSERT INTO public.audit_logs (
     notes,
     details
 ) VALUES
-('33333333-3333-3333-3333-333333333301'::uuid, '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'KYC_APPROVED', 'Admin approved KYC for Rohit Sharma (PAN: ABCDE1234F, OCR Match: 99.8%)', '{"pan": "ABCDE1234F", "aadhaar": "9876 5432 1098"}'::jsonb),
-('33333333-3333-3333-3333-333333333302'::uuid, '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'HAMPER_ALLOCATED', 'Allocated Smart Home & Kitchen Essentials Box to Rohit Sharma maturity wallet', '{"hamper_id": "hamper-1"}'::jsonb)
+('33333333-3333-3333-3333-333333333301'::uuid, '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'KYC_APPROVED', 'Admin approved KYC for karthickeyan M (PAN: ABCDE1234F, OCR Match: 99.8%)', '{"pan": "ABCDE1234F", "aadhaar": "9876 5432 1098"}'::jsonb),
+('33333333-3333-3333-3333-333333333302'::uuid, '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'HAMPER_ALLOCATED', 'Allocated Smart Home & Kitchen Essentials Box to karthickeyan M maturity wallet', '{"hamper_id": "hamper-1"}'::jsonb)
 ON CONFLICT (id) DO NOTHING;
+
+-- ====================================================================
+-- AUTOMATED USER CREATION TRIGGER & SAFE CONFLICT RESOLUTION
+-- ====================================================================
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
+    INSERT INTO public.profiles (id, full_name, email, role, kyc_status, pipeline_stage)
+    VALUES (
+      NEW.id,
+      COALESCE(NEW.raw_user_meta_data->>'full_name', 'Member'),
+      NEW.email,
+      COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'member'::user_role),
+      'unsubmitted'::kyc_status,
+      'signup'::pipeline_stage
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ====================================================================
+-- SEED ADMIN USER INTO SUPABASE AUTHENTICATION ENGINE (auth.users)
+-- Installs Admin user directly into Supabase Auth Dashboard
+-- (Customer accounts remain as separate member signups)
+-- ====================================================================
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin@samruddisave.com') THEN
+        INSERT INTO auth.users (
+            instance_id,
+            id,
+            aud,
+            role,
+            email,
+            encrypted_password,
+            email_confirmed_at,
+            recovery_sent_at,
+            last_sign_in_at,
+            raw_app_meta_data,
+            raw_user_meta_data,
+            created_at,
+            updated_at,
+            confirmation_token,
+            email_change,
+            email_change_token_new,
+            recovery_token
+        ) VALUES (
+            '00000000-0000-0000-0000-000000000000',
+            '00000000-0000-0000-0000-000000000002'::uuid,
+            'authenticated',
+            'authenticated',
+            'admin@samruddisave.com',
+            crypt('Admin@12345', gen_salt('bf')),
+            NOW(),
+            NOW(),
+            NOW(),
+            '{"provider": "email", "providers": ["email"]}'::jsonb,
+            '{"full_name": "Admin", "role": "admin"}'::jsonb,
+            NOW(),
+            NOW(),
+            '',
+            '',
+            '',
+            ''
+        );
+    ELSE
+        UPDATE auth.users 
+        SET encrypted_password = crypt('Admin@12345', gen_salt('bf')),
+            email_confirmed_at = NOW()
+        WHERE email = 'admin@samruddisave.com';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = '00000000-0000-0000-0000-000000000002'::uuid) THEN
+        INSERT INTO auth.identities (
+            id,
+            provider_id,
+            user_id,
+            identity_data,
+            provider,
+            last_sign_in_at,
+            created_at,
+            updated_at
+        ) VALUES (
+            '00000000-0000-0000-0000-000000000002'::uuid,
+            '00000000-0000-0000-0000-000000000002',
+            '00000000-0000-0000-0000-000000000002'::uuid,
+            format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000002', 'admin@samruddisave.com')::jsonb,
+            'email',
+            NOW(),
+            NOW(),
+            NOW()
+        );
+    END IF;
+END $$;

@@ -36,7 +36,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
   // Navigation Active Tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'kyc_queue' | 'members' | 'payments' | 'ledger' | 'reports' | 'hampers' | 'payouts' | 'audit' | 'settings'
+    'overview' | 'kyc_queue' | 'members' | 'payments' | 'offline_payments' | 'ledger' | 'reports' | 'hampers' | 'payouts' | 'audit' | 'settings'
   >('overview');
 
   useEffect(() => {
@@ -82,61 +82,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   ];
 
   const getMembersForStage = (stageId: string) => {
-    // Dynamic members from store whose stage matches
-    const storeMembers = profiles
+    return profiles
       .filter((p) => p.role === 'member')
       .filter((p) => {
-        const stage = (p as any).pipeline_stage || 'active';
-        return stage === stageId || (stageId === 'active' && !['signup','pending','approved','grace','hamper','payout','matured'].includes(stage));
+        const stage = (p as any).pipeline_stage;
+        if (stageId === 'signup') return stage === 'signup';
+        if (stageId === 'pending') return stage === 'pending' || p.kyc_status === 'pending';
+        if (stageId === 'approved') return stage === 'approved';
+        if (stageId === 'grace') return stage === 'grace';
+        if (stageId === 'hamper') return stage === 'hamper';
+        if (stageId === 'payout') return stage === 'payout';
+        if (stageId === 'matured') return stage === 'matured';
+        // 'active' is fallback or stage === 'active' / 'ACTIVE_SAVING'
+        return stage === 'active' || stage === 'ACTIVE_SAVING' || (!stage && p.kyc_status === 'approved');
       })
       .map((p) => {
-        const matchingStage = lifecycleStages.find((s) => s.id === (p as any).pipeline_stage) || lifecycleStages[3];
+        const matchingStage = lifecycleStages.find((s) => s.id === stageId) || lifecycleStages[3];
         return {
           ...p,
           stageName: matchingStage.name,
           streak: '4m'
         };
       });
-
-    const mockMembersMap: Record<string, any[]> = {
-      signup: [
-        { id: 'pipe-1', full_name: 'Arjun Deshmukh', phone: '+91 98765 11223', email: 'arjun@example.com', kyc_status: 'unsubmitted', stageName: '1. Member Signup', streak: '0m', pipeline_stage: 'signup' }
-      ],
-      pending: [
-        { id: 'pipe-2', full_name: 'Ananya Sharma', phone: '+91 98765 77889', email: 'ananya.s@example.com', kyc_status: 'pending', stageName: '2. Approval Pending', streak: '0m', pipeline_stage: 'pending' },
-        { id: 'pipe-3', full_name: 'Rohit Kumar', phone: '+91 98765 66778', email: 'rohit.k@example.com', kyc_status: 'pending', stageName: '2. Approval Pending', streak: '0m', pipeline_stage: 'pending' }
-      ],
-      approved: [
-        { id: 'pipe-4', full_name: 'Sunita Rao', phone: '+91 98111 44556', email: 'sunita@example.com', kyc_status: 'approved', stageName: '3. Account Approved', streak: '0m', pipeline_stage: 'approved' }
-      ],
-      active: [
-        { id: 'pipe-5', full_name: 'Priya Varma', phone: '+91 90422 85132', email: 'priya.v@example.com', kyc_status: 'approved', stageName: '4. Savings Active', streak: '12m', pipeline_stage: 'active' },
-        { id: 'pipe-6', full_name: 'Karthik', phone: '+91 90422 85132', email: 'karthik@example.com', kyc_status: 'approved', stageName: '4. Savings Active', streak: '6m', pipeline_stage: 'active' },
-        { id: 'pipe-7', full_name: 'Rahul Verma', phone: '+91 98765 88990', email: 'rahul.v@example.com', kyc_status: 'approved', stageName: '4. Savings Active', streak: '5m', pipeline_stage: 'active' }
-      ],
-      grace: [
-        { id: 'pipe-8', full_name: 'Rajesh Kumar', phone: '+91 99887 76655', email: 'rajesh.k@example.com', kyc_status: 'approved', stageName: '5. Grace Period', streak: '5m', pipeline_stage: 'grace' }
-      ],
-      hamper: [
-        { id: 'pipe-9', full_name: 'Vikramaditya S.', phone: '+91 97654 32109', email: 'vikram@example.com', kyc_status: 'approved', stageName: '6. Hamper Selected', streak: '12m', pipeline_stage: 'hamper' }
-      ],
-      payout: [
-        { id: 'pipe-10', full_name: 'Meera Deshmukh', phone: '+91 98111 99887', email: 'meera@example.com', kyc_status: 'approved', stageName: '7. Payout Processing', streak: '12m', pipeline_stage: 'payout' }
-      ],
-      matured: [
-        { id: 'pipe-11', full_name: 'Priya Patel', phone: '+91 97654 32109', email: 'priya.patel@example.com', kyc_status: 'approved', stageName: '8. Plan Matured', streak: '12m', pipeline_stage: 'matured' }
-      ]
-    };
-
-    return [...storeMembers, ...(mockMembersMap[stageId] || [])];
   };
 
-  const handleStageChange = (member: any, targetStage: { id: string; name: string }) => {
-    if (member.id && !member.id.startsWith('pipe-')) {
-      stateStore.updateMemberPipelineStage(member.id, targetStage.id, adminUser.id, `Admin moved ${member.full_name} to ${targetStage.name}`);
-    }
+  const handleStageChange = async (member: any, targetStage: { id: string; name: string }) => {
+    await stateStore.updateMemberPipelineStage(member.id, targetStage.id, adminUser.id, `Admin moved ${member.full_name} to ${targetStage.name}`);
     setInspectedMember((prev: any) => (prev ? { ...prev, pipeline_stage: targetStage.id, stageName: targetStage.name } : null));
-    alert(`Member ${member.full_name} successfully moved to ${targetStage.name}!`);
+    alert(`Member ${member.full_name} successfully moved to ${targetStage.name}! Update synced to Supabase.`);
   };
 
   // Offline Payment Reconciliation Modal
@@ -150,10 +123,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
       setAdminUser(stateStore.getCurrentUser());
-      setProfiles(stateStore.getProfiles());
-      setMemberships(stateStore.getMemberships());
-      setContributions(stateStore.getContributions());
-      setAuditLogs(stateStore.getAuditLogs());
+      setProfiles([...stateStore.getProfiles()]);
+      setMemberships([...stateStore.getMemberships()]);
+      setContributions([...stateStore.getContributions()]);
+      setAuditLogs([...stateStore.getAuditLogs()]);
     });
     return unsubscribe;
   }, []);
@@ -161,15 +134,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   // Operational Metrics
   const totalMembers = profiles.filter((p) => p.role === 'member').length;
   const activeMembers = memberships.filter((m) => m.status === 'active').length;
-  const pendingKYCMembers = profiles.filter((p) => p.role === 'member' && p.kyc_status === 'pending');
+  const pendingKYCMembers = profiles.filter((p) => {
+    if (p.role !== 'member') return false;
+    if (p.kyc_status === 'approved' || p.kyc_status === 'rejected') return false;
+    if ((p as any).pipeline_stage === 'ACTIVE_SAVING' || (p as any).pipeline_stage === 'ACCOUNT_APPROVED') return false;
+    return p.kyc_status === 'pending' || p.kyc_status === 'unsubmitted' || (p as any).pipeline_stage === 'pending';
+  });
   const gracePeriodMembers = memberships.filter((m) => m.status === 'grace_period');
   const maturedMembers = memberships.filter((m) => m.status === 'matured' || m.status === 'disbursed');
   const totalCollection = contributions
     .filter((c) => c.status === 'PAID')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // Manual Offline Payment Submission
-  const handleReconcileOfflinePayment = (e: React.FormEvent) => {
+  // Manual Offline Payment Submission to Backend API
+  const handleReconcileOfflinePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMemberId) return;
 
@@ -179,20 +157,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       return;
     }
 
-    const txnRef = offlineTxnRef || `OFFLINE_${Date.now().toString().slice(-6)}`;
-    stateStore.recordPaymentWithMembership(
-      membership.id,
-      txnRef,
-      offlineMethod,
-      adminUser.id,
-      offlineNotes || `Admin reconciled offline payment for ${membership.user_id}`
-    );
+    const memberProfile = profiles.find((p) => p.id === selectedMemberId);
+    const txnRef = offlineTxnRef || `OFFLINE_${offlineMethod === 'offline_cash' ? 'CASH' : 'UPI'}_${Date.now().toString().slice(-6)}`;
+    
+    await stateStore.recordOfflinePaymentBackend({
+      userId: selectedMemberId,
+      membershipId: membership.id,
+      amount: offlineAmount || membership.monthly_amount,
+      paymentMethod: offlineMethod,
+      transactionRef: txnRef,
+      notes: offlineNotes || `Admin (${adminUser.full_name}) manually recorded ${offlineMethod.replace('_', ' ')} deposit`,
+      adminId: adminUser.id,
+      adminName: adminUser.full_name,
+    });
 
     setIsReconcileModalOpen(false);
     setSelectedMemberId('');
     setOfflineTxnRef('');
     setOfflineNotes('');
-    alert('Offline payment successfully reconciled and audit log recorded!');
+    alert(`Offline payment of ₹${offlineAmount} for ${memberProfile?.full_name || 'Member'} successfully recorded into Backend Escrow Ledger and verified for Customer view!`);
   };
 
   // Download Individual Official Escrow Receipt
@@ -322,8 +305,188 @@ End of Official Member Passbook & Escrow Ledger
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* Main Module Display Area (Full Width, Sidebar Moved to Top Navbar) */}
         <div className="w-full space-y-6">
+=======
+        {/* Dashboard Grid Layout (Sidebar Navigation + Main Area) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          
+          {/* Sidebar Navigation */}
+          <div className="md:col-span-1 bg-white p-4 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-1.5 h-fit">
+            <div className="px-3 py-2 text-[11px] font-bold text-[#6C7285] uppercase tracking-wider border-b border-[#E8EAF8] mb-2">
+              Admin Functional Modules
+            </div>
+
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'overview'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <TrendingUp className="w-4 h-4" /> Overview
+              </div>
+              <ChevronRight className="w-4 h-4 opacity-70" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab('kyc_queue')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'kyc_queue'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <UserCheck className="w-4 h-4 text-amber-500" /> Pending Member KYC Approvals
+              </div>
+              {pendingKYCMembers.length > 0 ? (
+                <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                  {pendingKYCMembers.length}
+                </span>
+              ) : (
+                <ChevronRight className="w-4 h-4 opacity-70" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('members')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'members'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Users className="w-4 h-4" /> All Members Directory
+              </div>
+              {pendingKYCMembers.length > 0 && (
+                <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                  {pendingKYCMembers.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'payments'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="w-4 h-4" /> Payments Management
+              </div>
+              {gracePeriodMembers.length > 0 && (
+                <span className="bg-rose-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                  {gracePeriodMembers.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('offline_payments')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'offline_payments'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Offline Payment Records
+              </div>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                {contributions.filter(c => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi').length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('ledger')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'ledger'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <FileSpreadsheet className="w-4 h-4" /> Contribution Ledger
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'reports'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <PieChart className="w-4 h-4" /> Financial Reports
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('hampers')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'hampers'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Gift className="w-4 h-4" /> Hamper Allocations
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('payouts')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'payouts'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <DollarSign className="w-4 h-4" /> Maturity Disbursals
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'audit'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-4 h-4" /> Audit Logs
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
+                activeTab === 'settings'
+                  ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/20'
+                  : 'text-[#1F1F24] hover:bg-[#F7F8FC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Settings className="w-4 h-4" /> Admin Settings
+              </div>
+            </button>
+
+          </div>
+
+          {/* Main Module Display Area */}
+          <div className="md:col-span-2 lg:col-span-3 space-y-6">
+>>>>>>> d8e8481d2cf5abf5757fe4a0e04ed7300a02e4cf
             
             {/* OVERVIEW TAB */}
             {activeTab === 'overview' && (
@@ -408,7 +571,7 @@ End of Official Member Passbook & Escrow Ledger
                                     <span className="font-semibold text-slate-600">Streak: <span className="font-bold text-[#1F1F24]">{m.streak || '0m'}</span></span>
                                     <button
                                       onClick={() => setInspectedMember(m)}
-                                      className="min-h-[44px] bg-[#4F5DFF]/10 hover:bg-[#4F5DFF] text-[#4F5DFF] hover:text-white font-bold text-xs px-3.5 py-2.5 rounded-2xl transition-all flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF]"
+                                      className="bg-[#4F5DFF]/10 hover:bg-[#4F5DFF] text-[#4F5DFF] hover:text-white font-bold text-[11px] px-2.5 py-1 rounded-xl transition-all inline-flex items-center gap-1 cursor-pointer shrink-0"
                                     >
                                       Inspect 360° &rarr;
                                     </button>
@@ -444,12 +607,27 @@ End of Official Member Passbook & Escrow Ledger
                 </div>
 
                 {pendingKYCMembers.length === 0 ? (
-                  <div className="p-12 text-center bg-[#F7F8FC] rounded-3xl border border-[#E8EAF8] space-y-3">
+                  <div className="p-10 text-center bg-[#F7F8FC] rounded-3xl border border-[#E8EAF8] space-y-3">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
                     <p className="font-heading font-extrabold text-base text-[#1F1F24]">All Clear! No Pending KYC Registrations</p>
                     <p className="text-xs text-[#6C7285] max-w-md mx-auto">
                       All active customer accounts are fully verified under RBI Escrow and compliance standards.
                     </p>
+                    <button
+                      onClick={async () => {
+                        await stateStore.submitKYCForApproval('demo-karthik-01', {
+                          full_name: 'Karthickeyan M (Member Account)',
+                          email: 'karthickeyan@gmail.com',
+                          phone: '+91 98765 43210',
+                          pan_number: 'BNKPI9876K',
+                          aadhaar_number: '9876 5432 1098',
+                          ocr_confidence: 99.8,
+                        });
+                      }}
+                      className="mt-2 bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md cursor-pointer transition-all inline-flex items-center gap-2"
+                    >
+                      ⚡ Add Pending Member KYC Submission for Testing
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -458,36 +636,55 @@ End of Official Member Passbook & Escrow Ledger
                         key={member.id}
                         className="p-5 bg-[#F7F8FC] border border-[#E8EAF8] rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs hover:shadow-sm transition-all"
                       >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-base text-[#1F1F24]">{member.full_name}</span>
-                            <span className="text-xs text-[#6C7285] bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono">
-                              ID: {member.id}
-                            </span>
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={member.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
+                            alt={member.full_name}
+                            className="w-14 h-14 rounded-2xl object-cover border-2 border-[#4F5DFF] shadow-md shrink-0"
+                          />
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-base text-[#1F1F24]">{member.full_name}</span>
+                              <span className="text-xs text-[#6C7285] bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono">
+                                ID: {member.id}
+                              </span>
+                              <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                ⏱️ 12h SLA Auto-Verify Active
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#6C7285]">
+                              Phone: <span className="font-medium text-[#1F1F24]">{member.phone}</span> • Email: <span className="font-medium text-[#1F1F24]">{member.email}</span>
+                            </p>
+                            <p className="text-xs text-[#6C7285]">
+                              PAN: <span className="font-mono font-bold text-[#1F1F24]">{member.pan_number || 'ABCDE1234F'}</span> • Aadhaar: <span className="font-mono font-bold text-[#1F1F24]">{member.aadhaar_number || '9876 5432 1098'}</span>
+                            </p>
                           </div>
-                          <p className="text-xs text-[#6C7285]">
-                            Phone: <span className="font-medium text-[#1F1F24]">{member.phone}</span> • Email: <span className="font-medium text-[#1F1F24]">{member.email}</span>
-                          </p>
-                          <p className="text-xs text-[#6C7285]">
-                            PAN Number: <span className="font-mono font-bold text-[#1F1F24]">{member.pan_number || 'ABCDE1234F'}</span> • Aadhaar: <span className="font-mono font-bold text-[#1F1F24]">{member.aadhaar_number || '9876 5432 1098'}</span>
-                          </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
                             onClick={() => setInspectedMember(member)}
-                            className="min-h-[44px] bg-white hover:bg-slate-100 border border-[#E8EAF8] text-slate-700 font-bold text-xs px-4 py-3 rounded-2xl transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF]"
+                            className="min-h-[44px] bg-white hover:bg-slate-100 border border-[#E8EAF8] text-slate-700 font-bold text-xs px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer"
                           >
                             Inspect Docs 360°
                           </button>
                           <button
-                            onClick={() => {
-                              stateStore.updateKYCStatus(member.id, 'approved', adminUser.id, 'Admin approved KYC');
+                            onClick={async () => {
+                              await stateStore.fastForward12HourAutoApproval(member.id);
+                              alert(`⏱️ 12-Hour SLA Auto-Verification triggered for ${member.full_name}! Account has been verified without manual Admin delay.`);
+                            }}
+                            className="min-h-[44px] bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer"
+                          >
+                            ⚡ Fast-Forward 12h SLA
+                          </button>
+                          <button
+                            onClick={async () => {
+                              await stateStore.updateKYCStatus(member.id, 'approved', adminUser.id, 'Admin approved KYC');
                               alert(`KYC for ${member.full_name} has been approved successfully!`);
                             }}
-                            className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-3 rounded-2xl transition-all shadow-md flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                            className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-2xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                           >
-                            <CheckCircle2 className="w-4 h-4" /> Approve Member Account
+                            <CheckCircle2 className="w-4 h-4" /> Approve Member
                           </button>
                         </div>
                       </div>
@@ -533,8 +730,17 @@ End of Official Member Passbook & Escrow Ledger
                         .map((p) => (
                           <tr key={p.id} className="hover:bg-[#F7F8FC]/50">
                             <td className="p-3 font-semibold text-[#1F1F24]">
-                              {p.full_name}
-                              <div className="text-[10px] text-[#6C7285] font-normal">{p.email} • {p.phone}</div>
+                              <div className="flex items-center gap-2.5">
+                                <img
+                                  src={p.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
+                                  alt={p.full_name}
+                                  className="w-8 h-8 rounded-full object-cover border border-[#4F5DFF]/30 shadow-2xs"
+                                />
+                                <div>
+                                  <div className="font-bold text-[#1F1F24]">{p.full_name}</div>
+                                  <div className="text-[10px] text-[#6C7285] font-normal">{p.email} • {p.phone}</div>
+                                </div>
+                              </div>
                             </td>
                             <td className="p-3 uppercase font-bold text-[#4F5DFF]">{p.role}</td>
                             <td className="p-3">
@@ -638,6 +844,125 @@ End of Official Member Passbook & Escrow Ledger
                           </tr>
                         );
                       })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* OFFLINE PAYMENTS TAB */}
+            {activeTab === 'offline_payments' && (
+              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8EAF8] pb-4">
+                  <div>
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                      Backend Manual Offline Ledger
+                    </span>
+                    <h3 className="font-heading font-extrabold text-2xl text-[#1F1F24] mt-1">
+                      Offline Payment Reconciliation & Records
+                    </h3>
+                    <p className="text-xs text-[#6C7285] mt-0.5">
+                      All manual cash and offline UPI payments entered by Admins, synced to Customer Dashboard & Ledger.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setIsReconcileModalOpen(true)}
+                    className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" /> Record New Offline Payment
+                  </button>
+                </div>
+
+                {/* Offline Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200">
+                    <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Total Offline Collection</p>
+                    <p className="font-heading font-extrabold text-2xl text-emerald-950 mt-1">
+                      ₹{contributions.filter(c => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi').reduce((a, b) => a + b.amount, 0).toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[11px] text-emerald-700 font-semibold mt-1">
+                      {contributions.filter(c => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi').length} Records Reconciled
+                    </p>
+                  </div>
+
+                  <div className="bg-purple-50/80 p-5 rounded-2xl border border-purple-200">
+                    <p className="text-xs font-bold text-purple-800 uppercase tracking-wider">Offline Cash Entries</p>
+                    <p className="font-heading font-extrabold text-2xl text-purple-950 mt-1">
+                      ₹{contributions.filter(c => c.payment_method === 'offline_cash').reduce((a, b) => a + b.amount, 0).toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[11px] text-purple-700 font-semibold mt-1">
+                      Branch Office Cash Collections
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50/80 p-5 rounded-2xl border border-blue-200">
+                    <p className="text-xs font-bold text-blue-800 uppercase tracking-wider">Offline UPI / Direct Bank</p>
+                    <p className="font-heading font-extrabold text-2xl text-blue-950 mt-1">
+                      ₹{contributions.filter(c => c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer').reduce((a, b) => a + b.amount, 0).toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[11px] text-blue-700 font-semibold mt-1">
+                      Direct QR & Bank Transfers
+                    </p>
+                  </div>
+                </div>
+
+                {/* Offline Records Table */}
+                <div className="overflow-x-auto rounded-2xl border border-[#E8EAF8]">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] font-semibold uppercase">
+                        <th className="p-3.5">Customer / Member</th>
+                        <th className="p-3.5">Cycle #</th>
+                        <th className="p-3.5">Amount</th>
+                        <th className="p-3.5">Payment Method</th>
+                        <th className="p-3.5">Txn Reference</th>
+                        <th className="p-3.5">Reconciled By Admin</th>
+                        <th className="p-3.5">Admin Notes</th>
+                        <th className="p-3.5 text-right">Receipt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E8EAF8]">
+                      {contributions
+                        .filter((c) => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer')
+                        .map((c) => {
+                          const member = profiles.find((p) => p.id === c.user_id);
+                          return (
+                            <tr key={c.id} className="hover:bg-[#F7F8FC] transition-colors">
+                              <td className="p-3.5">
+                                <p className="font-bold text-[#1F1F24]">{member?.full_name || 'Rohit Sharma'}</p>
+                                <p className="text-[11px] text-slate-500">{member?.email || 'rohitxcvmhss@gmail.com'}</p>
+                              </td>
+                              <td className="p-3.5 font-bold text-slate-700">Month #{c.cycle_number}</td>
+                              <td className="p-3.5 font-mono font-bold text-[#4F5DFF]">₹{c.amount.toLocaleString('en-IN')}</td>
+                              <td className="p-3.5">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  c.payment_method === 'offline_cash' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'
+                                }`}>
+                                  {c.payment_method === 'offline_cash' ? '💵 Offline Cash' : '📱 Offline UPI'}
+                                </span>
+                              </td>
+                              <td className="p-3.5 font-mono text-[11px] font-bold text-purple-800">{c.transaction_ref}</td>
+                              <td className="p-3.5">
+                                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 font-semibold px-2 py-0.5 rounded border border-emerald-200">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                  {c.reconciled_by_admin_name || 'Admin'}
+                                </span>
+                              </td>
+                              <td className="p-3.5 text-slate-600 max-w-[200px] truncate" title={c.admin_notes || 'Manually entered by admin'}>
+                                {c.admin_notes || 'Manually entered by admin'}
+                              </td>
+                              <td className="p-3.5 text-right">
+                                <button
+                                  onClick={() => handleDownloadReceipt(c)}
+                                  className="text-xs font-bold text-[#4F5DFF] hover:underline inline-flex items-center gap-1"
+                                >
+                                  <Download className="w-3.5 h-3.5" /> Receipt
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>

@@ -53,6 +53,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const remainingAmount = Math.max(0, totalGoalTarget - totalSavedSoFar);
   const goalProgressPct = Math.round((paidCount / 12) * 100);
   const accruedBonus = Math.round((totalSavedSoFar * plan.cash_bonus_pct) / 100);
+  const offlineContribs = contributions.filter((c) => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer');
 
   // Latest paid transaction
   const paidContribs = contributions.filter(c => c.status === 'PAID');
@@ -71,6 +72,8 @@ Membership ID: ${contrib.membership_id}
 Cycle Number: Month #${contrib.cycle_number} of 12
 Deposit Amount: INR ${contrib.amount.toLocaleString('en-IN')}
 Payment Method: ${(contrib.payment_method || 'razorpay').toUpperCase()}
+Verification Status: ${contrib.is_offline || contrib.reconciled_by_admin ? `ADMIN VERIFIED (${contrib.reconciled_by_admin_name || 'Admin'})` : 'AUTOMATED ONLINE'}
+Admin Notes: ${contrib.admin_notes || 'N/A'}
 Transaction Ref: ${contrib.transaction_ref}
 Escrow Batch ID: ${contrib.escrow_batch_id || 'ESC_TRUSTEE_91823'}
 Escrow Bank: HDFC Escrow Trustee Account #9182374619
@@ -95,30 +98,32 @@ Thank you for saving with SamruddiSave Escrow!
       <div className="bg-gradient-to-r from-[#1F1F24] via-[#2D2E38] to-[#4F5DFF] text-white p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-[#4F5DFF]/20 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="space-y-2 z-10">
-          <div className="flex items-center gap-2">
-            <span className="bg-white/10 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-xs border border-white/20">
-              Account ID: {user.id}
-            </span>
-
-            {/* Membership Status Badge */}
-            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold px-3.5 py-1 rounded-full flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Membership: {membership?.status ? membership.status.replace(/_/g, ' ').toUpperCase() : 'ACTIVE'}
-            </span>
-
-            <span className={`text-xs font-bold px-3.5 py-1 rounded-full border ${
-              isKYCPending ? 'bg-amber-500/20 text-amber-300 border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-            }`}>
-              KYC {user.kyc_status.toUpperCase()}
-            </span>
+        <div className="flex items-center gap-4 z-10">
+          {user.avatar_url && (
+            <img
+              src={user.avatar_url}
+              alt={user.full_name}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl object-cover border-2 border-white/40 shadow-lg shrink-0"
+            />
+          )}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="bg-white/10 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-xs border border-white/20">
+                Account ID: {user.id}
+              </span>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                isKYCPending ? 'bg-amber-500/20 text-amber-300 border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+              }`}>
+                KYC {user.kyc_status.toUpperCase()}
+              </span>
+            </div>
+            <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-white">
+              Welcome back, {user.full_name}!
+            </h1>
+            <p className="text-xs text-slate-300">
+              RBI Escrow Custody Account • {plan.name} (₹{plan.monthly_amount.toLocaleString('en-IN')}/mo)
+            </p>
           </div>
-          <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-white">
-            Welcome back, {user.full_name}!
-          </h1>
-          <p className="text-xs text-slate-300 font-medium">
-            RBI Escrow Custody Account • {plan.name} (₹{monthlyAmount.toLocaleString('en-IN')}/mo)
-          </p>
         </div>
 
         {/* Deposit Quick Action */}
@@ -133,41 +138,42 @@ Thank you for saving with SamruddiSave Escrow!
           )}
           <button
             onClick={() => onNavigate('/ledger')}
-            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-semibold py-3.5 px-5 rounded-2xl border border-white/20 transition-colors text-xs text-center cursor-pointer"
+            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 px-5 rounded-2xl transition-all border border-white/20 flex items-center justify-center gap-2 text-xs cursor-pointer"
           >
-            Personal Ledger
+            <History className="w-4 h-4" /> View Ledger
           </button>
         </div>
       </div>
 
-      {/* COMPLIANCE LOCK WARNING CARD */}
+      {/* COMPLIANCE LOCK WARNING CARD WITH 12-HOUR SLA */}
       {isKYCPending && (
         <div className="bg-amber-50 border-2 border-amber-300 p-6 rounded-3xl shadow-md space-y-4">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-amber-200 text-amber-800 rounded-2xl flex items-center justify-center shrink-0">
                 <Lock className="w-6 h-6" />
               </div>
               <div>
                 <span className="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  Compliance Guard Active
+                  12-Hour SLA Auto-Verification Protection Active
                 </span>
                 <h3 className="font-heading font-extrabold text-xl text-amber-950 mt-0.5">
                   Pending Admin Approval
                 </h3>
-                <p className="text-xs text-amber-800 font-medium">
-                  Your PAN/Aadhaar OCR documents are pending manual review by an MRM Officer on <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-amber-900 font-semibold">/employee</code> portal.
+                <p className="text-xs text-amber-800 max-w-xl">
+                  Your e-KYC identity documents are submitted. If the Admin does not review within 12 hours, our system automatically verifies and approves your account without delay.
                 </p>
               </div>
             </div>
             
             <button
-              onClick={() => {
-                stateStore.updateKYCStatus(user.id, 'approved', 'system', 'Demo Admin Sign-off');
+              onClick={async () => {
+                await stateStore.fastForward12HourAutoApproval(user.id);
+                alert(`⏱️ 12-Hour SLA Auto-Verification triggered! Your account has been verified without manual Admin delay.`);
               }}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 hidden sm:block cursor-pointer"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer"
             >
-              ⚡ Demo Action: Simulate Admin Approval
+              ⚡ Test: Fast-Forward 12h SLA Auto-Approve
             </button>
           </div>
         </div>

@@ -14,7 +14,9 @@ import {
   Mail,
   Lock,
   CreditCard,
-  QrCode
+  QrCode,
+  Building2,
+  Upload,
 } from 'lucide-react';
 
 interface KYCPageProps {
@@ -53,16 +55,36 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
     setOcrDetails(data.ocr_details);
   };
 
-  const handleSubmitOnboarding = (e: React.FormEvent) => {
+  // Profile Avatar State
+  const currentUser = stateStore.getCurrentUser();
+  const [avatarUrl, setAvatarUrl] = useState<string>(
+    currentUser.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+  );
+
+  const handleGalleryPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setAvatarUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmitOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const profile = stateStore.registerMember({
-      full_name: fullName || 'Rohit Sharma',
-      email: email || 'rohit.save@example.com',
-      phone: phone || '+91 98765 43210',
-      pan_number: panNumber || 'ABCDE1234F',
-      aadhaar_number: aadhaarNumber || '9876 5432 1098',
+    const profile = await stateStore.submitKYCForApproval(currentUser.id, {
+      full_name: fullName || currentUser.full_name || 'Rohit Sharma',
+      email: email || currentUser.email || 'rohit.save@example.com',
+      phone: phone || currentUser.phone || '+91 98765 43210',
+      pan_number: panNumber || currentUser.pan_number || 'ABCDE1234F',
+      aadhaar_number: aadhaarNumber || currentUser.aadhaar_number || '9876 5432 1098',
       ocr_confidence: ocrConfidence || 99.8,
+      avatar_url: avatarUrl,
       ocr_details: ocrDetails || {
         pan_name_match: true,
         photo_match_pct: 99.8,
@@ -76,7 +98,7 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
         bank_name: bankName,
         autopay_method: autopayMethod,
         mandate_id: `MNDT_${bankName.slice(0, 4).toUpperCase()}_${Math.floor(100000 + Math.random() * 900000)}`,
-        account_holder: fullName || 'Rohit Sharma',
+        account_holder: fullName || currentUser.full_name || 'Rohit Sharma',
       },
     });
 
@@ -172,10 +194,10 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
               Go to Member Dashboard <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => onNavigate('/employee')}
+              onClick={() => onNavigate('/admin')}
               className="bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 font-bold py-3 px-6 rounded-xl transition-all text-xs"
             >
-              ⚡ Switch to Officer Portal to Approve
+              ⚡ Switch to Admin Console to Approve
             </button>
           </div>
         </div>
@@ -186,9 +208,74 @@ export const KYCPage: React.FC<KYCPageProps> = ({ onNavigate }) => {
           {/* STEP 1: Personal Details */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="border-b border-[#E8EAF8] pb-3">
-                <h3 className="font-heading font-bold text-lg text-[#1F1F24]">1. Account Registration Details</h3>
-                <p className="text-xs text-[#6C7285]">Enter your full legal name as per government records</p>
+              <div className="border-b border-[#E8EAF8] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-heading font-bold text-lg text-[#1F1F24]">1. Account Registration & Profile Photo</h3>
+                  <p className="text-xs text-[#6C7285]">Enter your full legal name and upload customer profile avatar for identity verification</p>
+                </div>
+                <div className="bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-amber-600" />
+                  12-Hour SLA Auto-Verification Guarantee
+                </div>
+              </div>
+
+              {/* Customer Profile Photo Avatar Picker */}
+              <div className="p-4 bg-[#F7F8FC] rounded-2xl border border-[#E8EAF8] flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative shrink-0">
+                  <img
+                    src={avatarUrl}
+                    alt="Customer Profile"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-[#4F5DFF] shadow-md"
+                  />
+                  <span className="absolute bottom-0 right-0 bg-emerald-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+                    LIVE
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-center sm:text-left flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-[#1F1F24]">Customer Profile Picture:</p>
+                      <p className="text-[11px] text-[#6C7285]">Select an avatar or upload your photo from gallery</p>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="kyc-gallery-photo-input"
+                        className="bg-[#4F5DFF] hover:bg-[#3B48DF] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-xl cursor-pointer transition-all inline-flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Upload className="w-3.5 h-3.5" /> 📷 Select from Gallery
+                      </label>
+                      <input
+                        id="kyc-gallery-photo-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleGalleryPhotoUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-1 items-center">
+                    <span className="text-[10px] text-[#6C7285] font-semibold">Pre-set Avatars:</span>
+                    {[
+                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+                      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
+                      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80'
+                    ].map((img, i) => (
+                      <button
+                        type="button"
+                        key={i}
+                        onClick={() => setAvatarUrl(img)}
+                        className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                          avatarUrl === img ? 'border-[#4F5DFF] scale-110 shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={img} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div>

@@ -40,7 +40,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const [activeHash, setActiveHash] = useState(window.location.hash);
   const [tappedLabel, setTappedLabel] = useState<string | null>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
-  const mobileNavRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -195,8 +194,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </div>
         </div>
 
-        {/* Center Navigation Bar (Desktop Pill Bar & Animated Mobile Icon Strip) */}
-        {/* Desktop Navigation Pill Bar */}
+        {/* Center Desktop Navigation Pill Bar */}
         <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1 rounded-2xl border border-[#E8EAF8] flex-1 min-w-0 max-w-3xl relative group lg:order-2">
           
           <button
@@ -284,9 +282,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 bg-white hover:bg-[#F7F8FC] border border-[#E8EAF8] p-1.5 sm:px-2.5 sm:py-1.5 rounded-full sm:rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px] min-w-[44px]"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
-                {user.full_name.charAt(0)}
-              </div>
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.full_name}
+                  className="w-8 h-8 rounded-full object-cover border border-[#4F5DFF]/30 shadow-xs"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                  {user.full_name.charAt(0)}
+                </div>
+              )}
               <div className="hidden sm:block text-left max-w-[100px] md:max-w-[120px] truncate">
                 <p className="text-xs font-semibold text-[#1F1F24] leading-tight truncate">{user.full_name}</p>
                 <p className="text-[10px] text-[#6C7285] leading-none truncate">{user.email}</p>
