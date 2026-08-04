@@ -58,6 +58,15 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
 
         {/* Login Form */}
         <div className="p-8">
+          <div className="mb-6 p-4 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex items-start gap-3 text-indigo-900 text-xs">
+            <Lock className="w-5 h-5 flex-shrink-0 text-indigo-600 mt-0.5" />
+            <div>
+              <p className="font-bold">Admin Portal Authentication Required</p>
+              <p className="mt-0.5 text-indigo-700 leading-normal">
+                Please log in with Admin credentials (or click 1-Click Demo) to gain access to the Admin Operations Console.
+              </p>
+            </div>
+          </div>
           {error && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-rose-700 text-xs animate-in fade-in duration-150">
               <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />

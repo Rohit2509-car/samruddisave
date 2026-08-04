@@ -97,7 +97,7 @@ export const GIFT_HAMPERS: GiftHamper[] = [
 
 export const INITIAL_PROFILES: UserProfile[] = [
   {
-    id: 'user-member-1',
+    id: '00000000-0000-0000-0000-000000000001',
     full_name: 'karthickeyan M',
     email: 'karthickeyan@gmail.com',
     phone: '+91 98765 43210',
@@ -128,7 +128,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2026-04-01T10:00:00Z',
   },
   {
-    id: 'user-member-pending-1',
+    id: '00000000-0000-0000-0000-000000000003',
     full_name: 'Sneha Roy',
     email: 'sneha.roy@example.com',
     phone: '+91 98111 22334',
@@ -159,7 +159,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2026-08-04T08:00:00Z',
   },
   {
-    id: 'user-stage-signup',
+    id: '00000000-0000-0000-0000-000000000004',
     full_name: 'Arjun Deshmukh',
     email: 'arjun.deshmukh@example.com',
     phone: '+91 98765 11223',
@@ -173,7 +173,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2026-08-01T10:00:00Z',
   },
   {
-    id: 'user-stage-approved',
+    id: '00000000-0000-0000-0000-000000000005',
     full_name: 'Vikas Sharma',
     email: 'vikas.sharma@example.com',
     phone: '+91 91234 56789',
@@ -187,7 +187,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2026-07-15T10:00:00Z',
   },
   {
-    id: 'user-stage-active-1',
+    id: '00000000-0000-0000-0000-000000000006',
     full_name: 'Ananya Rao',
     email: 'ananya.rao@example.com',
     phone: '+91 90422 85132',
@@ -201,7 +201,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2026-05-01T10:00:00Z',
   },
   {
-    id: 'user-stage-grace',
+    id: '00000000-0000-0000-0000-000000000007',
     full_name: 'Rajesh Kumar',
     email: 'rajesh.kumar@example.com',
     phone: '+91 99887 76655',
@@ -215,7 +215,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2026-03-01T10:00:00Z',
   },
   {
-    id: 'user-stage-hamper',
+    id: '00000000-0000-0000-0000-000000000008',
     full_name: 'Vikramaditya S.',
     email: 'vikramaditya@example.com',
     phone: '+91 97654 32109',
@@ -229,7 +229,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2025-08-01T10:00:00Z',
   },
   {
-    id: 'user-stage-payout',
+    id: '00000000-0000-0000-0000-000000000009',
     full_name: 'Meera Deshmukh',
     email: 'meera.deshmukh@example.com',
     phone: '+91 98111 99887',
@@ -243,7 +243,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2025-08-01T10:00:00Z',
   },
   {
-    id: 'user-stage-matured',
+    id: '00000000-0000-0000-0000-000000000010',
     full_name: 'Priya Patel',
     email: 'priya.patel@example.com',
     phone: '+91 97654 88776',
@@ -257,7 +257,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     created_at: '2025-08-01T10:00:00Z',
   },
   {
-    id: 'user-admin-1',
+    id: '00000000-0000-0000-0000-000000000002',
     full_name: 'Operations Admin',
     email: 'admin@samruddisave.com',
     phone: '+91 98765 00000',
@@ -274,8 +274,8 @@ export const INITIAL_PROFILES: UserProfile[] = [
 
 export const INITIAL_MEMBERSHIPS: Membership[] = [
   {
-    id: 'm-rohit-01',
-    user_id: 'user-member-1',
+    id: '11111111-1111-1111-1111-111111111111',
+    user_id: '00000000-0000-0000-0000-000000000001',
     plan_id: 'plan-1000',
     monthly_amount: 1000,
     current_streak: 4,
@@ -289,13 +289,44 @@ export const INITIAL_MEMBERSHIPS: Membership[] = [
 ];
 
 export const INITIAL_CONTRIBUTIONS: ContributionRecord[] = [
-  { id: 'c-r-1', user_id: 'user-member-1', membership_id: 'm-rohit-01', amount: 1000, cycle_number: 1, due_date: '2026-04-05', paid_date: '2026-04-04T12:00:00Z', status: 'PAID', transaction_ref: 'PAY_SS_10928301', payment_method: 'razorpay', escrow_batch_id: 'ESC_BATCH_202604' },
-  { id: 'c-r-2', user_id: 'user-member-1', membership_id: 'm-rohit-01', amount: 1000, cycle_number: 2, due_date: '2026-05-05', paid_date: '2026-05-05T09:15:00Z', status: 'PAID', transaction_ref: 'PAY_SS_10928302', payment_method: 'razorpay', escrow_batch_id: 'ESC_BATCH_202605' },
-  { id: 'c-r-3', user_id: 'user-member-1', membership_id: 'm-rohit-01', amount: 1000, cycle_number: 3, due_date: '2026-06-05', paid_date: '2026-06-03T16:20:00Z', status: 'PAID', transaction_ref: 'OFFLINE_CASH_89201', payment_method: 'offline_cash', is_offline: true, reconciled_by_admin: 'user-admin-1', reconciled_by_admin_name: 'Admin', admin_notes: 'Manual cash collected at Bandra branch office by Admin', escrow_batch_id: 'ESC_BATCH_202606' },
-  { id: 'c-r-4', user_id: 'user-member-1', membership_id: 'm-rohit-01', amount: 1000, cycle_number: 4, due_date: '2026-07-05', paid_date: '2026-07-04T10:10:00Z', status: 'PAID', transaction_ref: 'PAY_SS_10928304', payment_method: 'razorpay', escrow_batch_id: 'ESC_BATCH_202607' },
+  { id: '22222222-2222-2222-2222-222222222201', user_id: '00000000-0000-0000-0000-000000000001', membership_id: '11111111-1111-1111-1111-111111111111', amount: 1000, cycle_number: 1, due_date: '2026-04-05', paid_date: '2026-04-04T12:00:00Z', status: 'PAID', transaction_ref: 'PAY_SS_10928301', payment_method: 'razorpay', escrow_batch_id: 'ESC_BATCH_202604' },
+  { id: '22222222-2222-2222-2222-222222222202', user_id: '00000000-0000-0000-0000-000000000001', membership_id: '11111111-1111-1111-1111-111111111111', amount: 1000, cycle_number: 2, due_date: '2026-05-05', paid_date: '2026-05-05T09:15:00Z', status: 'PAID', transaction_ref: 'PAY_SS_10928302', payment_method: 'razorpay', escrow_batch_id: 'ESC_BATCH_202605' },
+  { id: '22222222-2222-2222-2222-222222222203', user_id: '00000000-0000-0000-0000-000000000001', membership_id: '11111111-1111-1111-1111-111111111111', amount: 1000, cycle_number: 3, due_date: '2026-06-05', paid_date: '2026-06-03T16:20:00Z', status: 'PAID', transaction_ref: 'OFFLINE_CASH_89201', payment_method: 'offline_cash', is_offline: true, reconciled_by_admin: '00000000-0000-0000-0000-000000000002', reconciled_by_admin_name: 'Operations Admin', admin_notes: 'Manual cash collected at branch office by Admin', escrow_batch_id: 'ESC_BATCH_202606' },
+  { id: '22222222-2222-2222-2222-222222222204', user_id: '00000000-0000-0000-0000-000000000001', membership_id: '11111111-1111-1111-1111-111111111111', amount: 1000, cycle_number: 4, due_date: '2026-07-05', paid_date: '2026-07-04T10:10:00Z', status: 'PAID', transaction_ref: 'PAY_SS_10928304', payment_method: 'razorpay', escrow_batch_id: 'ESC_BATCH_202607' },
 ];
 
-export const INITIAL_MATURITY_PAYOUTS: MaturityPayout[] = [];
+export const INITIAL_MATURITY_PAYOUTS: MaturityPayout[] = [
+  {
+    id: 'pay-meera-12',
+    user_id: '00000000-0000-0000-0000-000000000009',
+    user_name: 'Meera Deshmukh',
+    user_email: 'meera.deshmukh@example.com',
+    membership_id: 'm-meera-12',
+    principal_amount: 12000,
+    bonus_amount: 600,
+    total_disbursal_amount: 12600,
+    maker_status: 'VERIFIED_BY_MAKER',
+    checker_status: 'PENDING_CHECKER',
+    hamper_id: 'hamper-1',
+    hamper_name: 'Royal Heritage Silk & Silver Dinner Set',
+    hamper_dispatch_status: 'DISPATCHED',
+  },
+  {
+    id: 'pay-priya-12',
+    user_id: '00000000-0000-0000-0000-000000000010',
+    user_name: 'Priya Patel',
+    user_email: 'priya.patel@example.com',
+    membership_id: 'm-priya-12',
+    principal_amount: 12000,
+    bonus_amount: 600,
+    total_disbursal_amount: 12600,
+    maker_status: 'PENDING_MAKER',
+    checker_status: 'PENDING_CHECKER',
+    hamper_id: 'hamper-2',
+    hamper_name: 'Smart Appliances Executive Gold Bundle',
+    hamper_dispatch_status: 'PREPARING',
+  },
+];
 
 export const INITIAL_TICKETS: SupportTicket[] = [
   {

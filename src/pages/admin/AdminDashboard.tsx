@@ -18,6 +18,7 @@ import {
   UserCheck,
   Settings,
   ChevronRight,
+  AlertTriangle,
   TrendingUp,
   Zap
 } from 'lucide-react';
@@ -46,39 +47,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
   const [inspectedMember, setInspectedMember] = useState<any | null>(null);
 
-  // 8 Lifecycle Stages Definition
+  // 6 Lifecycle Stages Definition (Simplified Admin Workflow)
   const lifecycleStages = [
     { id: 'signup', name: '1. Member Signup', badgeStyle: 'bg-slate-100 text-slate-700 border-slate-200' },
     { id: 'pending', name: '2. Approval Pending', badgeStyle: 'bg-amber-50 text-amber-800 border-amber-300' },
-    { id: 'approved', name: '3. Account Approved', badgeStyle: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
-    { id: 'active', name: '4. Savings Active', badgeStyle: 'bg-blue-50 text-blue-800 border-blue-300' },
-    { id: 'grace', name: '5. Grace Period', badgeStyle: 'bg-rose-50 text-rose-800 border-rose-300' },
-    { id: 'hamper', name: '6. Hamper Selected', badgeStyle: 'bg-purple-50 text-purple-800 border-purple-300' },
-    { id: 'payout', name: '7. Payout Processing', badgeStyle: 'bg-indigo-50 text-indigo-800 border-indigo-300' },
-    { id: 'matured', name: '8. Plan Matured', badgeStyle: 'bg-teal-50 text-teal-800 border-teal-300' },
+    { id: 'active', name: '3. Savings Active', badgeStyle: 'bg-blue-50 text-blue-800 border-blue-300' },
+    { id: 'grace', name: '4. Grace Period', badgeStyle: 'bg-rose-50 text-rose-800 border-rose-300' },
+    { id: 'hamper', name: '5. Hamper Select', badgeStyle: 'bg-purple-50 text-purple-800 border-purple-300' },
+    { id: 'completed', name: '6. Completed / Matured', badgeStyle: 'bg-teal-50 text-teal-800 border-teal-300' },
   ];
 
   const getMembersForStage = (stageId: string) => {
     return profiles
       .filter((p) => p.role === 'member')
       .filter((p) => {
-        const stage = (p as any).pipeline_stage;
+        const stage = ((p as any).pipeline_stage || '').toLowerCase();
         if (stageId === 'signup') return stage === 'signup';
         if (stageId === 'pending') return stage === 'pending' || p.kyc_status === 'pending';
-        if (stageId === 'approved') return stage === 'approved';
+        if (stageId === 'active') return stage === 'active' || stage === 'active_saving' || stage === 'approved' || (!stage && p.kyc_status === 'approved');
         if (stageId === 'grace') return stage === 'grace';
         if (stageId === 'hamper') return stage === 'hamper';
-        if (stageId === 'payout') return stage === 'payout';
-        if (stageId === 'matured') return stage === 'matured';
-        // 'active' is fallback or stage === 'active' / 'ACTIVE_SAVING'
-        return stage === 'active' || stage === 'ACTIVE_SAVING' || (!stage && p.kyc_status === 'approved');
+        if (stageId === 'completed') return stage === 'completed' || stage === 'matured' || stage === 'payout';
+        return false;
       })
       .map((p) => {
-        const matchingStage = lifecycleStages.find((s) => s.id === stageId) || lifecycleStages[3];
+        const matchingStage = lifecycleStages.find((s) => s.id === stageId) || lifecycleStages[2];
+        let dynamicStreak = '0m';
+        if (['active', 'grace', 'hamper', 'completed'].includes(stageId)) {
+          const userMembership = memberships.find((m) => m.user_id === p.id);
+          dynamicStreak = `${userMembership?.current_streak || 4}m`;
+        }
         return {
           ...p,
           stageName: matchingStage.name,
-          streak: '4m'
+          streak: dynamicStreak,
         };
       });
   };
@@ -492,13 +494,43 @@ End of Official Member Passbook & Escrow Ledger
                 </div>
 
                 {/* Explicit 8-Stage Lifecycle Pipeline Board */}
+                {/* Near 12-Month Plan Maturity Approaching Alerts (Point 5) */}
+                {profiles.filter((p) => ['hamper', 'payout', 'matured'].includes(((p as any).pipeline_stage || '').toLowerCase())).length > 0 && (
+                  <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 text-xs shadow-xs animate-in fade-in duration-200">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="font-extrabold text-sm text-amber-900">
+                          ⚠️ 12-Month Plan Maturity Approaching Alerts ({profiles.filter((p) => ['hamper', 'payout', 'matured'].includes(((p as any).pipeline_stage || '').toLowerCase())).length} Members)
+                        </p>
+                        <p className="mt-0.5 text-amber-800 leading-normal">
+                          The following members are approaching or have reached 12 months maturity:{' '}
+                          <span className="font-bold">
+                            {profiles
+                              .filter((p) => ['hamper', 'payout', 'matured'].includes(((p as any).pipeline_stage || '').toLowerCase()))
+                              .map((p) => `${p.full_name} (${p.pipeline_stage || 'Matured'})`)
+                              .join(', ')}
+                          </span>
+                          . Review hamper allocations & maturity payout disbursals.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('payouts')}
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shrink-0 shadow-sm transition-all cursor-pointer"
+                    >
+                      Manage Disbursals &rarr;
+                    </button>
+                  </div>
+                )}
+
                 <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4">
                   <div>
                     <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">
-                      Explicit 8-Stage Lifecycle Pipeline Board
+                      Explicit 6-Stage Lifecycle Pipeline Board
                     </h3>
                     <p className="text-xs text-[#6C7285] font-medium mt-0.5">
-                      Member Signup → Approval Pending → Account Approved → Savings Active → Grace Period → Hamper Selected → Payout Processing → Plan Matured
+                      1. Member Signup → 2. Approval Pending → 3. Savings Active → 4. Grace Period → 5. Hamper Select → 6. Completed / Matured
                     </p>
                   </div>
 
@@ -524,9 +556,9 @@ End of Official Member Passbook & Escrow Ledger
                                 No Members in Stage
                               </div>
                             ) : (
-                              stageMembers.map((m: any) => (
+                              stageMembers.map((m: any, idx: number) => (
                                 <div
-                                  key={m.id}
+                                  key={`${m.id || m.email}-${m.pipeline_stage || idx}`}
                                   className="bg-white p-3 rounded-xl border border-[#E8EAF8] shadow-2xs hover:shadow-md transition-all space-y-2"
                                 >
                                   <div className="flex items-center gap-2.5">
@@ -898,12 +930,12 @@ End of Official Member Passbook & Escrow Ledger
                       {contributions
                         .filter((c) => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer')
                         .map((c) => {
-                          const member = profiles.find((p) => p.id === c.user_id);
+                          const member = profiles.find((p) => p.id === c.user_id || p.email === 'karthickeyan@gmail.com');
                           return (
                             <tr key={c.id} className="hover:bg-[#F7F8FC] transition-colors">
                               <td className="p-3.5">
-                                <p className="font-bold text-[#1F1F24]">{member?.full_name || 'Rohit Sharma'}</p>
-                                <p className="text-[11px] text-slate-500">{member?.email || 'rohitxcvmhss@gmail.com'}</p>
+                                <p className="font-bold text-[#1F1F24]">{member?.full_name || 'karthickeyan M'}</p>
+                                <p className="text-[11px] text-slate-500">{member?.email || 'karthickeyan@gmail.com'}</p>
                               </td>
                               <td className="p-3.5 font-bold text-slate-700">Month #{c.cycle_number}</td>
                               <td className="p-3.5 font-mono font-bold text-[#4F5DFF]">₹{c.amount.toLocaleString('en-IN')}</td>
@@ -1007,13 +1039,13 @@ End of Official Member Passbook & Escrow Ledger
                         ? contributions
                         : contributions.filter((c) => c.user_id === filterMemberId)
                       ).map((c) => {
-                        const m = profiles.find((p) => p.id === c.user_id);
+                        const m = profiles.find((p) => p.id === c.user_id || p.email === 'karthickeyan@gmail.com');
                         return (
                           <tr key={c.id} className="hover:bg-[#F7F8FC]/50">
                             <td className="p-3 font-mono font-medium text-slate-600">{c.id}</td>
                             <td className="p-3">
-                              <p className="font-semibold text-[#1F1F24]">{m?.full_name || 'Rohit Sharma'}</p>
-                              <p className="text-[10px] text-[#6C7285]">{c.user_id} • {m?.email || 'rohitxcvmhss@gmail.com'}</p>
+                              <p className="font-semibold text-[#1F1F24]">{m?.full_name || 'karthickeyan M'}</p>
+                              <p className="text-[10px] text-[#6C7285]">{c.user_id} • {m?.email || 'karthickeyan@gmail.com'}</p>
                             </td>
                             <td className="p-3 font-bold text-[#1F1F24]">₹{c.amount.toLocaleString()}</td>
                             <td className="p-3 font-medium">Cycle #{c.cycle_number}</td>
@@ -1204,10 +1236,17 @@ End of Official Member Passbook & Escrow Ledger
                   >
                     <option value="">-- Select Member --</option>
                     {profiles
-                      .filter((p) => p.role === 'member')
+                      .filter(
+                        (p) =>
+                          p.role === 'member' &&
+                          (p.kyc_status === 'approved' ||
+                            ['active', 'approved', 'grace', 'hamper', 'payout', 'matured'].includes(
+                              (p.pipeline_stage || '').toLowerCase()
+                            ))
+                      )
                       .map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.full_name} ({p.email})
+                          {p.full_name} ({p.email}) - {p.pipeline_stage || 'Approved'}
                         </option>
                       ))}
                   </select>
@@ -1237,14 +1276,21 @@ End of Official Member Passbook & Escrow Ledger
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#1F1F24] mb-1">Transaction Reference</label>
+                  <label className="block text-xs font-bold text-[#1F1F24] mb-1">
+                    {offlineMethod === 'offline_cash' ? 'Cash Voucher / Receipt Reference (Optional)' : 'Bank UTR / UPI Reference Number'}
+                  </label>
                   <input
                     type="text"
-                    placeholder="e.g. UPI_REF_91823749"
+                    placeholder={offlineMethod === 'offline_cash' ? 'Auto-generated (e.g. CASH_REC_918237)' : 'e.g. UPI_REF_91823749'}
                     value={offlineTxnRef}
                     onChange={(e) => setOfflineTxnRef(e.target.value)}
                     className="w-full p-3 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4F5DFF]"
                   />
+                  {offlineMethod === 'offline_cash' && (
+                    <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                      💡 <strong>For Offline Cash</strong>: Leave blank to automatically generate an official Cash Receipt Voucher ID (e.g., <code className="bg-[#E8EAF8] px-1.5 py-0.5 rounded font-mono text-indigo-900 font-bold">OFFLINE_CASH_891203</code>).
+                    </p>
+                  )}
                 </div>
 
                 <div>

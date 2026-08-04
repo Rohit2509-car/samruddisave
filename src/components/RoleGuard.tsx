@@ -27,29 +27,38 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     return unsubscribe;
   }, []);
 
+  // Automatic Auth Guard: Redirect non-admin users attempting to access /admin directly to /console first
+  useEffect(() => {
+    if (allowedRoles && allowedRoles.includes('admin') && user.role !== 'admin') {
+      const timer = setTimeout(() => {
+        onNavigate('/console');
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [allowedRoles, user.role, onNavigate]);
+
   // Check role authorization
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return (
-      <div className="max-w-3xl mx-auto my-12 p-8 bg-white rounded-2xl border border-rose-200 shadow-lg text-center">
-        <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <ShieldAlert className="w-8 h-8" />
+      <div className="max-w-2xl mx-auto my-16 p-8 bg-white rounded-3xl border border-amber-200 shadow-xl text-center space-y-4 animate-in fade-in duration-200">
+        <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+          <Lock className="w-8 h-8 animate-pulse" />
         </div>
-        <h2 className="font-heading font-bold text-xl text-[#1F1F24] mb-2">Access Restricted (Admin Portal Guard)</h2>
-        <p className="text-sm text-[#6C7285] max-w-md mx-auto mb-6">
-          Your current account role (<span className="font-semibold text-rose-600">{user.role}</span>) does not have permission to view route <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-800">{currentPath}</code>.
+        <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3.5 py-1 rounded-full border border-amber-300 uppercase tracking-wider">
+          Admin Authentication Guard Active
+        </span>
+        <h2 className="font-heading font-extrabold text-2xl text-slate-900">
+          Redirecting to Admin Console Login (/console)...
+        </h2>
+        <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+          You attempted to access Admin features without logging in first. To protect RBI Escrow Operations, you are being redirected to the <strong>/console</strong> login page.
         </p>
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={() => onNavigate('/')}
-            className="bg-slate-100 text-slate-800 text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-slate-200 transition-colors"
-          >
-            Return to Home
-          </button>
+        <div className="pt-2 flex justify-center gap-3">
           <button
             onClick={() => onNavigate('/console')}
-            className="bg-[#4F5DFF] text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-[#4F5DFF]/90 transition-all shadow-md flex items-center gap-2"
+            className="bg-[#4F5DFF] text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-[#4F5DFF]/90 transition-all shadow-md flex items-center gap-2 cursor-pointer"
           >
-            Admin Portal Login (/console) <ArrowRight className="w-4 h-4" />
+            Go to Admin Console Login Now <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

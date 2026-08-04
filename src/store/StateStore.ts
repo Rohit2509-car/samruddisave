@@ -55,15 +55,37 @@ class StateStore {
     this.syncWithSupabase();
   }
 
+  private normalizePipelineStage(stage?: string): string {
+    if (!stage) return 'active';
+    const s = String(stage).toLowerCase();
+    if (s.includes('signup')) return 'signup';
+    if (s.includes('pending') || s.includes('due')) return 'pending';
+    if (s.includes('approved')) return 'approved';
+    if (s.includes('grace')) return 'grace';
+    if (s.includes('hamper')) return 'hamper';
+    if (s.includes('payout')) return 'payout';
+    if (s.includes('matured')) return 'matured';
+    return 'active';
+  }
+
+  private deduplicateProfiles(list: UserProfile[]): UserProfile[] {
+    const seen = new Set<string>();
+    return list.filter((p) => {
+      const key = p.email ? p.email.toLowerCase() : p.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   private async syncWithSupabase() {
     try {
-      // Seed all 10 profiles (9 Members + 1 Admin) to Supabase
       await this.pushAllProfilesToSupabase();
 
       const { data: dbProfiles, error: profileErr } = await supabase.from('profiles').select('*');
       if (!profileErr && dbProfiles && dbProfiles.length > 0) {
         dbProfiles.forEach((dbP: any) => {
-          const idx = this.profiles.findIndex((p) => p.id === dbP.id || p.email === dbP.email);
+          const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase() || p.id === dbP.id);
           const mapped: UserProfile = {
             id: dbP.id,
             full_name: dbP.full_name || 'Member',
@@ -73,7 +95,7 @@ class StateStore {
             aadhaar_number: dbP.aadhaar_number || '9876 5432 1098',
             role: dbP.role || 'member',
             kyc_status: dbP.kyc_status || 'approved',
-            pipeline_stage: dbP.pipeline_stage || 'ACTIVE_SAVING',
+            pipeline_stage: this.normalizePipelineStage(dbP.pipeline_stage) as any,
             ocr_confidence: dbP.ocr_confidence || 99.8,
             avatar_url: dbP.avatar_url,
             created_at: dbP.created_at,
@@ -84,6 +106,7 @@ class StateStore {
             this.profiles.push(mapped);
           }
         });
+        this.profiles = this.deduplicateProfiles(this.profiles);
         this.saveToStorage();
       }
     } catch (e) {
@@ -91,23 +114,51 @@ class StateStore {
     }
   }
 
+  private isValidUUID(uuidStr?: string): boolean {
+    if (!uuidStr) return false;
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuidStr);
+  }
+
   public async pushAllProfilesToSupabase() {
     try {
-      const dbRows = this.profiles.map((p) => ({
-        full_name: p.full_name,
-        email: p.email,
-        phone: p.phone,
-        pan_number: p.pan_number,
-        aadhaar_number: p.aadhaar_number,
-        role: p.role,
-        kyc_status: p.kyc_status,
-        pipeline_stage: (p as any).pipeline_stage || 'active',
-        ocr_confidence: p.ocr_confidence || 99.8,
-        avatar_url: p.avatar_url,
-      }));
+      const emailUuidMap: Record<string, string> = {
+        'karthickeyan@gmail.com': '00000000-0000-0000-0000-000000000001',
+        'admin@samruddisave.com': '00000000-0000-0000-0000-000000000002',
+        'sneha.roy@example.com': '00000000-0000-0000-0000-000000000003',
+        'arjun.deshmukh@example.com': '00000000-0000-0000-0000-000000000004',
+        'vikas.sharma@example.com': '00000000-0000-0000-0000-000000000005',
+        'ananya.rao@example.com': '00000000-0000-0000-0000-000000000006',
+        'rajesh.kumar@example.com': '00000000-0000-0000-0000-000000000007',
+        'vikramaditya@example.com': '00000000-0000-0000-0000-000000000008',
+        'meera.deshmukh@example.com': '00000000-0000-0000-0000-000000000009',
+        'priya.patel@example.com': '00000000-0000-0000-0000-000000000010',
+      };
 
-      await supabase.from('profiles').upsert(dbRows, { onConflict: 'email' });
-      console.log('Successfully synced all member profiles to Supabase DB!');
+      const dbRows = this.profiles.map((p) => {
+        let validId = p.id;
+        if (!this.isValidUUID(validId)) {
+          validId = emailUuidMap[p.email?.toLowerCase()] || '00000000-0000-0000-0000-000000000001';
+        }
+        return {
+          id: validId,
+          full_name: p.full_name,
+          email: p.email,
+          phone: p.phone || '+91 98765 43210',
+          pan_number: p.pan_number || 'ABCDE1234F',
+          aadhaar_number: p.aadhaar_number || '9876 5432 1098',
+          role: p.role || 'member',
+          kyc_status: p.kyc_status || 'approved',
+          pipeline_stage: this.normalizePipelineStage((p as any).pipeline_stage),
+          ocr_confidence: p.ocr_confidence || 99.8,
+        };
+      });
+
+      const { error } = await supabase.from('profiles').upsert(dbRows, { onConflict: 'email' });
+      if (!error) {
+        console.log('Successfully synced all member profiles to Supabase DB!');
+      } else {
+        console.warn('Supabase profile upsert warning:', error.message);
+      }
     } catch (e) {
       console.warn('Supabase auto-seed warning:', e);
     }
@@ -230,6 +281,26 @@ class StateStore {
     this.listeners.forEach((l) => l());
   }
 
+  public checkGracePeriodAndPenalties() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    this.memberships.forEach((m) => {
+      if (m.next_due_date && m.next_due_date < todayStr && m.status === 'active') {
+        const dueDate = new Date(m.next_due_date);
+        const diffMs = Date.now() - dueDate.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays > 5) {
+          m.grace_days_remaining = 0;
+          m.status = 'defaulted';
+          m.current_streak = 0; // Missed monthly payment beyond 5-day grace period resets streak
+          const profile = this.profiles.find((p) => p.id === m.user_id);
+          if (profile) {
+            (profile as any).pipeline_stage = 'grace';
+          }
+        }
+      }
+    });
+  }
+
   // --- Getters ---
   public getCurrentUser(): UserProfile {
     const user = this.profiles.find((p) => p.id === this.currentUserId);
@@ -268,6 +339,32 @@ class StateStore {
   }
 
   public getPayouts(): MaturityPayout[] {
+    if (this.payouts.length === 0) {
+      this.payouts = [...INITIAL_MATURITY_PAYOUTS];
+    }
+    const completedMembers = this.profiles.filter((p) =>
+      ['completed', 'matured', 'payout'].includes(((p as any).pipeline_stage || '').toLowerCase())
+    );
+    completedMembers.forEach((m) => {
+      if (!this.payouts.some((po) => po.user_id === m.id)) {
+        const hamper = GIFT_HAMPERS.find((h) => h.id === m.allocated_hamper_id) || GIFT_HAMPERS[0];
+        this.payouts.push({
+          id: `pay-${m.id.slice(-6)}`,
+          user_id: m.id,
+          user_name: m.full_name,
+          user_email: m.email,
+          membership_id: `m-${m.id.slice(-6)}`,
+          principal_amount: 12000,
+          bonus_amount: 600,
+          total_disbursal_amount: 12600,
+          maker_status: 'PENDING_MAKER',
+          checker_status: 'PENDING_CHECKER',
+          hamper_id: hamper.id,
+          hamper_name: hamper.name,
+          hamper_dispatch_status: 'PREPARING',
+        });
+      }
+    });
     return this.payouts;
   }
 
@@ -497,8 +594,7 @@ class StateStore {
           full_name: profile.full_name,
           email: profile.email,
           kyc_status: status,
-          pipeline_stage: profile.pipeline_stage,
-          avatar_url: profile.avatar_url,
+          pipeline_stage: this.normalizePipelineStage(profile.pipeline_stage),
         });
       } catch (e) {
         console.warn('Supabase profile update fallback:', e);
@@ -547,17 +643,17 @@ class StateStore {
     }
   }
 
-  // Submit or Update KYC for Approval with 12-Hour SLA Auto-Verification Guarantee
+  // Submit or Update KYC for Approval with 4-Hour SLA Auto-Verification Guarantee
   public async submitKYCForApproval(userId: string, kycData: Partial<UserProfile>): Promise<UserProfile> {
     let profile = this.profiles.find((p) => p.id === userId || p.email === kycData.email);
     const now = new Date();
-    const twelveHoursLater = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+    const fourHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
 
     if (profile) {
       profile.kyc_status = 'pending';
       (profile as any).pipeline_stage = 'pending';
       profile.submitted_at = now.toISOString();
-      profile.auto_approval_due_at = twelveHoursLater.toISOString();
+      profile.auto_approval_due_at = fourHoursLater.toISOString();
       if (kycData.full_name) profile.full_name = kycData.full_name;
       if (kycData.email) profile.email = kycData.email;
       if (kycData.phone) profile.phone = kycData.phone;
@@ -581,7 +677,7 @@ class StateStore {
         ocr_confidence: kycData.ocr_confidence || 99.8,
         avatar_url: kycData.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
         submitted_at: now.toISOString(),
-        auto_approval_due_at: twelveHoursLater.toISOString(),
+        auto_approval_due_at: fourHoursLater.toISOString(),
         created_at: now.toISOString(),
         ...kycData,
       };

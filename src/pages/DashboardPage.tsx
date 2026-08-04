@@ -179,6 +179,29 @@ Thank you for saving with SamruddiSave Escrow!
         </div>
       )}
 
+      {/* Renewal & Plan Continuation for Next 12 Months (Point 6) */}
+      {(paidCount >= 11 || user.pipeline_stage === 'matured' || membership?.status === 'matured') && (
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-6 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
+          <div className="space-y-1 text-center sm:text-left">
+            <span className="bg-white/20 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+              🎉 12-Month Plan Completion & Renewal Portal
+            </span>
+            <h3 className="font-heading font-extrabold text-xl">
+              Ready to Continue Your Savings Plan for the Next 12 Months?
+            </h3>
+            <p className="text-xs text-teal-100 max-w-lg">
+              You are approaching / have completed your 12-month micro-savings milestone. Continue saving to lock in your next guaranteed Gift Perk Hamper & ₹600 bonus!
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('/plans')}
+            className="bg-white text-emerald-900 hover:bg-teal-50 font-extrabold text-xs px-6 py-3.5 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            Re-Enroll for Next 12 Months <ArrowRight className="w-4 h-4 text-emerald-600" />
+          </button>
+        </div>
+      )}
+
       {/* REALTIME GOAL SUMMARY & PROGRESS BAR CARD */}
       <div className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">

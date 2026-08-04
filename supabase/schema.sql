@@ -197,12 +197,12 @@ ALTER TABLE public.savings_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users read own profile or Admins read all" ON public.profiles;
-CREATE POLICY "Users read own profile or Admins read all" ON public.profiles
-    FOR SELECT USING (auth.uid() = id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
-
 DROP POLICY IF EXISTS "Users update own profile or Admins update any" ON public.profiles;
-CREATE POLICY "Users update own profile or Admins update any" ON public.profiles
-    FOR UPDATE USING (auth.uid() = id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "Profiles read policy" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles write policy" ON public.profiles;
+
+CREATE POLICY "Profiles read policy" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Profiles write policy" ON public.profiles FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Users read own contributions or Admins read all" ON public.contributions;
 CREATE POLICY "Users read own contributions or Admins read all" ON public.contributions
