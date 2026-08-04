@@ -74,9 +74,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 bg-white hover:bg-[#F7F8FC] border border-[#E8EAF8] p-1.5 sm:px-3 sm:py-1.5 rounded-full sm:rounded-xl transition-all shadow-xs"
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center">
-                {user.full_name.charAt(0)}
-              </div>
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.full_name}
+                  className="w-7 h-7 rounded-full object-cover border border-[#4F5DFF]/30 shadow-2xs"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center">
+                  {user.full_name.charAt(0)}
+                </div>
+              )}
               <div className="hidden sm:block text-left">
                 <p className="text-xs font-semibold text-[#1F1F24] leading-tight">{user.full_name}</p>
                 <p className="text-[10px] text-[#6C7285] leading-none">{user.email}</p>
@@ -101,44 +109,67 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                 </div>
 
                 <div className="py-1">
-                  {user.role === 'member' && (
+                  {user.role === 'member' ? (
                     <>
                       <button
                         onClick={() => { onNavigate('/dashboard'); setDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] font-semibold"
                       >
                         <User className="w-4 h-4 text-[#4F5DFF]" /> My Wallet Dashboard
                       </button>
                       <button
                         onClick={() => { onNavigate('/kyc'); setDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] font-semibold"
                       >
                         <FileCheck2 className="w-4 h-4 text-[#4F5DFF]" /> KYC Verification Status
+                      </button>
+                      <button
+                        onClick={() => {
+                          stateStore.setCurrentUser('user-admin-1');
+                          onNavigate('/admin');
+                          setDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-rose-50 flex items-center gap-2 text-rose-600 font-bold border-t border-[#E8EAF8] mt-1"
+                      >
+                        ⚡ Switch to Admin Console
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => { onNavigate('/admin'); setDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] font-semibold"
+                      >
+                        <Building2 className="w-4 h-4 text-[#4F5DFF]" /> Admin Operations Dashboard
+                      </button>
+                      <button
+                        onClick={() => { onNavigate('/dashboard'); setDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                      >
+                        <User className="w-4 h-4 text-[#4F5DFF]" /> View Customer Wallet
+                      </button>
+                      <button
+                        onClick={() => { onNavigate('/kyc'); setDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                      >
+                        <FileCheck2 className="w-4 h-4 text-[#4F5DFF]" /> Customer Onboarding & KYC
+                      </button>
+                      <button
+                        onClick={() => {
+                          stateStore.setCurrentUser('user-member-1');
+                          onNavigate('/dashboard');
+                          setDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-2 text-[#4F5DFF] font-bold border-t border-[#E8EAF8] mt-1"
+                      >
+                        ⚡ Switch to Customer Account (karthickeyan M)
                       </button>
                     </>
                   )}
 
-                  {user.role === 'employee' && (
-                    <button
-                      onClick={() => { onNavigate('/employee'); setDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
-                    >
-                      <FileCheck2 className="w-4 h-4 text-amber-600" /> MRM Approval Queue
-                    </button>
-                  )}
-
-                  {user.role === 'finance_admin' && (
-                    <button
-                      onClick={() => { onNavigate('/finance'); setDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
-                    >
-                      <Building2 className="w-4 h-4 text-purple-600" /> Escrow Disbursal Queue
-                    </button>
-                  )}
-
                   <button
                     onClick={() => { onNavigate('/support'); setDropdownOpen(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24]"
+                    className="w-full text-left px-4 py-2 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] border-t border-[#E8EAF8]"
                   >
                     <HelpCircle className="w-4 h-4 text-emerald-600" /> Help & Support Desk
                   </button>

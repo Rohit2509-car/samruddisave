@@ -37,6 +37,9 @@ export interface UserProfile {
   };
   allocated_hamper_id?: string;
   allocated_by_admin?: string;
+  avatar_url?: string;
+  submitted_at?: string;
+  auto_approval_due_at?: string;
   created_at: string;
 }
 
@@ -78,6 +81,9 @@ export interface ContributionRecord {
   transaction_ref: string;
   payment_method?: 'razorpay' | 'offline_cash' | 'offline_upi' | 'bank_transfer';
   reconciled_by_admin?: string;
+  reconciled_by_admin_name?: string;
+  admin_notes?: string;
+  is_offline?: boolean;
   escrow_batch_id?: string;
   created_at?: string;
 }
@@ -179,11 +185,13 @@ export interface SavingsCircle {
 export interface AuditLog {
   id: string;
   timestamp: string;
-  admin_id: string;
+  admin_id?: string;
+  user_id?: string;
   member_id?: string;
+  user_role?: string;
   action: string;
   notes?: string;
-  details?: Record<string, any>;
+  details?: Record<string, any> | string;
   ip_address?: string;
 }
 

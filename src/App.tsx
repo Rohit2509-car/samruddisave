@@ -89,17 +89,14 @@ export default function App() {
       case '/circles':
         return <SavingsCirclesPage onNavigate={handleNavigate} />;
 
-      // Admin Login Portal Routes (/console or /login)
+      // Admin Login Portal Route
       case '/console':
       case '/login':
       case '/admin-login':
         return <AdminLoginPage onNavigate={handleNavigate} />;
 
-      // Single Admin Operations Dashboard
+      // Single Admin Operations Dashboard Route
       case '/admin':
-      case '/employee':
-      case '/finance':
-      case '/support':
         return (
           <RoleGuard currentPath={currentPath} allowedRoles={['admin']} onNavigate={handleNavigate}>
             <AdminDashboard onNavigate={handleNavigate} />

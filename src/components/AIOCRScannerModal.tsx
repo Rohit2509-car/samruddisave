@@ -19,6 +19,13 @@ export const AIOCRScannerModal: React.FC<AIOCRScannerModalProps> = ({ isOpen, on
   const [progress, setProgress] = useState(0);
   const [extractedResult, setExtractedResult] = useState<any>(null);
 
+  const handleDocumentFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleStartScan();
+    }
+  };
+
   if (!isOpen) return null;
 
   const handleStartScan = async (sample?: 'pan' | 'aadhaar') => {
@@ -146,19 +153,26 @@ export const AIOCRScannerModal: React.FC<AIOCRScannerModalProps> = ({ isOpen, on
               </div>
 
               {/* Sample Upload Zone */}
-              <div
-                onClick={() => handleStartScan()}
-                className="border-2 border-dashed border-[#4F5DFF]/40 bg-[#F7F8FC] hover:bg-[#4F5DFF]/5 rounded-2xl p-8 text-center cursor-pointer transition-all group"
+              <label
+                htmlFor="ocr-doc-gallery-input"
+                className="border-2 border-dashed border-[#4F5DFF]/40 bg-[#F7F8FC] hover:bg-[#4F5DFF]/5 rounded-2xl p-8 text-center cursor-pointer transition-all group block"
               >
                 <div className="w-12 h-12 bg-[#4F5DFF]/10 text-[#4F5DFF] rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                   <Upload className="w-6 h-6" />
                 </div>
-                <p className="font-bold text-sm text-[#1F1F24]">Drop Image / PDF or Click to Upload</p>
+                <p className="font-bold text-sm text-[#1F1F24]">📷 Select Document Photo from Gallery</p>
                 <p className="text-xs text-[#6C7285] mt-1">Supports JPG, PNG, PDF up to 10MB</p>
                 <span className="inline-block mt-3 bg-[#4F5DFF] text-white text-xs font-semibold px-4 py-1.5 rounded-xl shadow-sm">
-                  Run AI OCR Scan Now
+                  Choose File & Scan
                 </span>
-              </div>
+                <input
+                  id="ocr-doc-gallery-input"
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleDocumentFileSelect}
+                  className="hidden"
+                />
+              </label>
             </div>
           )}
 

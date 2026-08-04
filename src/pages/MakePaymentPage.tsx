@@ -103,26 +103,50 @@ export const MakePaymentPage: React.FC<MakePaymentPageProps> = ({ onNavigate }) 
           </p>
         </div>
 
+        {/* Offline Payment Information Notice */}
+        <div className="bg-purple-50 border border-purple-200 p-4 rounded-2xl space-y-2 text-xs text-purple-950">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-sm text-purple-900">
+              <CheckCircle2 className="w-5 h-5 text-purple-600" />
+              Paying via Offline Cash or Branch UPI?
+            </div>
+            <span className="bg-purple-200 text-purple-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              Admin Manual Reconciliation
+            </span>
+          </div>
+          <p className="text-purple-800 leading-relaxed">
+            If you pay cash at a branch office or scan a local branch QR code, give your <strong>Membership ID ({membership?.id || user.id})</strong> to the Admin. Once the Admin records your offline deposit in the backend system, it will instantly show in your Dashboard and Ledger with <strong>Verified by Admin</strong> status.
+          </p>
+        </div>
+
         {/* Payment History */}
         <div>
           <h4 className="font-heading font-bold text-sm text-[#1F1F24] mb-3">Escrow Deposit Breakdown:</h4>
           <div className="space-y-2 text-xs">
-            {contributions.map((c) => (
-              <div key={c.id} className="bg-[#F7F8FC] border border-[#E8EAF8] p-3 rounded-xl flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-[#1F1F24]">Cycle {c.cycle_number}</span>
-                  <span className="text-[11px] text-[#6C7285] ml-2 font-mono">Ref: {c.transaction_ref}</span>
+            {contributions.map((c) => {
+              const isOffline = c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer';
+              return (
+                <div key={c.id} className="bg-[#F7F8FC] border border-[#E8EAF8] p-3 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-[#1F1F24]">Cycle {c.cycle_number}</span>
+                    <span className="text-[11px] text-[#6C7285] ml-2 font-mono">Ref: {c.transaction_ref}</span>
+                    {isOffline && (
+                      <span className="ml-2 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                        Offline ({c.payment_method === 'offline_cash' ? 'Cash' : 'UPI'}) • Verified by {c.reconciled_by_admin_name || 'Admin'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold text-[#1F1F24]">₹{c.amount.toLocaleString('en-IN')}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      c.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {c.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-[#1F1F24]">₹{c.amount.toLocaleString('en-IN')}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    c.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {c.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
