@@ -212,20 +212,27 @@ class StateStore {
             supabase.from('profiles').update({ id: dbP.id }).eq('email', dbP.email);
           }
 
-          const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase());
+          const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase() || p.id === dbP.id);
+          const existingProfile = idx >= 0 ? this.profiles[idx] : null;
+          const resolvedName = (dbP.full_name && dbP.full_name !== 'Member')
+            ? dbP.full_name
+            : (existingProfile?.full_name && existingProfile.full_name !== 'Member')
+            ? existingProfile.full_name
+            : 'Member';
+
           const mapped: UserProfile = {
             id: dbP.id,
-            full_name: dbP.full_name || 'Member',
-            email: dbP.email || '',
-            phone: dbP.phone || '+91 98765 43210',
-            pan_number: dbP.pan_number || 'ABCDE1234F',
-            aadhaar_number: dbP.aadhaar_number || '9876 5432 1098',
-            role: dbP.role || 'member',
-            kyc_status: dbP.kyc_status || 'pending',
-            pipeline_stage: this.normalizePipelineStage(dbP.pipeline_stage) as any,
-            ocr_confidence: dbP.ocr_confidence || 99.8,
-            avatar_url: dbP.avatar_url,
-            created_at: dbP.created_at,
+            full_name: resolvedName,
+            email: dbP.email || existingProfile?.email || '',
+            phone: dbP.phone || existingProfile?.phone || '+91 98765 43210',
+            pan_number: dbP.pan_number || existingProfile?.pan_number || 'ABCDE1234F',
+            aadhaar_number: dbP.aadhaar_number || existingProfile?.aadhaar_number || '9876 5432 1098',
+            role: dbP.role || existingProfile?.role || 'member',
+            kyc_status: dbP.kyc_status || existingProfile?.kyc_status || 'pending',
+            pipeline_stage: this.normalizePipelineStage(dbP.pipeline_stage || existingProfile?.pipeline_stage) as any,
+            ocr_confidence: dbP.ocr_confidence || existingProfile?.ocr_confidence || 99.8,
+            avatar_url: dbP.avatar_url || existingProfile?.avatar_url,
+            created_at: dbP.created_at || existingProfile?.created_at || new Date().toISOString(),
           };
           if (idx >= 0) {
             this.profiles[idx] = { ...this.profiles[idx], ...mapped };
@@ -900,8 +907,13 @@ class StateStore {
 
       try {
         await supabase.from('profiles').upsert({
+          id: profile.id,
           full_name: profile.full_name,
           email: profile.email,
+          phone: profile.phone,
+          pan_number: profile.pan_number,
+          aadhaar_number: profile.aadhaar_number,
+          role: profile.role,
           kyc_status: status,
           pipeline_stage: this.normalizePipelineStage(profile.pipeline_stage),
         });
@@ -972,7 +984,7 @@ class StateStore {
       (profile as any).pipeline_stage = 'pending';
       profile.submitted_at = now.toISOString();
       profile.auto_approval_due_at = fourHoursLater.toISOString();
-      if (kycData.full_name) profile.full_name = kycData.full_name;
+      if (kycData.full_name && kycData.full_name !== 'Member') profile.full_name = kycData.full_name;
       if (kycData.email) profile.email = kycData.email;
       if (kycData.phone) profile.phone = kycData.phone;
       if (kycData.pan_number) profile.pan_number = kycData.pan_number;
