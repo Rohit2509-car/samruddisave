@@ -128,6 +128,7 @@ class StateStore {
 
   public async fetchLatestFromSupabase() {
     try {
+      await this.pushAllProfilesToSupabase();
       const { data: dbProfiles, error: profileErr } = await supabase.from('profiles').select('*');
       if (!profileErr && dbProfiles && dbProfiles.length > 0) {
         dbProfiles.forEach((dbP: any) => {
@@ -722,9 +723,18 @@ class StateStore {
     }
   }
 
-  // Submit or Update KYC for Approval with 4-Hour SLA Auto-Verification Guarantee
   public async submitKYCForApproval(userId: string, kycData: Partial<UserProfile>): Promise<UserProfile> {
-    let profile = this.profiles.find((p) => p.id === userId || p.email === kycData.email);
+    let profile: UserProfile | undefined = undefined;
+    if (kycData.email) {
+      profile = this.profiles.find((p) => p.email?.toLowerCase() === kycData.email?.toLowerCase());
+    }
+    if (!profile && userId && userId !== '00000000-0000-0000-0000-000000000001' && userId !== 'user-member-1') {
+      const p = this.profiles.find((item) => item.id === userId);
+      if (p && (!kycData.email || p.email?.toLowerCase() === kycData.email?.toLowerCase())) {
+        profile = p;
+      }
+    }
+
     const now = new Date();
     const fourHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
 
