@@ -73,6 +73,23 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 -- ====================================================================
+-- 2B. KYC RECORDS TABLE (Onboarding KYC Verification Records)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS public.kyc_records (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    full_name TEXT NOT NULL,
+    phone_number TEXT NOT NULL,
+    pan_number VARCHAR(20) NOT NULL,
+    terms_accepted BOOLEAN DEFAULT true NOT NULL,
+    status kyc_status DEFAULT 'pending'::kyc_status NOT NULL,
+    submitted_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    verified_at TIMESTAMPTZ,
+    verified_by_admin UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ====================================================================
 -- 3. SAVINGS PLANS TABLE
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS public.savings_plans (
@@ -211,12 +228,14 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON public.audit_logs(timesta
 -- 11. ROW LEVEL SECURITY (RLS) POLICIES
 -- ====================================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.kyc_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contributions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public profiles access policy" ON public.profiles FOR ALL USING (true);
+CREATE POLICY "Public kyc records access policy" ON public.kyc_records FOR ALL USING (true);
 CREATE POLICY "Public memberships access policy" ON public.memberships FOR ALL USING (true);
 CREATE POLICY "Public contributions access policy" ON public.contributions FOR ALL USING (true);
 CREATE POLICY "Public notifications access policy" ON public.notifications FOR ALL USING (true);

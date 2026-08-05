@@ -16,6 +16,8 @@ import { LedgerPage } from './pages/LedgerPage';
 import { HamperSelectionPage } from './pages/HamperSelectionPage';
 import { SavingsCirclesPage } from './pages/SavingsCirclesPage';
 
+import { SupportPortalPage } from './pages/support/SupportPortalPage';
+
 // Admin Portal Pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -89,6 +91,9 @@ export default function App() {
       case '/circles':
         return <SavingsCirclesPage onNavigate={handleNavigate} />;
 
+      case '/support':
+        return <SupportPortalPage onNavigate={handleNavigate} />;
+
       // Admin Login Portal Route
       case '/console':
       case '/login':
@@ -99,7 +104,6 @@ export default function App() {
       case '/admin':
       case '/employee':
       case '/finance':
-      case '/support':
         return (
           <RoleGuard currentPath={currentPath} allowedRoles={['admin', 'employee', 'finance_admin']} onNavigate={handleNavigate}>
             <AdminDashboard onNavigate={handleNavigate} />
@@ -112,7 +116,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] pb-6">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] pb-6">
       <div>
         {/* Sticky Top Header */}
         <TopHeader currentPath={currentPath} onNavigate={handleNavigate} />

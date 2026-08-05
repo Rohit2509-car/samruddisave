@@ -18,7 +18,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   onNavigate,
   children,
 }) => {
-  const [user, setUser] = useState<UserProfile>(stateStore.getCurrentUser());
+  const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -27,15 +27,48 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     return unsubscribe;
   }, []);
 
+  // Redirect unauthenticated users attempting to access protected pages
+  useEffect(() => {
+    if (!user && (allowedRoles || requiresApprovedKYC)) {
+      const timer = setTimeout(() => {
+        onNavigate('/login');
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [user, allowedRoles, requiresApprovedKYC, onNavigate]);
+
   // Automatic Auth Guard: Redirect non-admin users attempting to access /admin directly to /console first
   useEffect(() => {
-    if (allowedRoles && allowedRoles.includes('admin') && user.role !== 'admin') {
+    if (user && allowedRoles && allowedRoles.includes('admin') && user.role !== 'admin') {
       const timer = setTimeout(() => {
         onNavigate('/console');
       }, 700);
       return () => clearTimeout(timer);
     }
-  }, [allowedRoles, user.role, onNavigate]);
+  }, [allowedRoles, user, onNavigate]);
+
+  if (!user) {
+    if (allowedRoles || requiresApprovedKYC) {
+      return (
+        <div className="max-w-xl mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 shadow-xl text-center space-y-4">
+          <div className="w-16 h-16 bg-blue-100 text-blue-700 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="font-heading font-extrabold text-2xl text-slate-900">Authentication Required</h2>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Please sign in to access your micro-savings wallet, contribution ledger, and account features.
+          </p>
+          <button
+            onClick={() => onNavigate('/login')}
+            className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white text-xs font-bold px-6 py-3 rounded-2xl transition-all shadow-md cursor-pointer"
+          >
+            Sign In Now
+          </button>
+        </div>
+      );
+    }
+    return <>{children}</>;
+  }
 
   // Check role authorization
   if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -66,7 +99,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   }
 
   // Check KYC Approval constraint for member payment routes
-  if (user.role === 'member' && requiresApprovedKYC && user.kyc_status !== 'approved') {
+  if (user?.role === 'member' && requiresApprovedKYC && user?.kyc_status !== 'approved') {
     return (
       <div className="max-w-3xl mx-auto my-12 p-8 bg-white rounded-2xl border border-amber-200 shadow-xl text-center">
         <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xs">

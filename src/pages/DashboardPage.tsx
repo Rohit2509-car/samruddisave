@@ -34,9 +34,9 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const [user, setUser] = useState<UserProfile>(stateStore.getCurrentUser());
-  const [membership, setMembership] = useState<Membership | undefined>(stateStore.getUserMembership(user.id));
-  const [contributions, setContributions] = useState<ContributionRecord[]>(stateStore.getUserContributions(user.id));
+  const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
+  const [membership, setMembership] = useState<Membership | undefined>(user ? stateStore.getUserMembership(user.id) : undefined);
+  const [contributions, setContributions] = useState<ContributionRecord[]>(user ? stateStore.getUserContributions(user.id) : []);
   
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [viewReceiptRecord, setViewReceiptRecord] = useState<ContributionRecord | null>(null);
@@ -46,11 +46,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     const unsubscribe = stateStore.subscribe(() => {
       const u = stateStore.getCurrentUser();
       setUser(u);
-      setMembership(stateStore.getUserMembership(u.id));
-      setContributions(stateStore.getUserContributions(u.id));
+      if (u) {
+        setMembership(stateStore.getUserMembership(u.id));
+        setContributions(stateStore.getUserContributions(u.id));
+      } else {
+        setMembership(undefined);
+        setContributions([]);
+      }
     });
     return unsubscribe;
   }, []);
+
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-xl">
+        <h2 className="font-heading font-extrabold text-2xl text-slate-900">Signed Out</h2>
+        <p className="text-xs text-slate-500">Please sign in to view your micro-savings wallet dashboard.</p>
+        <button
+          onClick={() => onNavigate('/login')}
+          className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white text-xs font-bold px-6 py-3 rounded-2xl transition-all cursor-pointer"
+        >
+          Sign In
+        </button>
+      </div>
+    );
+  }
 
   const plan = SAVINGS_PLANS.find((p) => p.id === membership?.plan_id) || SAVINGS_PLANS[0];
   const allocatedHamper = GIFT_HAMPERS.find((h) => h.id === user.allocated_hamper_id);

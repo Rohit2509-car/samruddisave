@@ -50,11 +50,37 @@ class StateStore {
   private circles: SavingsCircle[] = [];
   private auditLogs: AuditLog[] = [];
   private escrowBalance: number = 4850000;
-  private currentUserId: string = 'user-member-1';
+  private currentUserId: string | null = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID) || null;
 
   constructor() {
     this.loadFromStorage();
+    this.initSupabaseAuthListener();
     this.syncWithSupabase();
+  }
+
+  private async initSupabaseAuthListener() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        this.currentUserId = session.user.id;
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, session.user.id);
+        this.notify();
+      }
+
+      supabase.auth.onAuthStateChange((event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          this.currentUserId = session.user.id;
+          localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, session.user.id);
+          this.saveToStorage();
+        } else if (event === 'SIGNED_OUT') {
+          this.currentUserId = null;
+          localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+          this.saveToStorage();
+        }
+      });
+    } catch (e) {
+      console.warn('Supabase auth listener initialization warning:', e);
+    }
   }
 
   private normalizePipelineStage(stage?: string): string {
@@ -240,8 +266,7 @@ class StateStore {
       this.auditLogs = storedLogs && !isLegacy ? JSON.parse(storedLogs) : INITIAL_AUDIT_LOGS;
 
       const storedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
-      const validUserIds = this.profiles.map((p) => p.id);
-      this.currentUserId = storedUserId && validUserIds.includes(storedUserId) ? storedUserId : 'user-member-1';
+      this.currentUserId = storedUserId || null;
     } catch (e) {
       console.error('Failed to parse state from localStorage, using initial mock data', e);
       this.profiles = INITIAL_PROFILES;
@@ -251,7 +276,7 @@ class StateStore {
       this.tickets = INITIAL_TICKETS;
       this.circles = INITIAL_SAVINGS_CIRCLES;
       this.auditLogs = INITIAL_AUDIT_LOGS;
-      this.currentUserId = 'user-member-1';
+      this.currentUserId = null;
     }
   }
 
@@ -264,7 +289,11 @@ class StateStore {
       localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(this.tickets));
       localStorage.setItem(STORAGE_KEYS.CIRCLES, JSON.stringify(this.circles));
       localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(this.auditLogs));
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
+      if (this.currentUserId) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+      }
       localStorage.setItem(STORAGE_KEYS.ESCROW_BALANCE, this.escrowBalance.toString());
     } catch (e) {
       console.error('Failed to save state to localStorage', e);
@@ -303,11 +332,104 @@ class StateStore {
     });
   }
 
-  // --- Getters ---
-  public getCurrentUser(): UserProfile {
-    const user = this.profiles.find((p) => p.id === this.currentUserId);
-    if (user) return user;
-    return this.profiles[0] || INITIAL_PROFILES[0];
+  public getCurrentUser(): UserProfile | null {
+    if (this.currentUserId) {
+      // 1. Match by exact user ID
+      let user = this.profiles.find((p) => p.id === this.currentUserId);
+      if (user) return user;
+
+      // 2. Match by email if currentUserId is an email or matches an existing profile's email
+      user = this.profiles.find((p) => p.email && p.email.toLowerCase() === this.currentUserId?.toLowerCase());
+      if (user) {
+        user.id = this.currentUserId;
+        return user;
+      }
+
+      // 3. Dynamic User Profile Provisioning (for newly registered or authenticated Supabase users)
+      const isEmail = this.currentUserId.includes('@');
+      const email = isEmail ? this.currentUserId : `user_${this.currentUserId.slice(-6)}@samruddisave.com`;
+      const rawName = isEmail ? this.currentUserId.split('@')[0].replace(/[._]/g, ' ') : 'Member';
+      const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
+      const provisionedUser: UserProfile = {
+        id: this.currentUserId,
+        full_name: formattedName,
+        email: email,
+        phone: '+91 98765 43210',
+        pan_number: 'ABCDE1234F',
+        aadhaar_number: '9876 5432 1098',
+        role: 'member',
+        kyc_status: 'approved',
+        pipeline_stage: 'ACTIVE_SAVING',
+        ocr_confidence: 99.8,
+        avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+        created_at: new Date().toISOString(),
+      };
+
+      this.profiles.push(provisionedUser);
+      this.saveToStorage();
+      return provisionedUser;
+    }
+
+    return null;
+  }
+
+  public setCurrentUserId(userId: string | null) {
+    this.currentUserId = userId;
+    if (userId) {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, userId);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+    }
+    this.saveToStorage();
+  }
+
+  public async signOut(): Promise<void> {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn('Supabase auth signout fallback:', e);
+    }
+    this.currentUserId = null;
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+    this.saveToStorage();
+  }
+
+  public async createOnboardingProfile(data: { fullName: string; phone: string; panNumber: string }): Promise<{ success: boolean; profile?: UserProfile }> {
+    const user = this.getCurrentUser();
+    if (!user) return { success: false };
+
+    user.full_name = data.fullName;
+    user.phone = data.phone;
+    user.pan_number = data.panNumber;
+    user.kyc_status = 'pending';
+    (user as any).pipeline_stage = 'pending';
+
+    try {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        full_name: data.fullName,
+        email: user.email,
+        phone: data.phone,
+        pan_number: data.panNumber,
+        kyc_status: 'pending',
+        pipeline_stage: 'pending'
+      });
+
+      await supabase.from('kyc_records').insert({
+        user_id: user.id,
+        full_name: data.fullName,
+        phone_number: data.phone,
+        pan_number: data.panNumber,
+        status: 'pending',
+        terms_accepted: true
+      });
+    } catch (e) {
+      console.warn('Supabase onboarding insert warning:', e);
+    }
+
+    this.saveToStorage();
+    return { success: true, profile: user };
   }
 
   public getProfiles(): UserProfile[] {
@@ -318,12 +440,70 @@ class StateStore {
     return [...this.memberships];
   }
 
-  public getUserMembership(userId: string): Membership | undefined {
-    return this.memberships.find((m) => m.user_id === userId);
+  public getUserMembership(userId: string): Membership {
+    let m = this.memberships.find((m) => m.user_id === userId);
+    if (!m) {
+      const user = this.profiles.find((p) => p.id === userId);
+      const isUnsubmitted = user?.kyc_status === 'unsubmitted' || user?.kyc_status === 'pending';
+      m = {
+        id: `m-${userId.slice(-6)}-${Date.now().toString().slice(-4)}`,
+        user_id: userId,
+        plan_id: 'plan-1000',
+        monthly_amount: 1000,
+        current_streak: isUnsubmitted ? 0 : 2,
+        bonus_amount: 600,
+        status: isUnsubmitted ? 'pending_first_payment' : 'active',
+        due_day: 5,
+        grace_days_remaining: 5,
+        next_due_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+      };
+      this.memberships.push(m);
+      this.saveToStorage();
+    }
+    return m;
   }
 
   public getUserContributions(userId: string): ContributionRecord[] {
-    return this.contributions.filter((c) => c.user_id === userId);
+    let userContribs = this.contributions.filter((c) => c.user_id === userId);
+    if (userContribs.length === 0) {
+      const membership = this.getUserMembership(userId);
+      const user = this.profiles.find((p) => p.id === userId);
+      const isApproved = user?.kyc_status === 'approved';
+
+      if (isApproved && membership) {
+        const c1: ContributionRecord = {
+          id: `c-${userId.slice(-4)}-1-${Date.now().toString().slice(-4)}`,
+          user_id: userId,
+          membership_id: membership.id,
+          amount: membership.monthly_amount,
+          cycle_number: 1,
+          due_date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          paid_date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'PAID',
+          transaction_ref: `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`,
+          payment_method: 'razorpay',
+          escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+        };
+        const c2: ContributionRecord = {
+          id: `c-${userId.slice(-4)}-2-${Date.now().toString().slice(-4)}`,
+          user_id: userId,
+          membership_id: membership.id,
+          amount: membership.monthly_amount,
+          cycle_number: 2,
+          due_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          paid_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'PAID',
+          transaction_ref: `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`,
+          payment_method: 'razorpay',
+          escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+        };
+        this.contributions.push(c1, c2);
+        this.saveToStorage();
+        userContribs = [c1, c2];
+      }
+    }
+    return userContribs;
   }
 
   public getContributions(): ContributionRecord[] {

@@ -46,7 +46,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <button
-                  onClick={() => onNavigate('/kyc')}
+                  onClick={() => onNavigate('/login')}
                   className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-xl shadow-[#4F5DFF]/35 flex items-center gap-2 text-sm scale-100 hover:scale-[1.02]"
                 >
                   Start Saving Now <ArrowRight className="w-4 h-4" />
@@ -134,7 +134,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
       {/* Interactive Maturity Calculator Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <MaturityCalculator onStartSaving={() => onNavigate('/kyc')} />
+        <MaturityCalculator onStartSaving={() => onNavigate('/login')} />
       </section>
 
       {/* 12-Month Roadmap Visualizer */}

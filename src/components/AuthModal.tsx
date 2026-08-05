@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { stateStore } from '../store/StateStore';
+import { supabase } from '../lib/supabase';
 import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
 
 interface AuthModalProps {
@@ -37,7 +38,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -46,7 +47,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    // Authenticate with StateStore
+    try {
+      // 1. Supabase Auth Login Attempt
+      if (loginIdentifier.includes('@')) {
+        const { data: authData } = await supabase.auth.signInWithPassword({
+          email: loginIdentifier.trim(),
+          password: loginPassword.trim(),
+        });
+        if (authData?.user) {
+          stateStore.setCurrentUserId(authData.user.id);
+          setSuccessMsg(`Welcome back! Redirecting to dashboard...`);
+          setTimeout(() => {
+            if (onSuccess) onSuccess();
+            onClose();
+          }, 600);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase Auth login fallback:', err);
+    }
+
+    // 2. Authenticate with StateStore local profiles
     const profiles = stateStore.getProfiles();
     const q = loginIdentifier.toLowerCase().trim();
     const user = profiles.find(
@@ -62,12 +84,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    stateStore.setCurrentUser(user.id);
+    stateStore.setCurrentUserId(user.id);
     setSuccessMsg(`Welcome back, ${user.full_name}! Redirecting to dashboard...`);
     setTimeout(() => {
       if (onSuccess) onSuccess();
       onClose();
-    }, 800);
+    }, 600);
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {

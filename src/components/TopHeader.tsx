@@ -36,7 +36,7 @@ interface TopHeaderProps {
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate }) => {
-  const [user, setUser] = useState<UserProfile>(stateStore.getCurrentUser());
+  const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -59,8 +59,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const isKYCPending = user.role === 'member' && user.kyc_status !== 'approved';
-  const isAdminPage = user.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login' || user.role === 'employee' || user.role === 'finance_admin';
+  const isKYCPending = user?.role === 'member' && user?.kyc_status !== 'approved';
+  const isAdminPage = user?.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login' || user?.role === 'employee' || user?.role === 'finance_admin';
 
   const memberNavItems = [
     { label: 'Overview', path: '/', icon: Home },
@@ -87,7 +87,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
   const currentNavItems = isAdminPage ? adminNavItems : memberNavItems;
 
-  // Strict 1:1 single active item check: Only the exact item explicitly clicked is active
   const checkIsActive = (item: { path: string }) => {
     if (isAdminPage) {
       if (item.path.includes('#')) {
@@ -165,6 +164,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     }
   };
 
+  const handleSignOut = async () => {
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+    await stateStore.signOut();
+    onNavigate('/login');
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E8EAF8] shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
@@ -181,7 +187,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
           {/* Website Logo (Positioned on the LEFT side) */}
           <div
-            onClick={() => handleNavClick('/', 'Overview')}
+            onClick={() => handleNavClick(isAdminPage ? '/admin' : '/', 'Overview')}
             className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95"
             title="SamruddiSave - RBI Certified Escrow Platform"
           >
@@ -267,173 +273,149 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </button>
         </div>
 
-        {/* Right Section: Role Switcher + Notifications + User Profile */}
+        {/* Right Section: Notifications + User Profile (Authenticated) OR Sign In Buttons (Unauthenticated) */}
         <div className="flex items-center gap-2 shrink-0">
-          
-          {/* Quick Role Switcher Button */}
-          {user.role === 'member' ? (
-            <button
-              onClick={() => handleSwitchRole('admin')}
-              className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-[#4F5DFF] to-[#8A7BFF] hover:opacity-95 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer shrink-0 min-h-[44px]"
-              title="Switch to Admin Console"
-            >
-              <UserCog className="w-4 h-4" />
-              <span>Admin Mode</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => handleSwitchRole('member')}
-              className="hidden sm:flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0 min-h-[44px]"
-              title="Switch to Member App"
-            >
-              <User className="w-4 h-4 text-emerald-600" />
-              <span>Member Mode</span>
-            </button>
-          )}
+          {user ? (
+            <>
+              {/* Notifications Dropdown */}
+              <NotificationsDropdown userId={user.id} />
 
-          {/* Notifications Dropdown */}
-          <NotificationsDropdown userId={user.id} />
-
-          {/* User Account Dropdown */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 bg-white hover:bg-[#F7F8FC] border border-[#E8EAF8] p-1.5 sm:px-2.5 sm:py-1.5 rounded-full sm:rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px] min-w-[44px]"
-            >
-              {user.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt={user.full_name}
-                  className="w-8 h-8 rounded-full object-cover border border-[#4F5DFF]/30 shadow-xs"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
-                  {user.full_name.charAt(0)}
-                </div>
-              )}
-              <div className="hidden sm:block text-left max-w-[100px] md:max-w-[120px] truncate">
-                <p className="text-xs font-semibold text-[#1F1F24] leading-tight truncate">{user.full_name}</p>
-                <p className="text-[10px] text-[#6C7285] leading-none truncate">{user.email}</p>
-              </div>
-              <ChevronDown className={`w-3.5 h-3.5 text-[#6C7285] hidden sm:block shrink-0 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-[#E8EAF8] py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-2.5 border-b border-[#E8EAF8]">
-                  <p className="font-bold text-[#1F1F24] text-sm">{user.full_name}</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    {getRoleBadge(user.role)}
-                    {user.role === 'member' && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        user.kyc_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        KYC {user.kyc_status.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="py-1 space-y-0.5">
-                  {user.role === 'member' ? (
-                    <button
-                      onClick={() => handleSwitchRole('admin')}
-                      className="w-full text-left px-4 py-3 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-[#4F5DFF] font-bold cursor-pointer min-h-[44px]"
-                    >
-                      <UserCog className="w-4 h-4 text-[#4F5DFF]" /> Switch to Admin Portal
-                    </button>
+              {/* User Account Dropdown */}
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 bg-white hover:bg-[#F7F8FC] border border-[#E8EAF8] p-1.5 sm:px-2.5 sm:py-1.5 rounded-full sm:rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px] min-w-[44px]"
+                >
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.full_name}
+                      className="w-8 h-8 rounded-full object-cover border border-[#4F5DFF]/30 shadow-xs"
+                    />
                   ) : (
-                    <button
-                      onClick={() => handleSwitchRole('member')}
-                      className="w-full text-left px-4 py-3 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-emerald-700 font-bold cursor-pointer min-h-[44px]"
-                    >
-                      <User className="w-4 h-4 text-emerald-600" /> Switch to Member Portal
-                    </button>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                      {user.full_name?.charAt(0) || 'M'}
+                    </div>
                   )}
+                  <div className="hidden sm:block text-left max-w-[100px] md:max-w-[120px] truncate">
+                    <p className="text-xs font-semibold text-[#1F1F24] leading-tight truncate">{user.full_name}</p>
+                    <p className="text-[10px] text-[#6C7285] leading-none truncate">{user.email}</p>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#6C7285] hidden sm:block shrink-0 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-                  <div className="border-t border-[#E8EAF8] my-1" />
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-[#E8EAF8] py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-4 py-2.5 border-b border-[#E8EAF8]">
+                      <p className="font-bold text-[#1F1F24] text-sm">{user.full_name}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {getRoleBadge(user.role)}
+                        {user.role === 'member' && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            user.kyc_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            KYC {user.kyc_status.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                  {user.role === 'member' && (
-                    <>
+                    <div className="py-1 space-y-0.5">
+                      {user.role === 'member' ? (
+                        <button
+                          onClick={() => handleSwitchRole('admin')}
+                          className="w-full text-left px-4 py-3 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-[#4F5DFF] font-bold cursor-pointer min-h-[44px]"
+                        >
+                          <UserCog className="w-4 h-4 text-[#4F5DFF]" /> Switch to Admin Portal
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSwitchRole('member')}
+                          className="w-full text-left px-4 py-3 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-emerald-700 font-bold cursor-pointer min-h-[44px]"
+                        >
+                          <User className="w-4 h-4 text-emerald-600" /> Switch to Member Portal
+                        </button>
+                      )}
+
+                      <div className="border-t border-[#E8EAF8] my-1" />
+
+                      {user.role === 'member' && (
+                        <>
+                          <button
+                            onClick={() => handleNavClick('/dashboard', 'Wallet Dashboard')}
+                            className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
+                          >
+                            <User className="w-4 h-4 text-[#4F5DFF]" /> My Wallet Dashboard
+                          </button>
+                          <button
+                            onClick={() => handleNavClick('/kyc', 'KYC Verification')}
+                            className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
+                          >
+                            <FileCheck2 className="w-4 h-4 text-[#4F5DFF]" /> KYC Verification Status
+                          </button>
+                        </>
+                      )}
+
+                      {(user.role === 'admin' || user.role === 'employee') && (
+                        <button
+                          onClick={() => handleNavClick('/employee', 'MRM Approval Queue')}
+                          className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
+                        >
+                          <UserCheck className="w-4 h-4 text-amber-600" /> MRM Approval Queue
+                        </button>
+                      )}
+
+                      {(user.role === 'admin' || user.role === 'finance_admin') && (
+                        <button
+                          onClick={() => handleNavClick('/finance', 'Escrow Queue')}
+                          className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
+                        >
+                          <Building2 className="w-4 h-4 text-purple-600" /> Escrow Disbursal Queue
+                        </button>
+                      )}
+
                       <button
-                        onClick={() => handleNavClick('/dashboard', 'Wallet Dashboard')}
+                        onClick={() => handleNavClick('/support', 'Help & Support')}
                         className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
                       >
-                        <User className="w-4 h-4 text-[#4F5DFF]" /> My Wallet Dashboard
+                        <HelpCircle className="w-4 h-4 text-emerald-600" /> Help & Support Desk
                       </button>
+                    </div>
+
+                    <div className="border-t border-[#E8EAF8] pt-1 px-2">
                       <button
-                        onClick={() => handleNavClick('/kyc', 'KYC Verification')}
-                        className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
+                        onClick={handleSignOut}
+                        className="w-full text-left px-3 py-2.5 text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 font-bold cursor-pointer min-h-[44px]"
                       >
-                        <FileCheck2 className="w-4 h-4 text-[#4F5DFF]" /> KYC Verification Status
+                        <LogOut className="w-4 h-4" /> Sign Out
                       </button>
-                    </>
-                  )}
-
-                  {(user.role === 'admin' || user.role === 'employee') && (
-                    <button
-                      onClick={() => handleNavClick('/employee', 'MRM Approval Queue')}
-                      className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
-                    >
-                      <UserCheck className="w-4 h-4 text-amber-600" /> MRM Approval Queue
-                    </button>
-                  )}
-
-                  {(user.role === 'admin' || user.role === 'finance_admin') && (
-                    <button
-                      onClick={() => handleNavClick('/finance', 'Escrow Queue')}
-                      className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
-                    >
-                      <Building2 className="w-4 h-4 text-purple-600" /> Escrow Disbursal Queue
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => handleNavClick('/support', 'Help & Support')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
-                  >
-                    <HelpCircle className="w-4 h-4 text-emerald-600" /> Help & Support Desk
-                  </button>
-                </div>
-
-                <div className="border-t border-[#E8EAF8] pt-1 px-2">
-                  <button
-                    onClick={() => handleNavClick('/', 'Sign Out')}
-                    className="w-full text-left px-3 py-2.5 text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 font-bold cursor-pointer min-h-[44px]"
-                  >
-                    <LogOut className="w-4 h-4" /> Sign Out
-                  </button>
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onNavigate('/login')}
+                className="bg-white hover:bg-[#F7F8FC] text-[#1F1F24] border border-[#E8EAF8] px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => onNavigate('/login')}
+                className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer min-h-[44px]"
+              >
+                Start Saving
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Mobile / Tablet Full Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white/98 backdrop-blur-xl border-b border-[#E8EAF8] px-4 pt-3 pb-6 space-y-4 animate-in fade-in slide-in-from-top-3 duration-200 shadow-2xl">
-          
-          {/* Quick Role Switcher on Mobile */}
-          <div className="flex items-center justify-between bg-[#F7F8FC] p-2.5 rounded-2xl border border-[#E8EAF8]">
-            <span className="text-xs font-bold text-[#6C7285] px-2">Active View:</span>
-            {user.role === 'member' ? (
-              <button
-                onClick={() => handleSwitchRole('admin')}
-                className="bg-[#4F5DFF] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-95 transition-all min-h-[44px]"
-              >
-                <UserCog className="w-4 h-4" /> Switch to Admin Portal
-              </button>
-            ) : (
-              <button
-                onClick={() => handleSwitchRole('member')}
-                className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-95 transition-all min-h-[44px]"
-              >
-                <User className="w-4 h-4" /> Switch to Member Portal
-              </button>
-            )}
-          </div>
 
           {/* Card matching reference screenshot */}
           <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
@@ -497,24 +479,38 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </div>
 
           {/* User Profile Summary Card in Drawer */}
-          <div className="bg-[#F7F8FC] p-3 rounded-2xl border border-[#E8EAF8] flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0">
-                {user.full_name.charAt(0)}
+          {user ? (
+            <div className="bg-[#F7F8FC] p-3 rounded-2xl border border-[#E8EAF8] flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#6A6DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                  {user.full_name?.charAt(0) || 'M'}
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-bold text-[#1F1F24] truncate">{user.full_name}</p>
+                  <p className="text-[10px] text-[#6C7285] truncate">{user.email}</p>
+                </div>
               </div>
-              <div className="truncate">
-                <p className="text-xs font-bold text-[#1F1F24] truncate">{user.full_name}</p>
-                <p className="text-[10px] text-[#6C7285] truncate">{user.email}</p>
-              </div>
+              <button
+                onClick={handleSignOut}
+                className="text-rose-600 hover:bg-rose-50 p-2.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 min-h-[44px] min-w-[44px] justify-center"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={() => handleNavClick('/', 'Sign Out')}
-              className="text-rose-600 hover:bg-rose-50 p-2.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 min-h-[44px] min-w-[44px] justify-center"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          ) : (
+            <div className="bg-[#F7F8FC] p-3 rounded-2xl border border-[#E8EAF8] flex items-center justify-between gap-2">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onNavigate('/login');
+                }}
+                className="w-full bg-[#4F5DFF] text-white py-2.5 rounded-xl text-xs font-bold text-center cursor-pointer"
+              >
+                Sign In / Register
+              </button>
+            </div>
+          )}
 
         </div>
       )}
