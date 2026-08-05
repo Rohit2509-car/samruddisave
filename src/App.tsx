@@ -97,8 +97,11 @@ export default function App() {
 
       // Single Admin Operations Dashboard Route
       case '/admin':
+      case '/employee':
+      case '/finance':
+      case '/support':
         return (
-          <RoleGuard currentPath={currentPath} allowedRoles={['admin']} onNavigate={handleNavigate}>
+          <RoleGuard currentPath={currentPath} allowedRoles={['admin', 'employee', 'finance_admin']} onNavigate={handleNavigate}>
             <AdminDashboard onNavigate={handleNavigate} />
           </RoleGuard>
         );
