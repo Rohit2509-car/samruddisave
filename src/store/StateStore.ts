@@ -85,7 +85,12 @@ class StateStore {
       const { data: dbProfiles, error: profileErr } = await supabase.from('profiles').select('*');
       if (!profileErr && dbProfiles && dbProfiles.length > 0) {
         dbProfiles.forEach((dbP: any) => {
-          const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase() || p.id === dbP.id);
+          if (dbP.email?.toLowerCase() !== 'karthickeyan@gmail.com' && (dbP.id === '00000000-0000-0000-0000-000000000001' || dbP.id === 'user-member-1')) {
+            dbP.id = this.generateUUID();
+            supabase.from('profiles').update({ id: dbP.id }).eq('email', dbP.email);
+          }
+
+          const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase());
           const mapped: UserProfile = {
             id: dbP.id,
             full_name: dbP.full_name || 'Member',
@@ -206,13 +211,15 @@ class StateStore {
         });
       }
 
-      // Ensure karthickeyan M profile is a member/customer profile
+      // Ensure karthickeyan M profile is matched strictly by email and not overwriting new members
       loadedProfiles.forEach((p) => {
-        if (p.id === 'user-member-1' || p.email === 'karthic@samruddisave.com' || p.email === 'karthickeyan@gmail.com' || p.full_name === 'karthickeyan M') {
-          p.id = 'user-member-1';
+        if (p.email?.toLowerCase() === 'karthic@samruddisave.com' || p.email?.toLowerCase() === 'karthickeyan@gmail.com') {
+          p.id = '00000000-0000-0000-0000-000000000001';
           p.role = 'member';
           p.full_name = 'karthickeyan M';
           p.email = 'karthickeyan@gmail.com';
+        } else if (p.id === 'user-member-1' || p.id === '00000000-0000-0000-0000-000000000001') {
+          p.id = this.generateUUID();
         }
       });
 
