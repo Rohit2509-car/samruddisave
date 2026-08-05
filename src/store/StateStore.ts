@@ -50,11 +50,57 @@ class StateStore {
   private circles: SavingsCircle[] = [];
   private auditLogs: AuditLog[] = [];
   private escrowBalance: number = 4850000;
-  private currentUserId: string = 'user-member-1';
+  private currentUserId: string = '00000000-0000-0000-0000-000000000001';
 
   constructor() {
     this.loadFromStorage();
     this.syncWithSupabase();
+  }
+
+  public sanitizeProfiles() {
+    let modified = false;
+    const seenIds = new Set<string>();
+
+    this.profiles.forEach((p) => {
+      const email = p.email?.toLowerCase() || '';
+
+      // Rule 1: karthickeyan@gmail.com MUST have ID '00000000-0000-0000-0000-000000000001'
+      if (email === 'karthickeyan@gmail.com' || email === 'karthic@samruddisave.com') {
+        if (p.id !== '00000000-0000-0000-0000-000000000001') {
+          const oldId = p.id;
+          p.id = '00000000-0000-0000-0000-000000000001';
+          modified = true;
+          if (this.currentUserId === oldId) {
+            this.currentUserId = p.id;
+          }
+        }
+        p.full_name = 'karthickeyan M';
+        p.email = 'karthickeyan@gmail.com';
+        p.role = 'member';
+      } else {
+        // Rule 2: ALL OTHER CUSTOMERS (nehe, deva, etc.) MUST have unique v4 UUIDs
+        if (p.id === '00000000-0000-0000-0000-000000000001' || p.id === 'user-member-1' || !this.isValidUUID(p.id) || seenIds.has(p.id)) {
+          const oldId = p.id;
+          p.id = this.generateUUID();
+          modified = true;
+
+          // If current logged-in user had the old duplicate ID, update currentUserId!
+          if (this.currentUserId === oldId) {
+            this.currentUserId = p.id;
+          }
+
+          // Asynchronously update Supabase database
+          if (p.email) {
+            supabase.from('profiles').update({ id: p.id }).eq('email', p.email);
+          }
+        }
+      }
+      seenIds.add(p.id);
+    });
+
+    if (modified) {
+      this.saveToStorage();
+    }
   }
 
   private normalizePipelineStage(stage?: string): string {
@@ -112,6 +158,7 @@ class StateStore {
           }
         });
         this.profiles = this.deduplicateProfiles(this.profiles);
+        this.sanitizeProfiles();
         this.saveToStorage();
       }
     } catch (e) {
@@ -269,7 +316,8 @@ class StateStore {
 
       const storedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
       const validUserIds = this.profiles.map((p) => p.id);
-      this.currentUserId = storedUserId && validUserIds.includes(storedUserId) ? storedUserId : 'user-member-1';
+      this.currentUserId = storedUserId && validUserIds.includes(storedUserId) ? storedUserId : '00000000-0000-0000-0000-000000000001';
+      this.sanitizeProfiles();
     } catch (e) {
       console.error('Failed to parse state from localStorage, using initial mock data', e);
       this.profiles = INITIAL_PROFILES;
@@ -279,7 +327,8 @@ class StateStore {
       this.tickets = INITIAL_TICKETS;
       this.circles = INITIAL_SAVINGS_CIRCLES;
       this.auditLogs = INITIAL_AUDIT_LOGS;
-      this.currentUserId = 'user-member-1';
+      this.currentUserId = '00000000-0000-0000-0000-000000000001';
+      this.sanitizeProfiles();
     }
   }
 
