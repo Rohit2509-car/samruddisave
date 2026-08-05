@@ -16,6 +16,20 @@ export type PipelineStage =
   | 'completed'
   | 'payout';
 
+export interface UserPasswordMetadata {
+  id?: string;
+  user_id: string;
+  email: string;
+  password_hash?: string;
+  password_last_updated?: string;
+  failed_login_attempts?: number;
+  is_locked?: boolean;
+  lockout_until?: string | null;
+  requires_password_change?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface UserProfile {
   id: string;
   full_name: string;

@@ -24,6 +24,9 @@ import {
   GIFT_HAMPERS
 } from '../data/mockData';
 
+import { supabase } from '../lib/supabase';
+import { PasswordMetadataService } from '../services/PasswordMetadataService';
+
 const STORAGE_KEYS = {
   CURRENT_USER_ID: 'samruddisave_current_user_id',
   PROFILES: 'samruddisave_profiles',
@@ -35,8 +38,6 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'samruddisave_audit_logs',
   ESCROW_BALANCE: 'samruddisave_escrow_balance',
 };
-
-import { supabase } from '../lib/supabase';
 
 type Listener = () => void;
 
@@ -125,8 +126,11 @@ class StateStore {
         ocr_confidence: profile.ocr_confidence,
         avatar_url: profile.avatar_url,
       });
+
+      // Record password metadata relationship in user_password_metadata table
+      await PasswordMetadataService.recordPasswordMetadata(profile.id, profile.email);
     } catch (e) {
-      console.warn('Supabase profile upsert sync error:', e);
+      console.warn('Supabase profile & password metadata upsert sync error:', e);
     }
 
     return profile;
