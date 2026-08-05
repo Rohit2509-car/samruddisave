@@ -20,6 +20,13 @@ export interface UserProfile {
   kyc_status: KYCStatus;
   pipeline_stage: PipelineStage;
   ocr_confidence: number;
+  login_id?: string;
+  address?: string;
+  emergency_contact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
   ocr_details?: {
     pan_name_match: boolean;
     photo_match_pct: number;
@@ -34,10 +41,14 @@ export interface UserProfile {
     autopay_method: 'gpay' | 'phonepe' | 'paytm' | 'netbanking';
     mandate_id: string;
     account_holder?: string;
+    upi_id?: string;
   };
   allocated_hamper_id?: string;
   allocated_by_admin?: string;
   avatar_url?: string;
+  wallet_balance?: number;
+  referral_code?: string;
+  join_date?: string;
   submitted_at?: string;
   auto_approval_due_at?: string;
   created_at: string;
@@ -80,9 +91,14 @@ export interface ContributionRecord {
   status: 'PAID' | 'MISSING' | 'GRACE_PERIOD' | 'DEFAULTED';
   transaction_ref: string;
   payment_method?: 'razorpay' | 'offline_cash' | 'offline_upi' | 'bank_transfer';
+  payment_type?: 'cash' | 'upi' | 'razorpay' | 'online' | 'bank_transfer';
   reconciled_by_admin?: string;
   reconciled_by_admin_name?: string;
+  remarks?: string;
   admin_notes?: string;
+  reference_number?: string;
+  receipt_number?: string;
+  remaining_balance_after?: number;
   is_offline?: boolean;
   escrow_batch_id?: string;
   created_at?: string;
@@ -103,6 +119,32 @@ export interface RazorpayOrder {
     [key: string]: any;
   };
   created_at: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  user_id: string;
+  type: 'due_date' | 'payment_success' | 'announcement' | 'reward' | 'admin_message';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface MemberLedgerEntry {
+  id: string;
+  membership_id: string;
+  user_id: string;
+  date: string;
+  description: string;
+  opening_balance: number;
+  installment_amount: number;
+  credit: number;
+  debit: number;
+  remaining_balance: number;
+  closing_balance: number;
+  payment_method?: string;
+  receipt_ref?: string;
 }
 
 export interface HamperItem {
@@ -194,5 +236,3 @@ export interface AuditLog {
   details?: Record<string, any> | string;
   ip_address?: string;
 }
-
-
