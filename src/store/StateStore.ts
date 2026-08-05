@@ -410,7 +410,7 @@ class StateStore {
     });
   }
 
-  public getCurrentUser(): UserProfile | null {
+  public getCurrentUser(): UserProfile {
     if (this.currentUserId) {
       // 1. Match by exact user ID
       let user = this.profiles.find((p) => p.id === this.currentUserId);
@@ -449,7 +449,7 @@ class StateStore {
       return provisionedUser;
     }
 
-    return null;
+    return this.profiles[0] || INITIAL_PROFILES[0];
   }
 
   public setCurrentUserId(userId: string | null) {

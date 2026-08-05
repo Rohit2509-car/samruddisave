@@ -43,12 +43,12 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
           </p>
         </div>
 
-        {user.allocated_hamper_id ? (
+        {user?.allocated_hamper_id ? (
           <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-xs text-emerald-950 flex items-center gap-3">
             <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
             <div>
               <p className="font-bold">✓ Included Gift / Assigned to Your Maturity Payout</p>
-              <p className="text-emerald-800 text-[11px]">Allocated by MRM Officer {user.allocated_by_admin || 'Staff'}</p>
+              <p className="text-emerald-800 text-[11px]">Allocated by MRM Officer {user?.allocated_by_admin || 'Staff'}</p>
             </div>
           </div>
         ) : (
@@ -61,7 +61,7 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
       {/* Hampers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {GIFT_HAMPERS.map((hamper) => {
-          const isAssigned = user.allocated_hamper_id === hamper.id;
+          const isAssigned = user?.allocated_hamper_id === hamper.id;
 
           return (
             <div
