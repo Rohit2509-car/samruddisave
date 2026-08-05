@@ -584,7 +584,7 @@ class StateStore {
         user_id: userId,
         plan_id: 'plan-1000',
         monthly_amount: 1000,
-        current_streak: isUnsubmitted ? 0 : 2,
+        current_streak: 0,
         bonus_amount: 600,
         status: isUnsubmitted ? 'pending_first_payment' : 'active',
         due_day: 5,
@@ -599,45 +599,7 @@ class StateStore {
   }
 
   public getUserContributions(userId: string): ContributionRecord[] {
-    let userContribs = this.contributions.filter((c) => c.user_id === userId);
-    if (userContribs.length === 0) {
-      const membership = this.getUserMembership(userId);
-      const user = this.profiles.find((p) => p.id === userId);
-      const isApproved = user?.kyc_status === 'approved';
-
-      if (isApproved && membership) {
-        const c1: ContributionRecord = {
-          id: `c-${userId.slice(-4)}-1-${Date.now().toString().slice(-4)}`,
-          user_id: userId,
-          membership_id: membership.id,
-          amount: membership.monthly_amount,
-          cycle_number: 1,
-          due_date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          paid_date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'PAID',
-          transaction_ref: `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`,
-          payment_method: 'razorpay',
-          escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
-        };
-        const c2: ContributionRecord = {
-          id: `c-${userId.slice(-4)}-2-${Date.now().toString().slice(-4)}`,
-          user_id: userId,
-          membership_id: membership.id,
-          amount: membership.monthly_amount,
-          cycle_number: 2,
-          due_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          paid_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'PAID',
-          transaction_ref: `PAY_SS_${Math.floor(10000000 + Math.random() * 90000000)}`,
-          payment_method: 'razorpay',
-          escrow_batch_id: `ESC_BATCH_${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
-        };
-        this.contributions.push(c1, c2);
-        this.saveToStorage();
-        userContribs = [c1, c2];
-      }
-    }
-    return userContribs;
+    return this.contributions.filter((c) => c.user_id === userId);
   }
 
   public getContributions(): ContributionRecord[] {
