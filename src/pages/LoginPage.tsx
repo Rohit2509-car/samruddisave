@@ -48,20 +48,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
 
       let userId: string | null = authData?.user?.id || null;
 
-      // Local StateStore Fallback for Demo Profiles
-      if (authErr || !userId) {
+      if (!userId) {
+        // Reject invalid Supabase credentials immediately
+        if (authErr && (authErr.message.toLowerCase().includes('invalid login credentials') || authErr.message.toLowerCase().includes('invalid credentials'))) {
+          setErrorMsg('Invalid email or password. Please check your credentials and try again.');
+          setLoading(false);
+          return;
+        }
+
+        // For demo local profiles, verify valid demo password before granting access
         const q = emailOrPhone.toLowerCase().trim();
         const profiles = stateStore.getProfiles();
         const match = profiles.find(
           (p) => p.email.toLowerCase() === q || p.phone.includes(q) || p.id === q
         );
+
         if (match) {
-          userId = match.id;
+          const validDemoPasswords = ['password123', '123456', 'admin123', 'password', 'demo123'];
+          if (validDemoPasswords.includes(password.trim())) {
+            userId = match.id;
+          } else {
+            setErrorMsg('Invalid password entered for this user account. Please check your password and try again.');
+            setLoading(false);
+            return;
+          }
         }
       }
 
       if (!userId) {
-        setErrorMsg('Invalid email or password. Please try registering a new account.');
+        setErrorMsg('Invalid email or password. Please check your credentials or register a new account.');
         setLoading(false);
         return;
       }
