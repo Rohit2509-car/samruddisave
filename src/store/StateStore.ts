@@ -58,7 +58,7 @@ class StateStore {
   }
 
   private normalizePipelineStage(stage?: string): string {
-    if (!stage) return 'active';
+    if (!stage) return 'signup';
     const s = String(stage).toLowerCase();
     if (s.includes('signup')) return 'signup';
     if (s.includes('pending') || s.includes('due')) return 'pending';
@@ -67,7 +67,7 @@ class StateStore {
     if (s.includes('hamper')) return 'hamper';
     if (s.includes('payout')) return 'payout';
     if (s.includes('matured')) return 'matured';
-    return 'active';
+    return 'signup';
   }
 
   private deduplicateProfiles(list: UserProfile[]): UserProfile[] {
@@ -80,10 +80,8 @@ class StateStore {
     });
   }
 
-  private async syncWithSupabase() {
+  public async fetchLatestFromSupabase() {
     try {
-      await this.pushAllProfilesToSupabase();
-
       const { data: dbProfiles, error: profileErr } = await supabase.from('profiles').select('*');
       if (!profileErr && dbProfiles && dbProfiles.length > 0) {
         dbProfiles.forEach((dbP: any) => {
@@ -96,7 +94,7 @@ class StateStore {
             pan_number: dbP.pan_number || 'ABCDE1234F',
             aadhaar_number: dbP.aadhaar_number || '9876 5432 1098',
             role: dbP.role || 'member',
-            kyc_status: dbP.kyc_status || 'approved',
+            kyc_status: dbP.kyc_status || 'pending',
             pipeline_stage: this.normalizePipelineStage(dbP.pipeline_stage) as any,
             ocr_confidence: dbP.ocr_confidence || 99.8,
             avatar_url: dbP.avatar_url,
@@ -111,6 +109,15 @@ class StateStore {
         this.profiles = this.deduplicateProfiles(this.profiles);
         this.saveToStorage();
       }
+    } catch (e) {
+      console.warn('Supabase fetch fallback:', e);
+    }
+  }
+
+  private async syncWithSupabase() {
+    try {
+      await this.pushAllProfilesToSupabase();
+      await this.fetchLatestFromSupabase();
     } catch (e) {
       console.warn('Supabase initial fetch fallback:', e);
     }
@@ -871,7 +878,7 @@ class StateStore {
       aadhaar_number: profileData.aadhaar_number || '9876 5432 1098',
       role: 'member',
       kyc_status: 'pending',
-      pipeline_stage: 'ACTIVE_SAVING',
+      pipeline_stage: profileData.pipeline_stage || 'signup',
       ocr_confidence: profileData.ocr_confidence || 99.8,
       created_at: new Date().toISOString(),
     };

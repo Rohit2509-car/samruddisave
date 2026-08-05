@@ -20,7 +20,8 @@ import {
   ChevronRight,
   AlertTriangle,
   TrendingUp,
-  Zap
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import { GIFT_HAMPERS } from '../../data/mockData';
 import { AdminCashCollectionModal } from '../../components/AdminCashCollectionModal';
@@ -127,6 +128,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [offlineNotes, setOfflineNotes] = useState<string>('');
 
   useEffect(() => {
+    stateStore.fetchLatestFromSupabase();
     const unsubscribe = stateStore.subscribe(() => {
       setAdminUser(stateStore.getCurrentUser());
       setProfiles([...stateStore.getProfiles()]);
@@ -296,6 +298,16 @@ End of Official Member Passbook & Escrow Ledger
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={async () => {
+                await stateStore.fetchLatestFromSupabase();
+                setProfiles([...stateStore.getProfiles()]);
+              }}
+              className="min-h-[44px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs px-4 py-3 rounded-2xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              title="Fetch newest registered members from Supabase database"
+            >
+              <RefreshCw className="w-4 h-4" /> Sync Live Members
+            </button>
             <button
               onClick={() => setIsCashCollectionModalOpen(true)}
               className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] focus-visible:ring-offset-2 active:scale-95"

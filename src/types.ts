@@ -3,11 +3,18 @@ export type UserRole = 'member' | 'admin';
 export type KYCStatus = 'unsubmitted' | 'pending' | 'approved' | 'rejected' | 'resubmit_requested';
 
 export type PipelineStage = 
+  | 'signup'
+  | 'pending'
   | 'ACTIVE_SAVING'
   | 'PAYMENT_DUE'
   | 'GRACE_PERIOD'
   | 'MATURED'
-  | 'PAYOUT_COMPLETED';
+  | 'PAYOUT_COMPLETED'
+  | 'active'
+  | 'grace'
+  | 'hamper'
+  | 'completed'
+  | 'payout';
 
 export interface UserProfile {
   id: string;
