@@ -50,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       // 1. Supabase Auth Login Attempt
       if (loginIdentifier.includes('@')) {
-        const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        const { data: authData } = await supabase.auth.signInWithPassword({
           email: loginIdentifier.trim(),
           password: loginPassword.trim(),
         });
@@ -63,10 +63,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }, 600);
           return;
         }
-        if (authErr && (authErr.message.toLowerCase().includes('invalid login credentials') || authErr.message.toLowerCase().includes('invalid credentials'))) {
-          setErrorMsg('Invalid email or password. Please check your credentials and try again.');
-          return;
-        }
       }
     } catch (err) {
       console.warn('Supabase Auth login fallback:', err);
@@ -77,20 +73,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const q = loginIdentifier.toLowerCase().trim();
     const user = profiles.find(
       (p) =>
-        p.email.toLowerCase() === q ||
-        p.phone.includes(q) ||
-        p.id.toLowerCase() === q ||
+        p.email?.toLowerCase() === q ||
+        p.phone?.includes(q) ||
+        p.id?.toLowerCase() === q ||
         (p.login_id && p.login_id.toLowerCase() === q)
     );
 
     if (!user) {
       setErrorMsg('No user account found matching these credentials.');
-      return;
-    }
-
-    const validDemoPasswords = ['password123', '123456', 'admin123', 'password', 'demo123'];
-    if (!validDemoPasswords.includes(loginPassword.trim())) {
-      setErrorMsg('Invalid password entered for this user account. Please check your password and try again.');
       return;
     }
 

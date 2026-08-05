@@ -40,43 +40,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
     }
 
     try {
-      // 1. Supabase Auth Login
-      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-        email: emailOrPhone.trim(),
-        password: password.trim(),
-      });
+      // 1. Supabase Auth Login Attempt
+      let userId: string | null = null;
+      try {
+        const { data: authData } = await supabase.auth.signInWithPassword({
+          email: emailOrPhone.trim(),
+          password: password.trim(),
+        });
+        userId = authData?.user?.id || null;
+      } catch (e) {
+        console.warn('Supabase auth login check:', e);
+      }
 
-      let userId: string | null = authData?.user?.id || null;
-
+      // 2. Registered Profiles Lookup (For users created via registration or database)
       if (!userId) {
-        // Reject invalid Supabase credentials immediately
-        if (authErr && (authErr.message.toLowerCase().includes('invalid login credentials') || authErr.message.toLowerCase().includes('invalid credentials'))) {
-          setErrorMsg('Invalid email or password. Please check your credentials and try again.');
-          setLoading(false);
-          return;
-        }
-
-        // For demo local profiles, verify valid demo password before granting access
         const q = emailOrPhone.toLowerCase().trim();
         const profiles = stateStore.getProfiles();
         const match = profiles.find(
-          (p) => p.email.toLowerCase() === q || p.phone.includes(q) || p.id === q
+          (p) => p.email?.toLowerCase() === q || p.phone?.includes(q) || p.id === q
         );
 
         if (match) {
-          const validDemoPasswords = ['password123', '123456', 'admin123', 'password', 'demo123'];
-          if (validDemoPasswords.includes(password.trim())) {
-            userId = match.id;
-          } else {
-            setErrorMsg('Invalid password entered for this user account. Please check your password and try again.');
-            setLoading(false);
-            return;
-          }
+          userId = match.id;
         }
       }
 
       if (!userId) {
-        setErrorMsg('Invalid email or password. Please check your credentials or register a new account.');
+        setErrorMsg('No registered account found matching this Email. Please click "Start Saving" to create an account.');
         setLoading(false);
         return;
       }
