@@ -64,6 +64,13 @@ class StateStore {
       if (session?.user) {
         this.currentUserId = session.user.id;
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, session.user.id);
+        const metaName = session.user.user_metadata?.full_name || session.user.user_metadata?.fullName;
+        if (metaName) {
+          const user = this.profiles.find((p) => p.id === session.user.id || (p.email && p.email.toLowerCase() === session.user.email?.toLowerCase()));
+          if (user && (!user.full_name || user.full_name === 'Member')) {
+            user.full_name = metaName;
+          }
+        }
         this.notify();
       }
 
@@ -71,6 +78,13 @@ class StateStore {
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
           this.currentUserId = session.user.id;
           localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, session.user.id);
+          const metaName = session.user.user_metadata?.full_name || session.user.user_metadata?.fullName;
+          if (metaName) {
+            const user = this.profiles.find((p) => p.id === session.user.id || (p.email && p.email.toLowerCase() === session.user.email?.toLowerCase()));
+            if (user && (!user.full_name || user.full_name === 'Member')) {
+              user.full_name = metaName;
+            }
+          }
           this.saveToStorage();
         } else if (event === 'SIGNED_OUT') {
           this.currentUserId = null;
@@ -81,6 +95,41 @@ class StateStore {
     } catch (e) {
       console.warn('Supabase auth listener initialization warning:', e);
     }
+  }
+
+  public async registerOrUpdateProfile(profile: UserProfile): Promise<UserProfile> {
+    const existingIdx = this.profiles.findIndex(
+      (p) => p.id === profile.id || (p.email && p.email.toLowerCase() === profile.email.toLowerCase())
+    );
+
+    if (existingIdx >= 0) {
+      this.profiles[existingIdx] = { ...this.profiles[existingIdx], ...profile };
+    } else {
+      this.profiles.push(profile);
+    }
+
+    this.currentUserId = profile.id;
+    this.saveToStorage();
+
+    try {
+      await supabase.from('profiles').upsert({
+        id: profile.id,
+        full_name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone,
+        pan_number: profile.pan_number || '',
+        aadhaar_number: profile.aadhaar_number || '',
+        role: profile.role,
+        kyc_status: profile.kyc_status,
+        pipeline_stage: profile.pipeline_stage,
+        ocr_confidence: profile.ocr_confidence,
+        avatar_url: profile.avatar_url,
+      });
+    } catch (e) {
+      console.warn('Supabase profile upsert sync error:', e);
+    }
+
+    return profile;
   }
 
   public sanitizeProfiles() {

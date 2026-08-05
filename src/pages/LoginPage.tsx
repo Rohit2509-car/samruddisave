@@ -137,10 +137,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
         created_at: new Date().toISOString()
       };
 
-      const existingProfiles = stateStore.getProfiles();
-      existingProfiles.push(newProfile);
-      localStorage.setItem('samruddisave_profiles', JSON.stringify(existingProfiles));
-      stateStore.setCurrentUserId(newUserId);
+      await stateStore.registerOrUpdateProfile(newProfile);
 
       setSuccessMsg('Account created successfully! Proceeding to Onboarding...');
       setTimeout(() => {

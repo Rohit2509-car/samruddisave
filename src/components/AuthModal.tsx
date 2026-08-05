@@ -126,14 +126,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     // Register user profile
-    const newProfile = stateStore.registerMember({
-      full_name: regFullName,
-      email: regEmail,
-      phone: regMobile,
-      referral_code: regReferral,
-    });
+    const newUserId = `user-${Date.now()}`;
+    const newProfile = {
+      id: newUserId,
+      full_name: regFullName.trim() || 'Member',
+      email: regEmail.trim(),
+      phone: regMobile.trim(),
+      pan_number: '',
+      aadhaar_number: '',
+      role: 'member' as const,
+      kyc_status: 'unsubmitted' as const,
+      pipeline_stage: 'signup' as any,
+      ocr_confidence: 0,
+      created_at: new Date().toISOString()
+    };
 
-    stateStore.setCurrentUser(newProfile.id);
+    stateStore.registerOrUpdateProfile(newProfile);
     setSuccessMsg(`Registration successful! Welcome to SamruddiSave, ${newProfile.full_name}.`);
     setTimeout(() => {
       if (onSuccess) onSuccess();
