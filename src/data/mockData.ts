@@ -410,6 +410,21 @@ export const INITIAL_CONTRIBUTIONS: ContributionRecord[] = [
 
 export const INITIAL_MATURITY_PAYOUTS: MaturityPayout[] = [
   {
+    id: 'pay-vikram-12',
+    user_id: '00000000-0000-0000-0000-000000000008',
+    user_name: 'Vikramaditya S.',
+    user_email: 'vikramaditya@example.com',
+    membership_id: 'm-vikram-12',
+    principal_amount: 12000,
+    bonus_amount: 600,
+    total_disbursal_amount: 12600,
+    maker_status: 'PENDING_MAKER',
+    checker_status: 'PENDING_CHECKER',
+    hamper_id: 'hamper-3',
+    hamper_name: 'Premium Kitchen & Dining Privilege Hamper',
+    hamper_dispatch_status: 'PREPARING',
+  },
+  {
     id: 'pay-meera-12',
     user_id: '00000000-0000-0000-0000-000000000009',
     user_name: 'Meera Deshmukh',

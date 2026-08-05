@@ -83,8 +83,54 @@ class StateStore {
     }
   }
 
+  public sanitizeProfiles() {
+    let modified = false;
+    const seenIds = new Set<string>();
+
+    this.profiles.forEach((p) => {
+      const email = p.email?.toLowerCase() || '';
+
+      // Rule 1: karthickeyan@gmail.com MUST have ID '00000000-0000-0000-0000-000000000001'
+      if (email === 'karthickeyan@gmail.com' || email === 'karthic@samruddisave.com') {
+        if (p.id !== '00000000-0000-0000-0000-000000000001') {
+          const oldId = p.id;
+          p.id = '00000000-0000-0000-0000-000000000001';
+          modified = true;
+          if (this.currentUserId === oldId) {
+            this.currentUserId = p.id;
+          }
+        }
+        p.full_name = 'karthickeyan M';
+        p.email = 'karthickeyan@gmail.com';
+        p.role = 'member';
+      } else {
+        // Rule 2: ALL OTHER CUSTOMERS (nehe, deva, etc.) MUST have unique v4 UUIDs
+        if (p.id === '00000000-0000-0000-0000-000000000001' || p.id === 'user-member-1' || !this.isValidUUID(p.id) || seenIds.has(p.id)) {
+          const oldId = p.id;
+          p.id = this.generateUUID();
+          modified = true;
+
+          // If current logged-in user had the old duplicate ID, update currentUserId!
+          if (this.currentUserId === oldId) {
+            this.currentUserId = p.id;
+          }
+
+          // Asynchronously update Supabase database
+          if (p.email) {
+            supabase.from('profiles').update({ id: p.id }).eq('email', p.email);
+          }
+        }
+      }
+      seenIds.add(p.id);
+    });
+
+    if (modified) {
+      this.saveToStorage();
+    }
+  }
+
   private normalizePipelineStage(stage?: string): string {
-    if (!stage) return 'active';
+    if (!stage) return 'signup';
     const s = String(stage).toLowerCase();
     if (s.includes('signup')) return 'signup';
     if (s.includes('pending') || s.includes('due')) return 'pending';
@@ -93,7 +139,7 @@ class StateStore {
     if (s.includes('hamper')) return 'hamper';
     if (s.includes('payout')) return 'payout';
     if (s.includes('matured')) return 'matured';
-    return 'active';
+    return 'signup';
   }
 
   private deduplicateProfiles(list: UserProfile[]): UserProfile[] {
@@ -106,14 +152,18 @@ class StateStore {
     });
   }
 
-  private async syncWithSupabase() {
+  public async fetchLatestFromSupabase() {
     try {
       await this.pushAllProfilesToSupabase();
-
       const { data: dbProfiles, error: profileErr } = await supabase.from('profiles').select('*');
       if (!profileErr && dbProfiles && dbProfiles.length > 0) {
         dbProfiles.forEach((dbP: any) => {
-          const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase() || p.id === dbP.id);
+          if (dbP.email?.toLowerCase() !== 'karthickeyan@gmail.com' && (dbP.id === '00000000-0000-0000-0000-000000000001' || dbP.id === 'user-member-1')) {
+            dbP.id = this.generateUUID();
+            supabase.from('profiles').update({ id: dbP.id }).eq('email', dbP.email);
+          }
+
+          const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase());
           const mapped: UserProfile = {
             id: dbP.id,
             full_name: dbP.full_name || 'Member',
@@ -122,7 +172,7 @@ class StateStore {
             pan_number: dbP.pan_number || 'ABCDE1234F',
             aadhaar_number: dbP.aadhaar_number || '9876 5432 1098',
             role: dbP.role || 'member',
-            kyc_status: dbP.kyc_status || 'approved',
+            kyc_status: dbP.kyc_status || 'pending',
             pipeline_stage: this.normalizePipelineStage(dbP.pipeline_stage) as any,
             ocr_confidence: dbP.ocr_confidence || 99.8,
             avatar_url: dbP.avatar_url,
@@ -135,8 +185,18 @@ class StateStore {
           }
         });
         this.profiles = this.deduplicateProfiles(this.profiles);
+        this.sanitizeProfiles();
         this.saveToStorage();
       }
+    } catch (e) {
+      console.warn('Supabase fetch fallback:', e);
+    }
+  }
+
+  private async syncWithSupabase() {
+    try {
+      await this.pushAllProfilesToSupabase();
+      await this.fetchLatestFromSupabase();
     } catch (e) {
       console.warn('Supabase initial fetch fallback:', e);
     }
@@ -145,6 +205,19 @@ class StateStore {
   private isValidUUID(uuidStr?: string): boolean {
     if (!uuidStr) return false;
     return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuidStr);
+  }
+
+  private generateUUID(): string {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      try {
+        return crypto.randomUUID();
+      } catch (e) {}
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 
   public async pushAllProfilesToSupabase() {
@@ -165,7 +238,8 @@ class StateStore {
       const dbRows = this.profiles.map((p) => {
         let validId = p.id;
         if (!this.isValidUUID(validId)) {
-          validId = emailUuidMap[p.email?.toLowerCase()] || '00000000-0000-0000-0000-000000000001';
+          validId = emailUuidMap[p.email?.toLowerCase()] || this.generateUUID();
+          p.id = validId; // Ensure local profile has a valid unique UUID
         }
         return {
           id: validId,
@@ -211,13 +285,15 @@ class StateStore {
         });
       }
 
-      // Ensure karthickeyan M profile is a member/customer profile
+      // Ensure karthickeyan M profile is matched strictly by email and not overwriting new members
       loadedProfiles.forEach((p) => {
-        if (p.id === 'user-member-1' || p.email === 'karthic@samruddisave.com' || p.email === 'karthickeyan@gmail.com' || p.full_name === 'karthickeyan M') {
-          p.id = 'user-member-1';
+        if (p.email?.toLowerCase() === 'karthic@samruddisave.com' || p.email?.toLowerCase() === 'karthickeyan@gmail.com') {
+          p.id = '00000000-0000-0000-0000-000000000001';
           p.role = 'member';
           p.full_name = 'karthickeyan M';
           p.email = 'karthickeyan@gmail.com';
+        } else if (p.id === 'user-member-1' || p.id === '00000000-0000-0000-0000-000000000001') {
+          p.id = this.generateUUID();
         }
       });
 
@@ -267,6 +343,7 @@ class StateStore {
 
       const storedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
       this.currentUserId = storedUserId || null;
+      this.sanitizeProfiles();
     } catch (e) {
       console.error('Failed to parse state from localStorage, using initial mock data', e);
       this.profiles = INITIAL_PROFILES;
@@ -277,6 +354,7 @@ class StateStore {
       this.circles = INITIAL_SAVINGS_CIRCLES;
       this.auditLogs = INITIAL_AUDIT_LOGS;
       this.currentUserId = null;
+      this.sanitizeProfiles();
     }
   }
 
@@ -525,7 +603,7 @@ class StateStore {
       this.payouts = [...INITIAL_MATURITY_PAYOUTS];
     }
     const completedMembers = this.profiles.filter((p) =>
-      ['completed', 'matured', 'payout'].includes(((p as any).pipeline_stage || '').toLowerCase())
+      ['hamper', 'completed', 'matured', 'payout'].includes(((p as any).pipeline_stage || '').toLowerCase())
     );
     completedMembers.forEach((m) => {
       if (!this.payouts.some((po) => po.user_id === m.id)) {
@@ -825,9 +903,18 @@ class StateStore {
     }
   }
 
-  // Submit or Update KYC for Approval with 4-Hour SLA Auto-Verification Guarantee
   public async submitKYCForApproval(userId: string, kycData: Partial<UserProfile>): Promise<UserProfile> {
-    let profile = this.profiles.find((p) => p.id === userId || p.email === kycData.email);
+    let profile: UserProfile | undefined = undefined;
+    if (kycData.email) {
+      profile = this.profiles.find((p) => p.email?.toLowerCase() === kycData.email?.toLowerCase());
+    }
+    if (!profile && userId && userId !== '00000000-0000-0000-0000-000000000001' && userId !== 'user-member-1') {
+      const p = this.profiles.find((item) => item.id === userId);
+      if (p && (!kycData.email || p.email?.toLowerCase() === kycData.email?.toLowerCase())) {
+        profile = p;
+      }
+    }
+
     const now = new Date();
     const fourHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
 
@@ -846,8 +933,9 @@ class StateStore {
       if (kycData.bank_details) profile.bank_details = kycData.bank_details;
       if (kycData.avatar_url) profile.avatar_url = kycData.avatar_url;
     } else {
+      const validId = kycData.id && this.isValidUUID(kycData.id) ? kycData.id : this.generateUUID();
       profile = {
-        id: `user-${Date.now()}`,
+        id: validId,
         full_name: kycData.full_name || 'Member',
         email: kycData.email || '',
         phone: kycData.phone || '',
@@ -861,10 +949,26 @@ class StateStore {
         submitted_at: now.toISOString(),
         auto_approval_due_at: fourHoursLater.toISOString(),
         created_at: now.toISOString(),
-        ...kycData,
       };
       this.profiles.push(profile);
       this.currentUserId = profile.id;
+    }
+
+    try {
+      await supabase.from('profiles').upsert({
+        id: profile.id,
+        full_name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone || '+91 98765 43210',
+        pan_number: profile.pan_number || 'ABCDE1234F',
+        aadhaar_number: profile.aadhaar_number || '9876 5432 1098',
+        role: 'member',
+        kyc_status: profile.kyc_status || 'pending',
+        pipeline_stage: this.normalizePipelineStage((profile as any).pipeline_stage),
+        ocr_confidence: profile.ocr_confidence || 99.8,
+      }, { onConflict: 'email' });
+    } catch (e) {
+      console.warn('Supabase profile submit fallback:', e);
     }
 
     try {
@@ -1010,23 +1114,44 @@ class StateStore {
   }
 
   public registerMember(profileData: Partial<UserProfile>): UserProfile {
+    const validId = profileData.id && this.isValidUUID(profileData.id) ? profileData.id : this.generateUUID();
     const newProfile: UserProfile = {
-      id: `user-${Date.now()}`,
+      id: validId,
       full_name: profileData.full_name || 'Member',
       email: profileData.email || '',
       phone: profileData.phone || '',
-      pan_number: profileData.pan_number || '',
-      aadhaar_number: profileData.aadhaar_number || '',
+      pan_number: profileData.pan_number || 'ABCDE1234F',
+      aadhaar_number: profileData.aadhaar_number || '9876 5432 1098',
       role: 'member',
       kyc_status: 'pending',
-      pipeline_stage: 'ACTIVE_SAVING',
+      pipeline_stage: profileData.pipeline_stage || 'signup',
       ocr_confidence: profileData.ocr_confidence || 99.8,
       created_at: new Date().toISOString(),
-      ...profileData,
     };
 
     this.profiles.push(newProfile);
     this.saveToStorage();
+
+    // Async direct push to Supabase DB table
+    supabase.from('profiles').upsert({
+      id: newProfile.id,
+      full_name: newProfile.full_name,
+      email: newProfile.email,
+      phone: newProfile.phone || '+91 98765 43210',
+      pan_number: newProfile.pan_number || 'ABCDE1234F',
+      aadhaar_number: newProfile.aadhaar_number || '9876 5432 1098',
+      role: 'member',
+      kyc_status: newProfile.kyc_status || 'pending',
+      pipeline_stage: this.normalizePipelineStage(newProfile.pipeline_stage),
+      ocr_confidence: newProfile.ocr_confidence || 99.8,
+    }, { onConflict: 'email' }).then(({ error }) => {
+      if (error) {
+        console.warn('Supabase member signup error:', error.message);
+      } else {
+        console.log(`[SUPABASE REGISTER SUCCESS] Pushed member ${newProfile.full_name} (${newProfile.email}) to Supabase DB!`);
+      }
+    });
+
     return newProfile;
   }
 
