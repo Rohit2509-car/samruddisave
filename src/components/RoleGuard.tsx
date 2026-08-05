@@ -27,38 +27,41 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     return unsubscribe;
   }, []);
 
-  // Automatic Auth Guard: Redirect non-admin users attempting to access /admin directly to /console first
+  // Automatic Auth Guard: Auto-switch role to admin when navigating directly to /admin in demo mode
   useEffect(() => {
     if (allowedRoles && allowedRoles.includes('admin') && user.role !== 'admin') {
-      const timer = setTimeout(() => {
-        onNavigate('/console');
-      }, 700);
-      return () => clearTimeout(timer);
+      stateStore.switchRole('admin');
     }
-  }, [allowedRoles, user.role, onNavigate]);
+  }, [allowedRoles, user.role]);
 
-  // Check role authorization
+  // Check role authorization fallback
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return (
       <div className="max-w-2xl mx-auto my-16 p-8 bg-white rounded-3xl border border-amber-200 shadow-xl text-center space-y-4 animate-in fade-in duration-200">
         <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-          <Lock className="w-8 h-8 animate-pulse" />
+          <Lock className="w-8 h-8" />
         </div>
         <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3.5 py-1 rounded-full border border-amber-300 uppercase tracking-wider">
-          Admin Authentication Guard Active
+          Admin Portal Access Required
         </span>
         <h2 className="font-heading font-extrabold text-2xl text-slate-900">
-          Redirecting to Admin Console Login (/console)...
+          Admin Role Required for /admin
         </h2>
         <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-          You attempted to access Admin features without logging in first. To protect RBI Escrow Operations, you are being redirected to the <strong>/console</strong> login page.
+          You are attempting to access Admin features. Please switch to Admin mode or log in to continue.
         </p>
-        <div className="pt-2 flex justify-center gap-3">
+        <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
+          <button
+            onClick={() => stateStore.switchRole('admin')}
+            className="bg-[#4F5DFF] text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-[#4F5DFF]/90 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+          >
+            ⚡ 1-Click Demo Admin Login <ArrowRight className="w-4 h-4" />
+          </button>
           <button
             onClick={() => onNavigate('/console')}
-            className="bg-[#4F5DFF] text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-[#4F5DFF]/90 transition-all shadow-md flex items-center gap-2 cursor-pointer"
+            className="bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            Go to Admin Console Login Now <ArrowRight className="w-4 h-4" />
+            Log in with Credentials
           </button>
         </div>
       </div>
