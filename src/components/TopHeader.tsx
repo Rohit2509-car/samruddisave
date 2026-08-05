@@ -61,6 +61,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
   const isKYCPending = user?.role === 'member' && user?.kyc_status !== 'approved';
   const isAdminPage = user?.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login' || user?.role === 'employee' || user?.role === 'finance_admin';
+  const isDashboardPage = currentPath === '/dashboard';
 
   const memberNavItems = [
     { label: 'Overview', path: '/', icon: Home },
@@ -206,73 +207,75 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </div>
         </div>
 
-        {/* Center Navigation Bar (Centered in the Middle) */}
-        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 max-w-2xl justify-center mx-auto group/navbar">
-          
-          <button
-            onClick={() => handleScroll('left')}
-            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+        {/* Center Navigation Bar (Hidden on Customer Details Dashboard /dashboard) */}
+        {!isDashboardPage && (
+          <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 max-w-2xl justify-center mx-auto group/navbar">
+            
+            <button
+              onClick={() => handleScroll('left')}
+              className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
 
-          <nav
-            ref={navContainerRef}
-            onWheel={handleWheel}
-            className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-center"
-          >
-            {currentNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = checkIsActive(item);
-              const isLocked = (item as any).locked;
-              const isTapped = tappedLabel === item.label;
+            <nav
+              ref={navContainerRef}
+              onWheel={handleWheel}
+              className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-center"
+            >
+              {currentNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = checkIsActive(item);
+                const isLocked = (item as any).locked;
+                const isTapped = tappedLabel === item.label;
 
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => handleNavClick(item.path, item.label, isLocked)}
-                  disabled={isLocked}
-                  className={`group/navitem relative flex items-center justify-center transition-all duration-300 ease-out cursor-pointer shrink-0 rounded-full min-w-[44px] min-h-[44px] px-3 ${
-                    isActive
-                      ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-105'
-                      : isLocked
-                      ? 'text-slate-300 bg-transparent cursor-not-allowed'
-                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs'
-                  }`}
-                  title={item.label}
-                >
-                  <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover/navitem:scale-110 ${isActive ? 'scale-110 text-white' : ''}`} />
-                  
-                  {/* Smooth Animated Text Label (Hidden by default, expands cleanly on hover, focus, tap or active state) */}
-                  <span className={`overflow-hidden transition-all duration-300 ease-out whitespace-nowrap text-xs font-bold ${
-                    isActive || isTapped
-                      ? 'max-w-xs ml-2 opacity-100'
-                      : 'max-w-0 opacity-0 group-hover/navitem:max-w-xs group-hover/navitem:ml-2 group-hover/navitem:opacity-100 group-focus/navitem:max-w-xs group-focus/navitem:ml-2 group-focus/navitem:opacity-100'
-                  }`}>
-                    {item.label}
-                  </span>
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => handleNavClick(item.path, item.label, isLocked)}
+                    disabled={isLocked}
+                    className={`group/navitem relative flex items-center justify-center transition-all duration-300 ease-out cursor-pointer shrink-0 rounded-full min-w-[44px] min-h-[44px] px-3 ${
+                      isActive
+                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-105'
+                        : isLocked
+                        ? 'text-slate-300 bg-transparent cursor-not-allowed'
+                        : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs'
+                    }`}
+                    title={item.label}
+                  >
+                    <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover/navitem:scale-110 ${isActive ? 'scale-110 text-white' : ''}`} />
+                    
+                    {/* Smooth Animated Text Label */}
+                    <span className={`overflow-hidden transition-all duration-300 ease-out whitespace-nowrap text-xs font-bold ${
+                      isActive || isTapped
+                        ? 'max-w-xs ml-2 opacity-100'
+                        : 'max-w-0 opacity-0 group-hover/navitem:max-w-xs group-hover/navitem:ml-2 group-hover/navitem:opacity-100 group-focus/navitem:max-w-xs group-focus/navitem:ml-2 group-focus/navitem:opacity-100'
+                    }`}>
+                      {item.label}
+                    </span>
 
-                  {item.badge && !isActive && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
-                  )}
+                    {item.badge && !isActive && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
+                    )}
 
-                  {isLocked && (
-                    <Lock className="w-3 h-3 text-slate-300 ml-1 shrink-0" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+                    {isLocked && (
+                      <Lock className="w-3 h-3 text-slate-300 ml-1 shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
 
-          <button
-            onClick={() => handleScroll('right')}
-            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+            <button
+              onClick={() => handleScroll('right')}
+              className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Right Section: Notifications + User Profile (Authenticated) OR Sign In Buttons (Unauthenticated) */}
         <div className="flex items-center gap-2 shrink-0">
@@ -411,66 +414,68 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white/98 backdrop-blur-xl border-b border-[#E8EAF8] px-4 pt-3 pb-6 space-y-4 animate-in fade-in slide-in-from-top-3 duration-200 shadow-2xl">
 
-          {/* Card matching reference screenshot */}
-          <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
-            
-            {/* Category Header */}
-            <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
-                {isAdminPage ? 'ADMIN FUNCTIONAL MODULES' : 'MEMBER FUNCTIONAL MODULES'}
-              </span>
-              <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
-                RBI Escrow Certified
-              </span>
+          {/* Card matching reference screenshot (Hidden on Customer Details Dashboard /dashboard) */}
+          {!isDashboardPage && (
+            <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
+              
+              {/* Category Header */}
+              <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
+                  {isAdminPage ? 'ADMIN FUNCTIONAL MODULES' : 'MEMBER FUNCTIONAL MODULES'}
+                </span>
+                <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
+                  RBI Escrow Certified
+                </span>
+              </div>
+
+              {/* Nav Module Items List */}
+              <div className="space-y-1 pt-1">
+                {currentNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = checkIsActive(item);
+                  const isLocked = (item as any).locked;
+
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => handleNavClick(item.path, item.label, isLocked)}
+                      disabled={isLocked}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
+                        isActive
+                          ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
+                          : isLocked
+                          ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
+                          : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={`w-4 h-4 shrink-0 ${
+                          isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
+                        }`} />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isLocked && (
+                          <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-medium border border-amber-200 flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> KYC Required
+                          </span>
+                        )}
+                        {item.badge && (
+                          <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                            {item.badge}
+                          </span>
+                        )}
+                        <ChevronRight className={`w-4 h-4 ${
+                          isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
+                        }`} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-
-            {/* Nav Module Items List */}
-            <div className="space-y-1 pt-1">
-              {currentNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = checkIsActive(item);
-                const isLocked = (item as any).locked;
-
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => handleNavClick(item.path, item.label, isLocked)}
-                    disabled={isLocked}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
-                      isActive
-                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
-                        : isLocked
-                        ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
-                        : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 shrink-0 ${
-                        isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
-                      }`} />
-                      <span className="truncate">{item.label}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isLocked && (
-                        <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-medium border border-amber-200 flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> KYC Required
-                        </span>
-                      )}
-                      {item.badge && (
-                        <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
-                          {item.badge}
-                        </span>
-                      )}
-                      <ChevronRight className={`w-4 h-4 ${
-                        isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
-                      }`} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          )}
 
           {/* User Profile Summary Card in Drawer */}
           {user ? (
