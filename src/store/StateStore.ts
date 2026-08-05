@@ -343,7 +343,7 @@ class StateStore {
       this.payouts = [...INITIAL_MATURITY_PAYOUTS];
     }
     const completedMembers = this.profiles.filter((p) =>
-      ['completed', 'matured', 'payout'].includes(((p as any).pipeline_stage || '').toLowerCase())
+      ['hamper', 'completed', 'matured', 'payout'].includes(((p as any).pipeline_stage || '').toLowerCase())
     );
     completedMembers.forEach((m) => {
       if (!this.payouts.some((po) => po.user_id === m.id)) {

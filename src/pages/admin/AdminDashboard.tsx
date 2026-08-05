@@ -292,18 +292,22 @@ End of Official Member Passbook & Escrow Ledger
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsReconcileModalOpen(true)}
-              className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] focus-visible:ring-offset-2"
-            >
-              <PlusCircle className="w-4 h-4" /> Record Offline Payment
-            </button>
-            <button
-              onClick={handleExportCSV}
-              className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
-            >
-              <Download className="w-4 h-4" /> Export Ledger CSV
-            </button>
+            {['offline_payments', 'payments', 'ledger'].includes(activeTab) && (
+              <button
+                onClick={() => setIsReconcileModalOpen(true)}
+                className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] focus-visible:ring-offset-2"
+              >
+                <PlusCircle className="w-4 h-4" /> Record Offline Payment
+              </button>
+            )}
+            {['offline_payments', 'payments', 'ledger', 'reports'].includes(activeTab) && (
+              <button
+                onClick={handleExportCSV}
+                className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+              >
+                <Download className="w-4 h-4" /> Export Ledger CSV
+              </button>
+            )}
           </div>
         </div>
 
