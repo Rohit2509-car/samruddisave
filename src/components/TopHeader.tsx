@@ -168,6 +168,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     setDropdownOpen(false);
     setMobileMenuOpen(false);
     await stateStore.signOut();
+    setUser(null);
     onNavigate('/login');
   };
 

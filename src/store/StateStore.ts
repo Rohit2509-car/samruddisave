@@ -449,7 +449,7 @@ class StateStore {
       return provisionedUser;
     }
 
-    return this.profiles[0] || INITIAL_PROFILES[0];
+    return null;
   }
 
   public setCurrentUserId(userId: string | null) {
