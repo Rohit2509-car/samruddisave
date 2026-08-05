@@ -5,11 +5,12 @@ import { UserProfile } from '../types';
 import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
 interface LoginPageProps {
+  defaultMode?: 'login' | 'register';
   onNavigate: (path: string) => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onNavigate }) => {
+  const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
   
   // Login Form
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -211,19 +212,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           </div>
         )}
 
-        {/* Login Form */}
+        {/* Login Form (Customer Sign In with Email & Password) */}
         {mode === 'login' && (
           <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="block text-[#1F1F24] font-bold mb-1.5">Email Address or Phone Number</label>
+              <label className="block text-[#1F1F24] font-bold mb-1.5">Email Address</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
-                  type="text"
+                  type="email"
                   required
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
-                  placeholder="e.g. karthickeyan@gmail.com or +91 98765 43210"
+                  placeholder="your.email@example.com"
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#E8EAF8] focus:outline-none focus:border-[#4F5DFF] bg-[#F7F8FC]"
                 />
               </div>

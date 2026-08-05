@@ -403,7 +403,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                 Sign In
               </button>
               <button
-                onClick={() => onNavigate('/login')}
+                onClick={() => onNavigate('/register')}
                 className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer min-h-[44px]"
               >
                 Start Saving

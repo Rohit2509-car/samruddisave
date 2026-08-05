@@ -46,7 +46,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <button
-                  onClick={() => onNavigate('/login')}
+                  onClick={() => onNavigate('/register')}
                   className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-xl shadow-[#4F5DFF]/35 flex items-center gap-2 text-sm scale-100 hover:scale-[1.02]"
                 >
                   Start Saving Now <ArrowRight className="w-4 h-4" />

@@ -17,6 +17,7 @@ import { HamperSelectionPage } from './pages/HamperSelectionPage';
 import { SavingsCirclesPage } from './pages/SavingsCirclesPage';
 
 import { SupportPortalPage } from './pages/support/SupportPortalPage';
+import { LoginPage } from './pages/LoginPage';
 
 // Admin Portal Pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
@@ -94,9 +95,15 @@ export default function App() {
       case '/support':
         return <SupportPortalPage onNavigate={handleNavigate} />;
 
+      // Customer Login & Registration Routes
+      case '/login':
+        return <LoginPage defaultMode="login" onNavigate={handleNavigate} />;
+
+      case '/register':
+        return <LoginPage defaultMode="register" onNavigate={handleNavigate} />;
+
       // Admin Login Portal Route
       case '/console':
-      case '/login':
       case '/admin-login':
         return <AdminLoginPage onNavigate={handleNavigate} />;
 
