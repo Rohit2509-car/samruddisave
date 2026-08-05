@@ -121,6 +121,19 @@ class StateStore {
     return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuidStr);
   }
 
+  private generateUUID(): string {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      try {
+        return crypto.randomUUID();
+      } catch (e) {}
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
   public async pushAllProfilesToSupabase() {
     try {
       const emailUuidMap: Record<string, string> = {
@@ -139,7 +152,8 @@ class StateStore {
       const dbRows = this.profiles.map((p) => {
         let validId = p.id;
         if (!this.isValidUUID(validId)) {
-          validId = emailUuidMap[p.email?.toLowerCase()] || '00000000-0000-0000-0000-000000000001';
+          validId = emailUuidMap[p.email?.toLowerCase()] || this.generateUUID();
+          p.id = validId; // Ensure local profile has a valid unique UUID
         }
         return {
           id: validId,
@@ -666,8 +680,9 @@ class StateStore {
       if (kycData.bank_details) profile.bank_details = kycData.bank_details;
       if (kycData.avatar_url) profile.avatar_url = kycData.avatar_url;
     } else {
+      const validId = kycData.id && this.isValidUUID(kycData.id) ? kycData.id : this.generateUUID();
       profile = {
-        id: `user-${Date.now()}`,
+        id: validId,
         full_name: kycData.full_name || 'Member',
         email: kycData.email || '',
         phone: kycData.phone || '',
@@ -681,10 +696,26 @@ class StateStore {
         submitted_at: now.toISOString(),
         auto_approval_due_at: fourHoursLater.toISOString(),
         created_at: now.toISOString(),
-        ...kycData,
       };
       this.profiles.push(profile);
       this.currentUserId = profile.id;
+    }
+
+    try {
+      await supabase.from('profiles').upsert({
+        id: profile.id,
+        full_name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone || '+91 98765 43210',
+        pan_number: profile.pan_number || 'ABCDE1234F',
+        aadhaar_number: profile.aadhaar_number || '9876 5432 1098',
+        role: 'member',
+        kyc_status: profile.kyc_status || 'pending',
+        pipeline_stage: this.normalizePipelineStage((profile as any).pipeline_stage),
+        ocr_confidence: profile.ocr_confidence || 99.8,
+      }, { onConflict: 'email' });
+    } catch (e) {
+      console.warn('Supabase profile submit fallback:', e);
     }
 
     try {
@@ -830,23 +861,44 @@ class StateStore {
   }
 
   public registerMember(profileData: Partial<UserProfile>): UserProfile {
+    const validId = profileData.id && this.isValidUUID(profileData.id) ? profileData.id : this.generateUUID();
     const newProfile: UserProfile = {
-      id: `user-${Date.now()}`,
+      id: validId,
       full_name: profileData.full_name || 'Member',
       email: profileData.email || '',
       phone: profileData.phone || '',
-      pan_number: profileData.pan_number || '',
-      aadhaar_number: profileData.aadhaar_number || '',
+      pan_number: profileData.pan_number || 'ABCDE1234F',
+      aadhaar_number: profileData.aadhaar_number || '9876 5432 1098',
       role: 'member',
       kyc_status: 'pending',
       pipeline_stage: 'ACTIVE_SAVING',
       ocr_confidence: profileData.ocr_confidence || 99.8,
       created_at: new Date().toISOString(),
-      ...profileData,
     };
 
     this.profiles.push(newProfile);
     this.saveToStorage();
+
+    // Async direct push to Supabase DB table
+    supabase.from('profiles').upsert({
+      id: newProfile.id,
+      full_name: newProfile.full_name,
+      email: newProfile.email,
+      phone: newProfile.phone || '+91 98765 43210',
+      pan_number: newProfile.pan_number || 'ABCDE1234F',
+      aadhaar_number: newProfile.aadhaar_number || '9876 5432 1098',
+      role: 'member',
+      kyc_status: newProfile.kyc_status || 'pending',
+      pipeline_stage: this.normalizePipelineStage(newProfile.pipeline_stage),
+      ocr_confidence: newProfile.ocr_confidence || 99.8,
+    }, { onConflict: 'email' }).then(({ error }) => {
+      if (error) {
+        console.warn('Supabase member signup error:', error.message);
+      } else {
+        console.log(`[SUPABASE REGISTER SUCCESS] Pushed member ${newProfile.full_name} (${newProfile.email}) to Supabase DB!`);
+      }
+    });
+
     return newProfile;
   }
 
