@@ -418,11 +418,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
               S
             </div>
-            <div className="hidden sm:flex flex-col text-left">
-              <span className="font-heading font-extrabold text-base tracking-tight text-[#1F1F24] leading-none">
+            <div className="flex flex-col text-left">
+              <span className="font-heading font-extrabold text-sm sm:text-base tracking-tight text-[#1F1F24] leading-none">
                 Samruddi<span className="text-[#4F5DFF]">Save</span>
               </span>
-              <span className="text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5">
+              <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5 whitespace-nowrap">
                 RBI Escrow Certified
               </span>
             </div>
