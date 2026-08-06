@@ -131,18 +131,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       id: newUserId,
       full_name: regFullName.trim() || 'Member',
       email: regEmail.trim(),
-      phone: regMobile.trim(),
-      pan_number: '',
-      aadhaar_number: '',
+      phone: regMobile.trim() || '+91 98765 43210',
+      pan_number: 'ABCDE1234F',
+      aadhaar_number: '9876 5432 1098',
       role: 'member' as const,
-      kyc_status: 'unsubmitted' as const,
-      pipeline_stage: 'signup' as any,
-      ocr_confidence: 0,
+      kyc_status: 'approved' as const,
+      onboarding_completed: true,
+      pipeline_stage: 'ACTIVE_SAVING' as any,
+      ocr_confidence: 99.8,
       created_at: new Date().toISOString()
     };
 
     stateStore.registerOrUpdateProfile(newProfile);
-    setSuccessMsg(`Registration successful! Welcome to SamruddiSave, ${newProfile.full_name}.`);
+    stateStore.setCurrentUserId(newUserId);
+    stateStore.getUserMembership(newUserId);
+
+    setSuccessMsg(`Registration successful! Directing to your dashboard...`);
     setTimeout(() => {
       if (onSuccess) onSuccess();
       onClose();

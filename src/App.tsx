@@ -60,6 +60,7 @@ export default function App() {
       case '/kyc':
         return <KYCPage onNavigate={handleNavigate} />;
 
+      case '/onboarding':
       case '/dashboard':
         return (
           <RoleGuard currentPath={currentPath} onNavigate={handleNavigate}>
