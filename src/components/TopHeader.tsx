@@ -66,12 +66,15 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
   const memberNavItems = [
     { label: 'Overview', path: '/', icon: Home },
+    { label: 'Savings Plans', path: '/plans', icon: Calculator },
     { label: 'Chit Groups', path: '/circles', icon: Users },
     { label: 'KYC Verification', path: '/kyc', icon: FileCheck2, badge: isKYCPending ? 'Action' : undefined },
     { label: 'Wallet Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Monthly Deposit', path: '/pay', icon: CreditCard },
     { label: 'Ledger & Reports', path: '/reports', icon: FileText },
     { label: 'Gift Hampers', path: '/hampers', icon: Gift },
+    { label: 'How It Works', path: '/#how-it-works', icon: Activity },
+    { label: 'Security & Escrow', path: '/#security', icon: ShieldCheck },
   ];
 
   const adminNavItems = [
@@ -252,32 +255,28 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                     key={item.label}
                     onClick={() => handleNavClick(item.path, item.label, isLocked)}
                     disabled={isLocked}
-                    className={`group/navitem relative flex items-center justify-center transition-all duration-300 ease-out cursor-pointer shrink-0 rounded-full min-w-[44px] min-h-[44px] px-3 ${
+                    className={`group/navitem relative flex items-center justify-center gap-2 transition-all duration-200 ease-out cursor-pointer shrink-0 rounded-full min-h-[40px] px-3.5 text-xs font-bold ${
                       isActive
-                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-105'
+                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.02]'
                         : isLocked
                         ? 'text-slate-300 bg-transparent cursor-not-allowed'
-                        : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs'
+                        : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs font-semibold'
                     }`}
                     title={item.label}
                   >
-                    <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover/navitem:scale-110 ${isActive ? 'scale-110 text-white' : ''}`} />
-                    
-                    {/* Smooth Animated Text Label */}
-                    <span className={`overflow-hidden transition-all duration-300 ease-out whitespace-nowrap text-xs font-bold ${
-                      isActive || isTapped
-                        ? 'max-w-xs ml-2 opacity-100'
-                        : 'max-w-0 opacity-0 group-hover/navitem:max-w-xs group-hover/navitem:ml-2 group-hover/navitem:opacity-100 group-focus/navitem:max-w-xs group-focus/navitem:ml-2 group-focus/navitem:opacity-100'
-                    }`}>
+                    <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover/navitem:scale-110 ${isActive ? 'text-white' : ''}`} />
+                    <span className="whitespace-nowrap">
                       {item.label}
                     </span>
 
                     {item.badge && !isActive && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
+                      <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white rounded-full text-[9px] font-bold">
+                        {item.badge}
+                      </span>
                     )}
 
                     {isLocked && (
-                      <Lock className="w-3 h-3 text-slate-300 ml-1 shrink-0" />
+                      <Lock className="w-3 h-3 text-slate-300 ml-0.5 shrink-0" />
                     )}
                   </button>
                 );
@@ -439,125 +438,63 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           {/* Floating Mobile Drawer Content Overlay (Does not push down page content) */}
           <div className="lg:hidden fixed top-16 left-0 right-0 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto bg-white/98 backdrop-blur-xl border-b border-[#E8EAF8] px-4 pt-3 pb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-2xl">
 
-          {/* If user is NOT signed in or on Landing Page: Render Public Navigation ONLY */}
-          {(!user || currentPath === '/') ? (
-            <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
-              <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
-                  PUBLIC NAVIGATION
-                </span>
-                <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
-                  RBI Escrow Certified
-                </span>
-              </div>
-
-              <div className="space-y-1.5 pt-1">
-                <button
-                  onClick={() => handleNavClick('/plans', 'Savings Plans')}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <Calculator className="w-4 h-4 text-[#4F5DFF]" />
-                    <span>Savings Plans</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
-                </button>
-
-                <button
-                  onClick={() => handleNavClick('/hampers', 'Gift Hampers')}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <Gift className="w-4 h-4 text-[#4F5DFF]" />
-                    <span>Gift Hampers</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
-                </button>
-
-                <button
-                  onClick={() => handleNavClick('/#how-it-works', 'How It Works')}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <Activity className="w-4 h-4 text-[#4F5DFF]" />
-                    <span>How It Works</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
-                </button>
-
-                <button
-                  onClick={() => handleNavClick('/#security', 'Security & Escrow')}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Security & Escrow</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
-                </button>
-              </div>
+          {/* Consolidated Single Navigation Menu */}
+          <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
+            <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
+                {isAdminPage ? 'ADMIN NAVIGATION' : 'NAVIGATION MENU'}
+              </span>
+              <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
+                RBI Escrow Certified
+              </span>
             </div>
-          ) : (
-            /* Render Member / Admin functional modules ONLY when signed in and not on Landing Page */
-            !isDashboardPage && (
-              <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
-                <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
-                    {isAdminPage ? 'ADMIN FUNCTIONAL MODULES' : 'MEMBER FUNCTIONAL MODULES'}
-                  </span>
-                  <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
-                    RBI Escrow Certified
-                  </span>
-                </div>
 
-                <div className="space-y-1 pt-1">
-                  {currentNavItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = checkIsActive(item);
-                    const isLocked = (item as any).locked;
+            <div className="space-y-1 pt-1">
+              {currentNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = checkIsActive(item);
+                const isLocked = (item as any).locked;
 
-                    return (
-                      <button
-                        key={item.label}
-                        onClick={() => handleNavClick(item.path, item.label, isLocked)}
-                        disabled={isLocked}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
-                          isActive
-                            ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
-                            : isLocked
-                            ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
-                            : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className={`w-4 h-4 shrink-0 ${
-                            isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
-                          }`} />
-                          <span className="truncate">{item.label}</span>
-                        </div>
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => handleNavClick(item.path, item.label, isLocked)}
+                    disabled={isLocked}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
+                      isActive
+                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
+                        : isLocked
+                        ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
+                        : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className={`w-4 h-4 shrink-0 ${
+                        isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
+                      }`} />
+                      <span className="truncate">{item.label}</span>
+                    </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          {isLocked && (
-                            <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-medium border border-amber-200 flex items-center gap-1">
-                              <Lock className="w-3 h-3" /> KYC Required
-                            </span>
-                          )}
-                          {item.badge && (
-                            <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
-                              {item.badge}
-                            </span>
-                          )}
-                          <ChevronRight className={`w-4 h-4 ${
-                            isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
-                          }`} />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )
-          )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isLocked && (
+                        <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-medium border border-amber-200 flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> KYC Required
+                        </span>
+                      )}
+                      {item.badge && (
+                        <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                          {item.badge}
+                        </span>
+                      )}
+                      <ChevronRight className={`w-4 h-4 ${
+                        isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
+                      }`} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* User Profile Summary Card in Drawer */}
           {user ? (
