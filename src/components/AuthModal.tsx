@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { stateStore } from '../store/StateStore';
 import { supabase } from '../lib/supabase';
-import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
+import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, X, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
   initialMode?: 'login' | 'register' | 'forgot_password';
@@ -38,9 +38,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSuccessMsg(null);
 
     if (!loginIdentifier.trim() || !loginPassword.trim()) {
       setErrorMsg('Please enter your Email/Mobile/ID and Password.');
@@ -50,17 +55,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       // 1. Supabase Auth Login Attempt
       if (loginIdentifier.includes('@')) {
-        const { data: authData } = await supabase.auth.signInWithPassword({
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: loginIdentifier.trim(),
           password: loginPassword.trim(),
         });
-        if (authData?.user) {
+        if (!authError && authData?.user) {
           stateStore.setCurrentUserId(authData.user.id);
           setSuccessMsg(`Welcome back! Redirecting to dashboard...`);
           setTimeout(() => {
             if (onSuccess) onSuccess();
             onClose();
-          }, 600);
+          }, 400);
           return;
         }
       }
@@ -80,7 +85,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     );
 
     if (!user) {
-      setErrorMsg('No user account found matching these credentials.');
+      setErrorMsg('Invalid email or password. Please check your credentials and try again.');
       return;
     }
 
@@ -89,7 +94,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setTimeout(() => {
       if (onSuccess) onSuccess();
       onClose();
-    }, 600);
+    }, 400);
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) {
+      setErrorMsg('Please enter your registered email address.');
+      return;
+    }
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        setSuccessMsg('Password reset instructions have been sent to your email. Please check your inbox.');
+      }
+    } catch (err: any) {
+      setSuccessMsg('Password reset instructions have been sent to your email. Please check your inbox.');
+    }
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {

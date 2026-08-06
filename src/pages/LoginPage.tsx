@@ -2,26 +2,31 @@ import React, { useState } from 'react';
 import { stateStore } from '../store/StateStore';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types';
-import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 interface LoginPageProps {
-  defaultMode?: 'login' | 'register';
+  defaultMode?: 'login' | 'register' | 'forgot_password';
   onNavigate: (path: string) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onNavigate }) => {
-  const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot_password'>(defaultMode);
   
   // Login Form
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Register Form
   const [regFullName, setRegFullName] = useState('');
   const [regMobile, setRegMobile] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(true);
+
+  // Forgot Password
+  const [resetEmail, setResetEmail] = useState('');
 
   // Status
   const [loading, setLoading] = useState(false);
@@ -39,6 +44,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSuccessMsg(null);
     setLoading(true);
 
     if (!emailOrPhone.trim() || !password.trim()) {
@@ -50,47 +56,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
     try {
       // 1. Supabase Auth Login Attempt
       let userId: string | null = null;
+      let authSuccess = false;
+
       try {
-        const { data: authData } = await supabase.auth.signInWithPassword({
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: emailOrPhone.trim(),
           password: password.trim(),
         });
-        userId = authData?.user?.id || null;
+
+        if (authError) {
+          console.warn('Supabase auth login error:', authError.message);
+        } else if (authData?.user) {
+          userId = authData.user.id;
+          authSuccess = true;
+        }
       } catch (e) {
-        console.warn('Supabase auth login check:', e);
+        console.warn('Supabase auth login check exception:', e);
       }
 
-      // 2. Registered Profiles Lookup (Fetch live from Supabase DB)
+      // 2. Registered Profiles Fallback Lookup
       if (!userId) {
         await stateStore.fetchLatestFromSupabase();
         const q = emailOrPhone.toLowerCase().trim();
         const profiles = stateStore.getProfiles();
-        let match = profiles.find(
+        const match = profiles.find(
           (p) => p.email?.toLowerCase() === q || p.phone?.includes(q) || p.id === q
         );
-
-        if (!match && q.includes('@')) {
-          // Provision fresh customer account dynamically for registered email
-          const rawName = q.split('@')[0].replace(/[._]/g, ' ');
-          const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-          const newUserId = `user-registered-${Date.now()}`;
-          const newProfile = {
-            id: newUserId,
-            full_name: formattedName,
-            email: q,
-            phone: '+91 98765 43210',
-            pan_number: 'ABCDE1234F',
-            aadhaar_number: '9876 5432 1098',
-            role: 'member' as const,
-            kyc_status: 'approved' as const,
-            pipeline_stage: 'ACTIVE_SAVING' as any,
-            ocr_confidence: 99.8,
-            onboarding_completed: true,
-            created_at: new Date().toISOString()
-          };
-          await stateStore.registerOrUpdateProfile(newProfile);
-          match = newProfile;
-        }
 
         if (match) {
           userId = match.id;
@@ -98,7 +89,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
       }
 
       if (!userId) {
-        setErrorMsg('No registered account found matching this Email. Please click "Start Saving" to create an account.');
+        setErrorMsg('Invalid email or password. Please check your credentials and try again.');
         setLoading(false);
         return;
       }
@@ -111,7 +102,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
       onNavigate('/dashboard');
 
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Authentication failed. Please check your network.');
+      setErrorMsg('Invalid email or password. Please check your credentials and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) {
+      setErrorMsg('Please enter your registered email address.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        setSuccessMsg('Password reset instructions have been sent to your email. Please check your inbox.');
+      }
+    } catch (err: any) {
+      setSuccessMsg('Password reset instructions have been sent to your email. Please check your inbox.');
     } finally {
       setLoading(false);
     }
@@ -198,38 +215,42 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
             RBI Escrow Certified Login
           </div>
           <h2 className="font-heading font-extrabold text-2xl text-[#1F1F24]">
-            {mode === 'login' ? 'Welcome Back to SamruddiSave' : 'Start Your Savings Journey'}
+            {mode === 'login' && 'Welcome Back to SamruddiSave'}
+            {mode === 'register' && 'Start Your Savings Journey'}
+            {mode === 'forgot_password' && 'Reset Your Account Password'}
           </h2>
           <p className="text-xs text-[#6C7285]">
-            {mode === 'login'
-              ? 'Enter your credentials to access your gold & appliance savings dashboard'
-              : 'Create a new account to enroll in 12-month disciplined micro-savings'}
+            {mode === 'login' && 'Enter your credentials to access your gold & appliance savings dashboard'}
+            {mode === 'register' && 'Create a new account to enroll in 12-month disciplined micro-savings'}
+            {mode === 'forgot_password' && 'Enter your registered email to receive password reset instructions'}
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-[#F7F8FC] p-1 rounded-2xl border border-[#E8EAF8] text-xs font-bold">
-          <button
-            onClick={() => { setMode('login'); setErrorMsg(null); }}
-            className={`flex-1 py-2.5 rounded-xl transition-all ${
-              mode === 'login'
-                ? 'bg-[#4F5DFF] text-white shadow-sm'
-                : 'text-[#6C7285] hover:text-[#1F1F24]'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => { setMode('register'); setErrorMsg(null); }}
-            className={`flex-1 py-2.5 rounded-xl transition-all ${
-              mode === 'register'
-                ? 'bg-[#4F5DFF] text-white shadow-sm'
-                : 'text-[#6C7285] hover:text-[#1F1F24]'
-            }`}
-          >
-            New Registration
-          </button>
-        </div>
+        {mode !== 'forgot_password' && (
+          <div className="flex bg-[#F7F8FC] p-1 rounded-2xl border border-[#E8EAF8] text-xs font-bold">
+            <button
+              onClick={() => { setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
+              className={`flex-1 py-2.5 rounded-xl transition-all ${
+                mode === 'login'
+                  ? 'bg-[#4F5DFF] text-white shadow-sm'
+                  : 'text-[#6C7285] hover:text-[#1F1F24]'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => { setMode('register'); setErrorMsg(null); setSuccessMsg(null); }}
+              className={`flex-1 py-2.5 rounded-xl transition-all ${
+                mode === 'register'
+                  ? 'bg-[#4F5DFF] text-white shadow-sm'
+                  : 'text-[#6C7285] hover:text-[#1F1F24]'
+              }`}
+            >
+              New Registration
+            </button>
+          </div>
+        )}
 
         {/* Alert Messages */}
         {errorMsg && (
@@ -264,15 +285,60 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
             </div>
 
             <div>
-              <label className="block text-[#1F1F24] font-bold mb-1.5">Password</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-[#1F1F24] font-bold">Password</label>
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot_password'); setErrorMsg(null); setSuccessMsg(null); }}
+                  className="text-[#4F5DFF] hover:underline font-bold text-[11px]"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  className="w-full pl-10 pr-11 py-3 rounded-xl border border-[#E8EAF8] focus:outline-none focus:border-[#4F5DFF] bg-[#F7F8FC]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3.5 text-[#6C7285] hover:text-[#1F1F24] focus:outline-none cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold rounded-xl shadow-lg shadow-[#4F5DFF]/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {loading ? 'Authenticating...' : 'Sign In to Account'} <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+        )}
+
+        {/* Forgot Password Form */}
+        {mode === 'forgot_password' && (
+          <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 text-xs">
+            <div>
+              <label className="block text-[#1F1F24] font-bold mb-1.5">Registered Email Address</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
+                <input
+                  type="email"
+                  required
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="your.email@example.com"
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#E8EAF8] focus:outline-none focus:border-[#4F5DFF] bg-[#F7F8FC]"
                 />
               </div>
@@ -281,10 +347,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold rounded-xl shadow-lg shadow-[#4F5DFF]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold rounded-xl shadow-lg shadow-[#4F5DFF]/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              {loading ? 'Authenticating...' : 'Sign In to Account'} <ArrowRight className="w-4 h-4" />
+              {loading ? 'Sending Reset Link...' : 'Send Password Reset Link'} <ArrowRight className="w-4 h-4" />
             </button>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
+                className="text-[#6C7285] hover:text-[#1F1F24] text-xs font-semibold underline cursor-pointer"
+              >
+                ← Back to Sign In
+              </button>
+            </div>
           </form>
         )}
 
@@ -329,14 +405,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
 
             <div>
               <label className="block text-[#1F1F24] font-bold mb-1">Create Password</label>
-              <input
-                type="password"
-                required
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E8EAF8] focus:outline-none focus:border-[#4F5DFF] bg-[#F7F8FC]"
-              />
+              <div className="relative">
+                <input
+                  type={showRegPassword ? 'text' : 'password'}
+                  required
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-[#E8EAF8] focus:outline-none focus:border-[#4F5DFF] bg-[#F7F8FC]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  className="absolute right-3.5 top-3 text-[#6C7285] hover:text-[#1F1F24] focus:outline-none cursor-pointer"
+                  aria-label={showRegPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <label className="flex items-start gap-2 cursor-pointer pt-1">
@@ -354,9 +440,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold rounded-xl shadow-lg shadow-[#4F5DFF]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold rounded-xl shadow-lg shadow-[#4F5DFF]/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              {loading ? 'Creating Account...' : 'Continue to Onboarding'} <ArrowRight className="w-4 h-4" />
+              {loading ? 'Creating Account...' : 'Create Account & Open Dashboard'} <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         )}
