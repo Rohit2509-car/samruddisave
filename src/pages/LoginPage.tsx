@@ -28,6 +28,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    // Automatically redirect already authenticated existing users to dashboard
+    const user = stateStore.getCurrentUser();
+    if (user && user.id) {
+      const isComplete = user.onboarding_completed === true || 
+        (user.full_name && user.phone && user.pan_number && user.kyc_status !== 'unsubmitted');
+      if (isComplete) {
+        onNavigate('/dashboard');
+      } else if (user.onboarding_completed === false) {
+        onNavigate('/onboarding');
+      }
+    }
+  }, []);
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -77,6 +91,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
             kyc_status: 'approved' as const,
             pipeline_stage: 'ACTIVE_SAVING' as any,
             ocr_confidence: 99.8,
+            onboarding_completed: true,
             created_at: new Date().toISOString()
           };
           await stateStore.registerOrUpdateProfile(newProfile);
@@ -99,17 +114,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
       const profile = stateStore.getCurrentUser();
 
       // 3. User Validation: Check if Profile & Onboarding is complete
-      const isOnboardingCompleted = profile?.onboarding_completed === true || (profile && profile.full_name && profile.phone && profile.pan_number && profile.kyc_status !== 'unsubmitted');
+      const isOnboardingCompleted = profile?.onboarding_completed === true || 
+        (profile && profile.full_name && profile.phone && profile.pan_number && profile.kyc_status !== 'unsubmitted');
 
-      setSuccessMsg(`Login successful! Checking onboarding status...`);
+      setSuccessMsg(`Authentication successful! Redirecting to your dashboard...`);
 
-      setTimeout(() => {
-        if (isOnboardingCompleted) {
-          onNavigate('/dashboard');
-        } else {
-          onNavigate('/onboarding');
-        }
-      }, 600);
+      // Immediately navigate existing users to their personalized dashboard
+      if (isOnboardingCompleted) {
+        onNavigate('/dashboard');
+      } else {
+        onNavigate('/onboarding');
+      }
 
     } catch (err: any) {
       setErrorMsg(err?.message || 'Authentication failed. Please check your network.');
