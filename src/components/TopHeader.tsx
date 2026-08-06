@@ -43,7 +43,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [activeHash, setActiveHash] = useState(window.location.hash);
   const [tappedLabel, setTappedLabel] = useState<string | null>(null);
-  const navContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -172,19 +171,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     setMobileMenuOpen(false);
   };
 
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (navContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -180 : 180;
-      navContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
-
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (navContainerRef.current && e.deltaY !== 0) {
-      navContainerRef.current.scrollLeft += e.deltaY;
-    }
-  };
-
   const handleSignOut = async () => {
     setDropdownOpen(false);
     setMobileMenuOpen(false);
@@ -208,24 +194,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </button>
         </div>
 
-        {/* Center Section: Single Modern Navigation Bar with Animated Icons & Hover Reveal Labels */}
-        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 mx-2 group/navbar max-w-full justify-center">
-          
-          <button
-            onClick={() => handleScroll('left')}
-            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          <nav
-            ref={navContainerRef}
-            onWheel={handleWheel}
-            className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-center"
-          >
+        {/* Center Section: Clean Navigation Bar with Section Names */}
+        <div className="hidden lg:flex items-center justify-center flex-1 min-w-0 mx-2">
+          <nav className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner justify-center">
             {currentNavItems.map((item) => {
-              const Icon = item.icon;
               const isActive = checkIsActive(item);
               const isLocked = (item as any).locked;
 
@@ -234,48 +206,30 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                   key={item.label}
                   onClick={() => handleNavClick(item.path, item.label, isLocked)}
                   disabled={isLocked}
-                  className={`group/navitem relative flex items-center justify-center transition-all duration-300 ease-out cursor-pointer shrink-0 rounded-full min-h-[40px] px-3 text-xs font-bold ${
+                  className={`relative flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 rounded-full min-h-[40px] px-4 text-xs font-bold ${
                     isActive
-                      ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.03]'
+                      ? 'bg-[#4F5DFF] text-white shadow-md'
                       : isLocked
                       ? 'text-slate-300 bg-transparent cursor-not-allowed'
-                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs font-semibold'
+                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs'
                   }`}
                   aria-label={item.label}
                 >
-                  {/* Animated Micro-interaction Icon */}
-                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover/navitem:scale-110 group-hover/navitem:rotate-3 ${
-                    isActive ? 'scale-110 text-white animate-pulse' : ''
-                  }`} />
-
-                  {/* Smooth Reveal Page Name Text Label (Hidden by default, revealed on hover/focus or when active) */}
-                  <span className={`overflow-hidden transition-all duration-300 ease-out whitespace-nowrap text-xs font-bold ${
-                    isActive
-                      ? 'max-w-xs ml-2 opacity-100'
-                      : 'max-w-0 opacity-0 group-hover/navitem:max-w-xs group-hover/navitem:ml-2 group-hover/navitem:opacity-100 group-focus/navitem:max-w-xs group-focus/navitem:ml-2 group-focus/navitem:opacity-100'
-                  }`}>
+                  <span className="whitespace-nowrap">
                     {item.label}
                   </span>
 
                   {item.badge && !isActive && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
                   )}
 
                   {isLocked && (
-                    <Lock className="w-3 h-3 text-slate-300 ml-1 shrink-0" />
+                    <Lock className="w-3 h-3 text-slate-300 ml-1.5 shrink-0" />
                   )}
                 </button>
               );
             })}
           </nav>
-
-          <button
-            onClick={() => handleScroll('right')}
-            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Far Right Corner: Notifications + User Profile + Website Logo (Placed at the Far Right) */}
