@@ -197,38 +197,19 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E8EAF8] shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         
-        {/* Left Side: Logo & Mobile Hamburger Menu Toggle */}
+        {/* Left Side: Mobile Menu Toggle & User Profile Controls */}
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#6C7285] hover:text-[#1F1F24] bg-[#F7F8FC] border border-[#E8EAF8] transition-all cursor-pointer shrink-0 active:scale-95"
+            className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#6C7285] hover:text-[#1F1F24] bg-[#F7F8FC] border border-[#E8EAF8] transition-all cursor-pointer shrink-0 active:scale-95 shadow-xs"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-
-          {/* Website Logo (Positioned on the LEFT side) */}
-          <div
-            onClick={() => handleNavClick(isAdminPage ? '/admin' : '/', 'Overview')}
-            className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95"
-            title="SamruddiSave - RBI Certified Escrow Platform"
-          >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
-              S
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="font-heading font-extrabold text-base tracking-tight text-[#1F1F24] leading-none">
-                Samruddi<span className="text-[#4F5DFF]">Save</span>
-              </span>
-              <span className="hidden sm:inline-block text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5">
-                RBI Escrow Certified
-              </span>
-            </div>
-          </div>
         </div>
 
-        {/* Center Navigation Bar (Side by side single row layout) */}
-        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 mx-3 group/navbar max-w-full">
+        {/* Center Section: Single Modern Navigation Bar with Animated Icons & Hover Reveal Labels */}
+        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 mx-2 group/navbar max-w-full justify-center">
           
           <button
             onClick={() => handleScroll('left')}
@@ -241,7 +222,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           <nav
             ref={navContainerRef}
             onWheel={handleWheel}
-            className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-start xl:justify-center"
+            className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-center"
           >
             {currentNavItems.map((item) => {
               const Icon = item.icon;
@@ -253,28 +234,35 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                   key={item.label}
                   onClick={() => handleNavClick(item.path, item.label, isLocked)}
                   disabled={isLocked}
-                  className={`group/navitem relative flex items-center justify-center gap-1.5 transition-all duration-200 ease-out cursor-pointer shrink-0 rounded-full min-h-[38px] px-3 text-xs font-bold ${
+                  className={`group/navitem relative flex items-center justify-center transition-all duration-300 ease-out cursor-pointer shrink-0 rounded-full min-h-[40px] px-3 text-xs font-bold ${
                     isActive
-                      ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.02]'
+                      ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.03]'
                       : isLocked
                       ? 'text-slate-300 bg-transparent cursor-not-allowed'
                       : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs font-semibold'
                   }`}
-                  title={item.label}
+                  aria-label={item.label}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover/navitem:scale-110 ${isActive ? 'text-white' : ''}`} />
-                  <span className="whitespace-nowrap">
+                  {/* Animated Micro-interaction Icon */}
+                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover/navitem:scale-110 group-hover/navitem:rotate-3 ${
+                    isActive ? 'scale-110 text-white animate-pulse' : ''
+                  }`} />
+
+                  {/* Smooth Reveal Page Name Text Label (Hidden by default, revealed on hover/focus or when active) */}
+                  <span className={`overflow-hidden transition-all duration-300 ease-out whitespace-nowrap text-xs font-bold ${
+                    isActive
+                      ? 'max-w-xs ml-2 opacity-100'
+                      : 'max-w-0 opacity-0 group-hover/navitem:max-w-xs group-hover/navitem:ml-2 group-hover/navitem:opacity-100 group-focus/navitem:max-w-xs group-focus/navitem:ml-2 group-focus/navitem:opacity-100'
+                  }`}>
                     {item.label}
                   </span>
 
                   {item.badge && !isActive && (
-                    <span className="ml-0.5 px-1.5 py-0.5 bg-amber-500 text-white rounded-full text-[9px] font-bold">
-                      {item.badge}
-                    </span>
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
                   )}
 
                   {isLocked && (
-                    <Lock className="w-3 h-3 text-slate-300 ml-0.5 shrink-0" />
+                    <Lock className="w-3 h-3 text-slate-300 ml-1 shrink-0" />
                   )}
                 </button>
               );
@@ -290,8 +278,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </button>
         </div>
 
-        {/* Right Section: Notifications + User Profile (Authenticated) OR Sign In Buttons (Unauthenticated) */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Far Right Corner: Notifications + User Profile + Website Logo (Placed at the Far Right) */}
+        <div className="flex items-center gap-3 shrink-0">
           {user ? (
             <>
               {/* Notifications Dropdown */}
@@ -420,6 +408,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
               </button>
             </div>
           )}
+
+          {/* Far Right Corner: Website Logo */}
+          <div
+            onClick={() => handleNavClick(isAdminPage ? '/admin' : '/', 'Overview')}
+            className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95 pl-2 border-l border-[#E8EAF8]"
+            title="SamruddiSave - RBI Certified Escrow Platform"
+          >
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
+              S
+            </div>
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="font-heading font-extrabold text-base tracking-tight text-[#1F1F24] leading-none">
+                Samruddi<span className="text-[#4F5DFF]">Save</span>
+              </span>
+              <span className="text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5">
+                RBI Escrow Certified
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
