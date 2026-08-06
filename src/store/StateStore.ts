@@ -10,7 +10,11 @@
   AuditLog,
   GiftHamper,
   NotificationItem,
-  MemberLedgerEntry
+  MemberLedgerEntry,
+  ChitGroup,
+  ChitGroupMember,
+  ChitAuction,
+  ChitBid
 } from '../types';
 import {
   INITIAL_PROFILES,
@@ -20,6 +24,8 @@ import {
   INITIAL_TICKETS,
   INITIAL_SAVINGS_CIRCLES,
   INITIAL_AUDIT_LOGS,
+  INITIAL_CHIT_GROUPS,
+  INITIAL_AUCTIONS,
   SAVINGS_PLANS,
   GIFT_HAMPERS
 } from '../data/mockData';
@@ -50,6 +56,10 @@ class StateStore {
   private tickets: SupportTicket[] = [];
   private circles: SavingsCircle[] = [];
   private auditLogs: AuditLog[] = [];
+  private chitGroups: ChitGroup[] = INITIAL_CHIT_GROUPS;
+  private chitGroupMembers: ChitGroupMember[] = [];
+  private auctions: ChitAuction[] = INITIAL_AUCTIONS;
+  private bids: ChitBid[] = [];
   private escrowBalance: number = 4850000;
   private currentUserId: string | null = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID) || null;
 
@@ -574,6 +584,89 @@ class StateStore {
 
   public getProfiles(): UserProfile[] {
     return [...this.profiles];
+  }
+
+  public getChitGroups(): ChitGroup[] {
+    return [...this.chitGroups];
+  }
+
+  public getAuctions(): ChitAuction[] {
+    return [...this.auctions];
+  }
+
+  public getBids(auctionId?: string): ChitBid[] {
+    if (auctionId) {
+      return this.bids.filter((b) => b.auction_id === auctionId);
+    }
+    return [...this.bids];
+  }
+
+  public async requestJoinChitGroup(groupId: string, userId: string) {
+    const group = this.chitGroups.find((g) => g.id === groupId);
+    if (!group) return { success: false, message: 'Group not found.' };
+
+    const existing = this.chitGroupMembers.find((m) => m.group_id === groupId && m.user_id === userId);
+    if (existing) return { success: true, message: 'Already requested or joined this group.' };
+
+    const newMember: ChitGroupMember = {
+      id: `cgm-${userId.slice(-4)}-${Date.now().toString().slice(-4)}`,
+      group_id: groupId,
+      user_id: userId,
+      join_date: new Date().toISOString(),
+      status: 'pending_approval'
+    };
+
+    this.chitGroupMembers.push(newMember);
+    this.saveToStorage();
+
+    try {
+      await supabase.from('chit_group_members').insert({
+        id: newMember.id,
+        group_id: groupId,
+        user_id: userId,
+        status: newMember.status,
+      });
+    } catch (e) {
+      console.warn('Supabase chit_group_members insert fallback:', e);
+    }
+
+    return { success: true, message: 'Join request submitted! Awaiting Admin Approval.' };
+  }
+
+  public async placeAuctionBid(auctionId: string, userId: string, discountAmount: number) {
+    const auction = this.auctions.find((a) => a.id === auctionId);
+    if (!auction) return { success: false, message: 'Auction not found.' };
+
+    const user = this.profiles.find((p) => p.id === userId);
+    const newBid: ChitBid = {
+      id: `bid-${Date.now()}`,
+      auction_id: auctionId,
+      user_id: userId,
+      user_name: user?.full_name || 'Member',
+      bid_discount_amount: discountAmount,
+      created_at: new Date().toISOString(),
+    };
+
+    this.bids.push(newBid);
+    if (!auction.winning_discount_bid || discountAmount > auction.winning_discount_bid) {
+      auction.winning_discount_bid = discountAmount;
+      const g = this.chitGroups.find(group => group.id === auction.group_id);
+      auction.prize_amount = (g?.total_value || 50000) - discountAmount;
+    }
+    this.saveToStorage();
+
+    try {
+      await supabase.from('bids').insert({
+        id: newBid.id,
+        auction_id: auctionId,
+        user_id: userId,
+        bid_discount_amount: discountAmount
+      });
+    } catch (e) {
+      console.warn('Supabase bids insert fallback:', e);
+    }
+
+    return { success: true, message: 'Discount bid placed successfully!' };
   }
 
   public getMemberships(): Membership[] {

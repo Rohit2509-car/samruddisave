@@ -15,6 +15,8 @@ import { PaymentSetupPage } from './pages/PaymentSetupPage';
 import { LedgerPage } from './pages/LedgerPage';
 import { HamperSelectionPage } from './pages/HamperSelectionPage';
 import { SavingsCirclesPage } from './pages/SavingsCirclesPage';
+import { AuctionsPage } from './pages/AuctionsPage';
+import { ReportsPage } from './pages/ReportsPage';
 
 import { SupportPortalPage } from './pages/support/SupportPortalPage';
 import { LoginPage } from './pages/LoginPage';
@@ -91,6 +93,12 @@ export default function App() {
 
       case '/circles':
         return <SavingsCirclesPage onNavigate={handleNavigate} />;
+
+      case '/auctions':
+        return <AuctionsPage onNavigate={handleNavigate} />;
+
+      case '/reports':
+        return <ReportsPage onNavigate={handleNavigate} />;
 
       case '/support':
         return <SupportPortalPage onNavigate={handleNavigate} />;

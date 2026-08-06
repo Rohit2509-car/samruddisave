@@ -25,7 +25,8 @@ import {
   Activity,
   DollarSign,
   Settings,
-  UserCog
+  UserCog,
+  Gavel
 } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { AuthModal } from './AuthModal';
@@ -65,12 +66,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
   const memberNavItems = [
     { label: 'Overview', path: '/', icon: Home },
-    { label: 'Maturity Plans', path: '/plans', icon: Calculator },
+    { label: 'Chit Groups', path: '/circles', icon: Users },
+    { label: 'Live Auctions', path: '/auctions', icon: Gavel },
     { label: 'KYC Verification', path: '/kyc', icon: FileCheck2, badge: isKYCPending ? 'Action' : undefined },
     { label: 'Wallet Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Monthly Deposit', path: '/pay', icon: CreditCard },
+    { label: 'Ledger & Reports', path: '/reports', icon: FileText },
     { label: 'Gift Hampers', path: '/hampers', icon: Gift },
-    { label: 'Savings Circles', path: '/circles', icon: Users },
   ];
 
   const adminNavItems = [

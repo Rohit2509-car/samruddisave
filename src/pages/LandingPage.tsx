@@ -202,55 +202,161 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* Curated Gift Hampers Showcase */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <span className="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              Maturity Rewards
+      {/* About Company & RBI Escrow Section */}
+      <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white rounded-3xl border border-[#E8EAF8] shadow-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div className="space-y-4">
+            <span className="bg-blue-100 text-blue-800 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+              About SamruddiSave
             </span>
-            <h2 className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">
-              Curated Luxury Gift Hampers
+            <h2 className="font-heading font-extrabold text-3xl text-[#1F1F24]">
+              India's Most Trusted Certified Chit Fund & Micro-Savings Platform
             </h2>
-          </div>
-          <button
-            onClick={() => onNavigate('/hampers')}
-            className="text-xs font-bold text-[#4F5DFF] hover:underline flex items-center gap-1"
-          >
-            Explore All Hampers <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {GIFT_HAMPERS.map((hamper) => (
-            <div
-              key={hamper.id}
-              onClick={() => onNavigate('/hampers')}
-              className="bg-white rounded-2xl border border-[#E8EAF8] overflow-hidden shadow-xs hover:shadow-lg transition-all cursor-pointer group"
-            >
-              <div className="h-44 bg-slate-100 relative overflow-hidden">
-                <img
-                  src={hamper.image}
-                  alt={hamper.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <span className="absolute top-3 left-3 bg-[#1F1F24]/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
-                  {hamper.tier}
-                </span>
-                <span className="absolute bottom-3 right-3 bg-emerald-500 text-white font-mono font-bold text-xs px-2.5 py-1 rounded-xl shadow-md">
-                  ₹{hamper.retail_value.toLocaleString('en-IN')} Value
-                </span>
+            <p className="text-xs text-[#6C7285] leading-relaxed">
+              Founded with a mission to bring financial inclusion and disciplined savings to every household in India, SamruddiSave integrates traditional chit fund community savings with modern RBI-certified tripartite escrow security.
+            </p>
+            <div className="grid grid-cols-2 gap-4 pt-2 text-xs">
+              <div className="bg-[#F7F8FC] p-3 rounded-2xl border border-[#E8EAF8]">
+                <p className="font-bold text-[#4F5DFF] text-lg">100% Legal</p>
+                <p className="text-[11px] text-[#6C7285]">Compliant with Chit Funds Act 1982</p>
               </div>
-              <div className="p-4 space-y-2">
-                <h3 className="font-heading font-bold text-base text-[#1F1F24]">{hamper.name}</h3>
-                <p className="text-xs text-[#6C7285] line-clamp-2">{hamper.description}</p>
-                <div className="pt-2 flex items-center justify-between text-xs text-[#4F5DFF] font-semibold">
-                  <span>{hamper.included_items.length} Curated Items</span>
-                  <span>View Details →</span>
-                </div>
+              <div className="bg-[#F7F8FC] p-3 rounded-2xl border border-[#E8EAF8]">
+                <p className="font-bold text-emerald-600 text-lg">RBI Escrow</p>
+                <p className="text-[11px] text-[#6C7285]">Tripartite Bank Account Custody</p>
               </div>
             </div>
-          ))}
+          </div>
+          <div className="bg-gradient-to-tr from-[#1F1F24] to-[#4F5DFF] p-8 rounded-3xl text-white space-y-4 shadow-xl">
+            <ShieldCheck className="w-12 h-12 text-emerald-400" />
+            <h3 className="font-heading font-extrabold text-2xl">Bank-Grade Capital Safeguards</h3>
+            <p className="text-xs text-slate-200 leading-relaxed">
+              Every monthly contribution is automatically deposited into a designated tripartite RBI Escrow Custody Account with HDFC Bank Trustees. Your capital remains 100% bankruptcy-remote and ring-fenced.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How The Chit Fund Works */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="text-center space-y-2 max-w-xl mx-auto">
+          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+            Simple 4-Step Process
+          </span>
+          <h2 className="font-heading font-extrabold text-3xl text-[#1F1F24]">
+            How Samruddi Chit Fund Works
+          </h2>
+          <p className="text-xs text-[#6C7285]">
+            Transparent community savings combined with monthly bidding auctions
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-[#E8EAF8] shadow-xs space-y-2 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#4F5DFF]/10 text-[#4F5DFF] font-bold text-sm flex items-center justify-center mx-auto">1</div>
+            <h4 className="font-extrabold text-sm text-[#1F1F24]">1. Register & KYC</h4>
+            <p className="text-[11px] text-[#6C7285]">Verify your Aadhaar, PAN, and Bank details for instant RBI escrow onboarding.</p>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-[#E8EAF8] shadow-xs space-y-2 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#4F5DFF]/10 text-[#4F5DFF] font-bold text-sm flex items-center justify-center mx-auto">2</div>
+            <h4 className="font-extrabold text-sm text-[#1F1F24]">2. Join Chit Group</h4>
+            <p className="text-[11px] text-[#6C7285]">Choose a Chit Group (₹50K, ₹1L, ₹5L) matching your budget and savings goal.</p>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-[#E8EAF8] shadow-xs space-y-2 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#4F5DFF]/10 text-[#4F5DFF] font-bold text-sm flex items-center justify-center mx-auto">3</div>
+            <h4 className="font-extrabold text-sm text-[#1F1F24]">3. Monthly Deposit & Auction</h4>
+            <p className="text-[11px] text-[#6C7285]">Pay monthly installments via UPI or Cash & participate in monthly discount bidding.</p>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-[#E8EAF8] shadow-xs space-y-2 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#4F5DFF]/10 text-[#4F5DFF] font-bold text-sm flex items-center justify-center mx-auto">4</div>
+            <h4 className="font-extrabold text-sm text-[#1F1F24]">4. Maturity & Disbursal</h4>
+            <p className="text-[11px] text-[#6C7285]">Receive your full prize amount + accrued cash bonus + luxury gift hamper!</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="text-center space-y-2">
+          <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+            Verified Customer Feedback
+          </span>
+          <h2 className="font-heading font-extrabold text-3xl text-[#1F1F24]">
+            Trusted by 50,000+ Disciplined Savers
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] space-y-3 shadow-xs">
+            <div className="flex items-center gap-1 text-amber-500">★★★★★</div>
+            <p className="text-xs text-[#6C7285] leading-relaxed">
+              "SamruddiSave made monthly chit deposits so easy! I won the 3rd month auction bid and received ₹91,000 directly into my bank account within 24 hours."
+            </p>
+            <div className="pt-2 border-t border-slate-100">
+              <p className="font-bold text-xs text-[#1F1F24]">Karthickeyan M.</p>
+              <p className="text-[10px] text-[#6C7285]">Chennai • Member since Jan 2026</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] space-y-3 shadow-xs">
+            <div className="flex items-center gap-1 text-amber-500">★★★★★</div>
+            <p className="text-xs text-[#6C7285] leading-relaxed">
+              "The automatic receipt generation and digital ledger update after offline cash payment at the branch gives total peace of mind."
+            </p>
+            <div className="pt-2 border-t border-slate-100">
+              <p className="font-bold text-xs text-[#1F1F24]">Sneha Roy</p>
+              <p className="text-[10px] text-[#6C7285]">Kolkata • Member since Feb 2026</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] space-y-3 shadow-xs">
+            <div className="flex items-center gap-1 text-amber-500">★★★★★</div>
+            <p className="text-xs text-[#6C7285] leading-relaxed">
+              "Clear compliance, RBI escrow custody, and the luxury gift hamper at Month 12 maturity makes this the best savings plan in India."
+            </p>
+            <div className="pt-2 border-t border-slate-100">
+              <p className="font-bold text-xs text-[#1F1F24]">Rajesh Kumar</p>
+              <p className="text-[10px] text-[#6C7285]">Bengaluru • Member since Mar 2026</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ & Contact Us */}
+      <section id="faq" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          {/* FAQ */}
+          <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] space-y-4">
+            <h3 className="font-heading font-extrabold text-2xl text-[#1F1F24]">Frequently Asked Questions</h3>
+            <div className="space-y-3 text-xs">
+              <div className="p-3 bg-[#F7F8FC] rounded-2xl border border-[#E8EAF8]">
+                <p className="font-bold text-[#1F1F24]">Is SamruddiSave registered under the Chit Funds Act?</p>
+                <p className="text-[#6C7285] mt-1">Yes, all chit groups are 100% registered and compliant under the Chit Funds Act, 1982 with RBI Escrow bank custody.</p>
+              </div>
+              <div className="p-3 bg-[#F7F8FC] rounded-2xl border border-[#E8EAF8]">
+                <p className="font-bold text-[#1F1F24]">Can I pay offline cash at a branch office?</p>
+                <p className="text-[#6C7285] mt-1">Yes! When paying cash to an Admin, the Admin records your payment in the Admin Cash Entry module and an official receipt is issued instantly.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Us */}
+          <div id="contact" className="bg-gradient-to-tr from-[#1F1F24] to-[#4F5DFF] p-6 rounded-3xl text-white space-y-4 shadow-xl">
+            <h3 className="font-heading font-extrabold text-2xl">Contact Support & Branch Help Desk</h3>
+            <p className="text-xs text-slate-200">Have questions about joining a Chit Group or verifying your KYC?</p>
+            <div className="space-y-2 text-xs pt-2">
+              <p>📍 <strong>Head Office:</strong> Samruddi Savings Tower, MG Road, Bengaluru - 560001</p>
+              <p>📞 <strong>Phone:</strong> +91 1800 267 9000 (Toll Free)</p>
+              <p>✉️ <strong>Email:</strong> support@samruddisave.com</p>
+            </div>
+            <button
+              onClick={() => onNavigate('/support')}
+              className="w-full py-3 bg-white text-[#4F5DFF] hover:bg-slate-100 font-bold rounded-2xl text-xs transition-all cursor-pointer"
+            >
+              Open Support Ticket
+            </button>
+          </div>
+
         </div>
       </section>
 

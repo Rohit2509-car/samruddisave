@@ -1,6 +1,6 @@
-export type UserRole = 'member' | 'admin';
+export type UserRole = 'member' | 'admin' | 'staff' | 'super_admin' | 'employee' | 'finance_admin';
 
-export type KYCStatus = 'unsubmitted' | 'pending' | 'approved' | 'rejected' | 'resubmit_requested';
+export type KYCStatus = 'unsubmitted' | 'pending' | 'approved' | 'rejected' | 'resubmit_requested' | 'correction_requested';
 
 export type PipelineStage = 
   | 'signup'
@@ -15,6 +15,80 @@ export type PipelineStage =
   | 'hamper'
   | 'completed'
   | 'payout';
+
+export interface NomineeDetails {
+  id?: string;
+  user_id: string;
+  nominee_name: string;
+  relationship: string;
+  phone: string;
+  address?: string;
+}
+
+export interface DocumentUpload {
+  id?: string;
+  user_id: string;
+  doc_type: 'aadhaar' | 'pan' | 'photo' | 'passbook';
+  doc_url: string;
+  status: 'pending' | 'verified' | 'rejected';
+  notes?: string;
+}
+
+export interface ChitGroup {
+  id: string;
+  name: string;
+  total_value: number;
+  monthly_amount: number;
+  members_limit: number;
+  duration_months: number;
+  current_members_count: number;
+  status: 'recruiting' | 'active' | 'completed';
+  next_auction_date?: string;
+  created_at?: string;
+}
+
+export interface ChitGroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  join_date: string;
+  status: 'pending_approval' | 'approved' | 'active' | 'completed';
+}
+
+export interface ChitAuction {
+  id: string;
+  group_id: string;
+  group_name?: string;
+  auction_month: number;
+  auction_date: string;
+  winner_user_id?: string;
+  winner_name?: string;
+  winning_discount_bid?: number;
+  prize_amount?: number;
+  status: 'scheduled' | 'live' | 'completed' | 'disbursed';
+  created_at?: string;
+}
+
+export interface ChitBid {
+  id: string;
+  auction_id: string;
+  user_id: string;
+  user_name?: string;
+  bid_discount_amount: number;
+  created_at: string;
+}
+
+export interface LedgerEntry {
+  id: string;
+  user_id: string;
+  group_id?: string;
+  month_number: number;
+  debit: number;
+  credit: number;
+  balance: number;
+  fine_amount: number;
+  created_at: string;
+}
 
 export interface UserPasswordMetadata {
   id?: string;
@@ -37,13 +111,16 @@ export interface UserProfile {
   phone: string;
   pan_number: string;
   aadhaar_number: string;
+  dob?: string;
+  address?: string;
+  occupation?: string;
   role: UserRole;
   kyc_status: KYCStatus;
   pipeline_stage: PipelineStage;
   ocr_confidence: number;
   onboarding_completed?: boolean;
   login_id?: string;
-  address?: string;
+  nominee?: NomineeDetails;
   emergency_contact?: {
     name: string;
     relationship: string;
