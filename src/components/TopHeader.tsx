@@ -426,9 +426,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
         </div>
       </div>
 
-      {/* Mobile / Tablet Full Drawer Menu */}
+      {/* Mobile / Tablet Floating Overlay Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white/98 backdrop-blur-xl border-b border-[#E8EAF8] px-4 pt-3 pb-6 space-y-4 animate-in fade-in slide-in-from-top-3 duration-200 shadow-2xl">
+        <>
+          {/* Semi-transparent Backdrop Overlay */}
+          <div
+            className="lg:hidden fixed inset-0 top-16 z-40 bg-black/40 backdrop-blur-xs transition-opacity duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Floating Mobile Drawer Content Overlay (Does not push down page content) */}
+          <div className="lg:hidden fixed top-16 left-0 right-0 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto bg-white/98 backdrop-blur-xl border-b border-[#E8EAF8] px-4 pt-3 pb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-2xl">
 
           {/* If user is NOT signed in or on Landing Page: Render Public Navigation ONLY */}
           {(!user || currentPath === '/') ? (
@@ -594,6 +602,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           )}
 
         </div>
+        </>
       )}
 
       {/* Auth Modal */}
