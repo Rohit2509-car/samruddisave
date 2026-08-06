@@ -227,71 +227,68 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </div>
         </div>
 
-        {/* Center Navigation Bar (Hidden on Customer Details Dashboard /dashboard) */}
-        {!isDashboardPage && (
-          <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 max-w-2xl justify-center mx-auto group/navbar">
-            
-            <button
-              onClick={() => handleScroll('left')}
-              className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+        {/* Center Navigation Bar (Side by side single row layout) */}
+        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 mx-3 group/navbar max-w-full">
+          
+          <button
+            onClick={() => handleScroll('left')}
+            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
 
-            <nav
-              ref={navContainerRef}
-              onWheel={handleWheel}
-              className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-center"
-            >
-              {currentNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = checkIsActive(item);
-                const isLocked = (item as any).locked;
-                const isTapped = tappedLabel === item.label;
+          <nav
+            ref={navContainerRef}
+            onWheel={handleWheel}
+            className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-start xl:justify-center"
+          >
+            {currentNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = checkIsActive(item);
+              const isLocked = (item as any).locked;
 
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => handleNavClick(item.path, item.label, isLocked)}
-                    disabled={isLocked}
-                    className={`group/navitem relative flex items-center justify-center gap-2 transition-all duration-200 ease-out cursor-pointer shrink-0 rounded-full min-h-[40px] px-3.5 text-xs font-bold ${
-                      isActive
-                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.02]'
-                        : isLocked
-                        ? 'text-slate-300 bg-transparent cursor-not-allowed'
-                        : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs font-semibold'
-                    }`}
-                    title={item.label}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover/navitem:scale-110 ${isActive ? 'text-white' : ''}`} />
-                    <span className="whitespace-nowrap">
-                      {item.label}
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => handleNavClick(item.path, item.label, isLocked)}
+                  disabled={isLocked}
+                  className={`group/navitem relative flex items-center justify-center gap-1.5 transition-all duration-200 ease-out cursor-pointer shrink-0 rounded-full min-h-[38px] px-3 text-xs font-bold ${
+                    isActive
+                      ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.02]'
+                      : isLocked
+                      ? 'text-slate-300 bg-transparent cursor-not-allowed'
+                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs font-semibold'
+                  }`}
+                  title={item.label}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover/navitem:scale-110 ${isActive ? 'text-white' : ''}`} />
+                  <span className="whitespace-nowrap">
+                    {item.label}
+                  </span>
+
+                  {item.badge && !isActive && (
+                    <span className="ml-0.5 px-1.5 py-0.5 bg-amber-500 text-white rounded-full text-[9px] font-bold">
+                      {item.badge}
                     </span>
+                  )}
 
-                    {item.badge && !isActive && (
-                      <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white rounded-full text-[9px] font-bold">
-                        {item.badge}
-                      </span>
-                    )}
+                  {isLocked && (
+                    <Lock className="w-3 h-3 text-slate-300 ml-0.5 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-                    {isLocked && (
-                      <Lock className="w-3 h-3 text-slate-300 ml-0.5 shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-
-            <button
-              onClick={() => handleScroll('right')}
-              className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+          <button
+            onClick={() => handleScroll('right')}
+            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Right Section: Notifications + User Profile (Authenticated) OR Sign In Buttons (Unauthenticated) */}
         <div className="flex items-center gap-2 shrink-0">
