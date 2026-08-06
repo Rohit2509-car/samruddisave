@@ -67,7 +67,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const memberNavItems = [
     { label: 'Overview', path: '/', icon: Home },
     { label: 'Chit Groups', path: '/circles', icon: Users },
-    { label: 'Live Auctions', path: '/auctions', icon: Gavel },
     { label: 'KYC Verification', path: '/kyc', icon: FileCheck2, badge: isKYCPending ? 'Action' : undefined },
     { label: 'Wallet Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Monthly Deposit', path: '/pay', icon: CreditCard },
