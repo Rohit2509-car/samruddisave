@@ -3,31 +3,35 @@ import { stateStore } from '../store/StateStore';
 import { UserProfile, Membership, ContributionRecord, GiftHamper } from '../types';
 import { SAVINGS_PLANS, GIFT_HAMPERS } from '../data/mockData';
 import {
-  ShieldAlert,
+  Home,
+  Users,
+  CreditCard,
+  FileText,
+  Gift,
+  FileCheck2,
+  HelpCircle,
+  Search,
+  Bell,
+  Settings,
+  User,
+  ChevronDown,
+  ArrowRight,
   ShieldCheck,
   CheckCircle2,
   Clock,
-  Sparkles,
-  Gift,
-  CreditCard,
-  ArrowRight,
-  Zap,
-  Lock,
-  Calendar,
-  Award,
-  TrendingUp,
-  AlertCircle,
-  Activity,
-  FileText,
-  Check,
   Download,
-  User,
-  FileSpreadsheet,
-  Settings
+  Activity,
+  DollarSign,
+  TrendingUp,
+  Percent,
+  Calendar,
+  Lock,
+  LogOut,
+  AlertCircle,
+  FileSpreadsheet
 } from 'lucide-react';
 import { UserProfileEditModal } from '../components/UserProfileEditModal';
 import { PrintableReceiptModal } from '../components/PrintableReceiptModal';
-import { MemberLedgerView } from '../components/MemberLedgerView';
 
 interface DashboardPageProps {
   onNavigate: (path: string) => void;
@@ -37,10 +41,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
   const [membership, setMembership] = useState<Membership | undefined>(user ? stateStore.getUserMembership(user.id) : undefined);
   const [contributions, setContributions] = useState<ContributionRecord[]>(user ? stateStore.getUserContributions(user.id) : []);
-  
+
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [viewReceiptRecord, setViewReceiptRecord] = useState<ContributionRecord | null>(null);
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'ledger'>('dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -61,10 +65,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     return (
       <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-xl">
         <h2 className="font-heading font-extrabold text-2xl text-slate-900">Signed Out</h2>
-        <p className="text-xs text-slate-500">Please sign in to view your micro-savings wallet dashboard.</p>
+        <p className="text-xs text-slate-500">Please sign in to view your micro-savings customer dashboard.</p>
         <button
           onClick={() => onNavigate('/login')}
-          className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white text-xs font-bold px-6 py-3 rounded-2xl transition-all cursor-pointer"
+          className="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold px-6 py-3 rounded-2xl transition-all cursor-pointer"
         >
           Sign In
         </button>
@@ -83,7 +87,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const remainingAmount = Math.max(0, totalGoalTarget - totalSavedSoFar);
   const goalProgressPct = Math.round((paidCount / 12) * 100);
   const accruedBonus = Math.round((totalSavedSoFar * plan.cash_bonus_pct) / 100);
-  const offlineContribs = contributions.filter((c) => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer');
 
   // Latest paid transaction
   const paidContribs = contributions.filter(c => c.status === 'PAID');
@@ -122,381 +125,384 @@ Thank you for saving with SamruddiSave Escrow!
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 space-y-6 sm:space-y-8 overflow-x-hidden">
+    <div className="min-h-screen bg-[#F4F6F9] flex flex-col lg:flex-row text-slate-800 font-sans">
       
-      {/* Top Banner / Welcome Row */}
-      <div className="bg-gradient-to-r from-[#1F1F24] via-[#2D2E38] to-[#4F5DFF] text-white p-5 sm:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-[#4F5DFF]/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex items-center gap-3 sm:gap-4 z-10 min-w-0 max-w-full">
-          {user.avatar_url && (
-            <img
-              src={user.avatar_url}
-              alt={user.full_name}
-              className="w-12 h-12 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl object-cover border-2 border-white/40 shadow-lg shrink-0"
-            />
-          )}
-          <div className="space-y-1.5 min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap max-w-full">
-              <span className="bg-white/10 text-white text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full backdrop-blur-xs border border-white/20 truncate max-w-[220px] sm:max-w-none">
-                Account ID: {user.id.length > 22 ? `${user.id.substring(0, 18)}...` : user.id}
-              </span>
-              <span className={`text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border shrink-0 ${
-                isKYCPending ? 'bg-amber-500/20 text-amber-300 border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-              }`}>
-                KYC {user.kyc_status.toUpperCase()}
-              </span>
+      {/* LEFT SIDEBAR NAVIGATION (Matching Reference Dark Sidebar) */}
+      <aside className="w-full lg:w-64 bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
+        
+        {/* Brand Header */}
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate('/')}>
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-extrabold text-lg flex items-center justify-center shadow-md">
+              S
             </div>
-            <h1 className="font-heading font-extrabold text-2xl sm:text-3xl md:text-4xl text-white truncate leading-tight">
-              Welcome back, {user.full_name}!
-            </h1>
-            <p className="text-[11px] sm:text-xs text-slate-300 truncate">
-              RBI Escrow Custody Account • {plan.name} (₹{plan.monthly_amount.toLocaleString('en-IN')}/mo)
-            </p>
+            <span className="font-heading font-extrabold text-lg text-white tracking-tight">
+              Samruddi<span className="text-blue-400">Save</span>
+            </span>
           </div>
         </div>
 
-        {/* Deposit & Profile Quick Actions */}
-        <div className="z-10 flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {!isKYCPending && (
-            <button
-              onClick={() => onNavigate('/pay')}
-              className="w-full sm:w-auto bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-[#4F5DFF]/40 flex items-center justify-center gap-2 text-xs cursor-pointer min-h-[44px]"
-            >
-              <CreditCard className="w-4 h-4" /> Make Monthly Deposit
-            </button>
-          )}
-          
+        {/* Sidebar Menu Items */}
+        <nav className="flex-1 p-4 space-y-1.5 text-xs font-semibold">
           <button
-            onClick={() => setActiveSection(activeSection === 'dashboard' ? 'ledger' : 'dashboard')}
-            className={`w-full sm:w-auto font-bold py-3.5 px-5 rounded-2xl transition-all border flex items-center justify-center gap-2 text-xs cursor-pointer min-h-[44px] ${
-              activeSection === 'ledger'
-                ? 'bg-white text-[#4F5DFF] border-white'
-                : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
-            }`}
+            onClick={() => onNavigate('/dashboard')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#3B82F6] text-white shadow-md font-bold transition-all cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4" /> {activeSection === 'dashboard' ? 'View Passbook Statement' : 'View Main Dashboard'}
+            <Home className="w-4 h-4 shrink-0" />
+            <span>Home</span>
           </button>
 
           <button
-            onClick={() => setIsProfileModalOpen(true)}
-            className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 px-4 rounded-2xl transition-all border border-white/20 flex items-center justify-center gap-2 text-xs cursor-pointer min-h-[44px]"
-            title="Edit Profile Details"
+            onClick={() => onNavigate('/circles')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
           >
-            <User className="w-4 h-4" /> Edit Profile
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Chit Groups</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('/pay')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
+          >
+            <CreditCard className="w-4 h-4 shrink-0" />
+            <span>Monthly Deposit</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('/reports')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 shrink-0" />
+            <span>Passbook & Ledger</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('/hampers')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
+          >
+            <Gift className="w-4 h-4 shrink-0" />
+            <span>Gift Hampers</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('/kyc')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
+          >
+            <FileCheck2 className="w-4 h-4 shrink-0" />
+            <span>KYC Verification</span>
+          </button>
+        </nav>
+
+        {/* Bottom Contact Support */}
+        <div className="p-4 border-t border-slate-800">
+          <button
+            onClick={() => onNavigate('/support')}
+            className="w-full text-left text-slate-400 hover:text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+          >
+            Contact Support
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* COMPLIANCE LOCK WARNING CARD WITH 12-HOUR SLA */}
-      {isKYCPending && (
-        <div className="bg-amber-50 border-2 border-amber-300 p-6 rounded-3xl shadow-md space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-amber-200 text-amber-800 rounded-2xl flex items-center justify-center shrink-0">
-                <Lock className="w-6 h-6" />
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col min-w-0">
+        
+        {/* TOP APP BAR (Matching Reference Top Header) */}
+        <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between gap-4">
+          
+          {/* Search Box */}
+          <div className="relative max-w-sm w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search deposits, receipts, plans..."
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Right Header Controls */}
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>SamruddiSave Escrow</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </div>
+
+            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all relative">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full" />
+            </button>
+
+            <button onClick={() => setIsProfileModalOpen(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
+              <Settings className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsProfileModalOpen(true)}>
+              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                {user.full_name?.charAt(0) || 'U'}
               </div>
-              <div>
-                <span className="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  12-Hour SLA Auto-Verification Protection Active
+            </div>
+          </div>
+        </header>
+
+        {/* DASHBOARD BODY */}
+        <div className="p-6 space-y-6 max-w-7xl w-full mx-auto">
+          
+          {/* Welcome Greeting */}
+          <div className="flex items-center justify-between">
+            <h1 className="font-heading font-extrabold text-2xl text-slate-900">
+              Welcome {user.full_name}!
+            </h1>
+            <button onClick={() => onNavigate('/kyc')} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" /> KYC Status: {user.kyc_status.toUpperCase()}
+            </button>
+          </div>
+
+          {/* PRIMARY CARD: Process Pay Run / Active Savings Plan Banner (Matching Reference Layout) */}
+          <div className="bg-white rounded-2xl border-l-4 border-l-emerald-500 border border-slate-200 p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm text-slate-800">
+                  Active Savings Plan ({plan.name}) 01/01/2026 to 31/12/2026
                 </span>
-                <h3 className="font-heading font-extrabold text-xl text-amber-950 mt-0.5">
-                  Pending Admin Approval
-                </h3>
-                <p className="text-xs text-amber-800 max-w-xl">
-                  Your e-KYC identity documents are submitted. If the Admin does not review within 12 hours, our system automatically verifies and approves your account without delay.
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">
+                  {user.kyc_status === 'approved' ? 'APPROVED' : 'ACTIVE'}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL SAVINGS VALUE</p>
+                <p className="font-heading font-extrabold text-2xl text-slate-900 mt-1">
+                  ₹{totalGoalTarget.toLocaleString('en-IN')}
                 </p>
               </div>
-            </div>
-            
-            <button
-              onClick={async () => {
-                await stateStore.fastForward12HourAutoApproval(user.id);
-                alert(`⏱️ 12-Hour SLA Auto-Verification triggered! Your account has been verified without manual Admin delay.`);
-              }}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer"
-            >
-              ⚡ Test: Fast-Forward 12h SLA Auto-Approve
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Renewal & Plan Continuation for Next 12 Months (Point 6) */}
-      {(paidCount >= 11 || user.pipeline_stage === 'matured' || membership?.status === 'matured') && (
-        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-6 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
-          <div className="space-y-1 text-center sm:text-left">
-            <span className="bg-white/20 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-              🎉 12-Month Plan Completion & Renewal Portal
-            </span>
-            <h3 className="font-heading font-extrabold text-xl">
-              Ready to Continue Your Savings Plan for the Next 12 Months?
-            </h3>
-            <p className="text-xs text-teal-100 max-w-lg">
-              You are approaching / have completed your 12-month micro-savings milestone. Continue saving to lock in your next guaranteed Gift Perk Hamper & ₹600 bonus!
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate('/plans')}
-            className="bg-white text-emerald-900 hover:bg-teal-50 font-extrabold text-xs px-6 py-3.5 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0"
-          >
-            Re-Enroll for Next 12 Months <ArrowRight className="w-4 h-4 text-emerald-600" />
-          </button>
-        </div>
-      )}
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PAYMENT DUE DATE</p>
+                <p className="font-heading font-extrabold text-base text-slate-900 mt-1">
+                  {membership?.next_due_date || '15th of Every Month'}
+                </p>
+              </div>
 
-      {/* REALTIME GOAL SUMMARY & PROGRESS BAR CARD */}
-      <div className="nexora-card p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div>
-            <span className="bg-blue-50 text-blue-600 text-xs font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider border border-blue-200/70 inline-flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5" /> Supabase Realtime Progress
-            </span>
-            <h2 className="font-heading font-extrabold text-2xl text-slate-900 mt-1">
-              Goal Progress Summary ({goalProgressPct}% Achieved)
-            </h2>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-slate-500 font-medium">Target 12-Month Goal:</p>
-            <p className="font-heading font-extrabold text-xl text-slate-900">
-              ₹{totalGoalTarget.toLocaleString('en-IN')}
-            </p>
-          </div>
-        </div>
-
-        {/* Supabase Realtime Animated Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-            <span>Total Saved: <strong className="text-blue-600">₹{totalSavedSoFar.toLocaleString('en-IN')}</strong></span>
-            <span>Remaining Target: <strong className="text-slate-500">₹{remainingAmount.toLocaleString('en-IN')}</strong></span>
-          </div>
-
-          <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/80">
-            <div
-              className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-md shadow-blue-500/20"
-              style={{ width: `${Math.max(5, goalProgressPct)}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
-            <span>Month 1 Started</span>
-            <span>{paidCount} of 12 Cycles Paid</span>
-            <span>Month 12 Maturity</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#6C7285]">
-            <span>Total Escrow Saved</span>
-            <TrendingUp className="w-4 h-4 text-[#4F5DFF]" />
-          </div>
-          <p className="font-heading font-extrabold text-3xl text-[#1F1F24]">
-            ₹{totalSavedSoFar.toLocaleString('en-IN')}
-          </p>
-          <p className="text-[11px] text-[#6C7285]">
-            {paidCount} of 12 Cycles Completed
-          </p>
-        </div>
-
-        {/* Metric 2 */}
-        <div className="nexora-card nexora-card-hover p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>Next Due Date</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Calendar className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="font-heading font-extrabold text-2xl text-slate-900">
-            {membership?.next_due_date || '2026-08-05'}
-          </p>
-          <p className="text-[11px] text-emerald-600 font-semibold">
-            ₹{monthlyAmount.toLocaleString('en-IN')} Monthly AutoPay
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#6C7285]">
-            <span>Accrued Cash Bonus</span>
-            <Sparkles className="w-4 h-4 text-purple-600" />
-          </div>
-          <p className="font-heading font-extrabold text-3xl text-[#4F5DFF]">
-            +₹{accruedBonus.toLocaleString('en-IN')}
-          </p>
-          <p className="text-[11px] text-[#6C7285]">
-            {plan.cash_bonus_pct}% Rate at Month 12 Maturity
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#6C7285]">
-            <span>Savings Streak</span>
-            <Zap className="w-4 h-4 text-amber-500" />
-          </div>
-          <p className="font-heading font-extrabold text-3xl text-amber-600">
-            {membership?.current_streak || 0} Months
-          </p>
-          <p className="text-[11px] text-[#6C7285]">
-            5-Day Grace Period Safeguard Active
-          </p>
-        </div>
-      </div>
-
-      {/* LATEST LEDGER ENTRY CARD */}
-      <div className="nexora-card p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-600" />
-            <h3 className="font-heading font-extrabold text-base text-slate-900">Latest Ledger Payment Entry</h3>
-          </div>
-          <button
-            onClick={() => onNavigate('/ledger')}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700"
-          >
-            View Complete Ledger →
-          </button>
-        </div>
-
-        {latestPaid ? (
-          <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div>
-              <p className="text-slate-400 font-medium">Payment Date:</p>
-              <p className="font-bold text-slate-900 mt-0.5">{latestPaid.payment_date || '2026-08-01'}</p>
-            </div>
-            <div>
-              <p className="text-slate-400 font-medium">Amount Paid:</p>
-              <p className="font-heading font-extrabold text-base text-slate-900 mt-0.5">₹{latestPaid.amount.toLocaleString('en-IN')}</p>
-            </div>
-            <div>
-              <p className="text-slate-400 font-medium">Payment Status:</p>
-              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full mt-1">
-                <Check className="w-3 h-3" /> PAID
-              </span>
-            </div>
-            <div>
-              <p className="text-slate-400 font-medium">Transaction ID / Ref:</p>
-              <p className="font-mono text-slate-700 text-[11px] font-semibold truncate mt-0.5">
-                {latestPaid.escrow_ref || `TXN-${latestPaid.id.substring(0, 10)}`}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-xs text-slate-500 py-2">No completed payment records found yet.</p>
-        )}
-      </div>
-
-      {/* VISUAL GOAL JOURNEY (Month 1 to 12 Progress Grid) */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8EAF8] pb-4">
-          <div>
-            <span className="bg-[#4F5DFF]/10 text-[#4F5DFF] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              12-Month Ledger Tracking
-            </span>
-            <h3 className="font-heading font-extrabold text-2xl text-[#1F1F24] mt-1">
-              Visual Goal Journey
-            </h3>
-          </div>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Paid ({paidCount})
-            </span>
-            <span className="flex items-center gap-1 text-slate-400 font-semibold">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-200 inline-block" /> Remaining ({12 - paidCount})
-            </span>
-          </div>
-        </div>
-
-        {/* 12 Month Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-          {Array.from({ length: 12 }).map((_, idx) => {
-            const cycleNum = idx + 1;
-            const contrib = contributions.find((c) => c.cycle_number === cycleNum);
-            const isPaid = contrib?.status === 'PAID';
-            const isGrace = contrib?.status === 'GRACE_PERIOD';
-            const isNext = cycleNum === paidCount + 1;
-
-            return (
-              <div
-                key={cycleNum}
-                className={`p-4 rounded-2xl border text-center transition-all ${
-                  isPaid
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
-                    : isGrace
-                    ? 'bg-amber-50 border-amber-300 text-amber-900 ring-2 ring-amber-400'
-                    : isNext
-                    ? 'bg-[#4F5DFF]/5 border-[#4F5DFF] text-[#4F5DFF] ring-2 ring-[#4F5DFF]/20'
-                    : 'bg-[#F7F8FC] border-[#E8EAF8] text-slate-400'
-                }`}
-              >
-                <div className="flex justify-between items-center text-[10px] font-bold mb-2">
-                  <span>MONTH {cycleNum}</span>
-                  {isPaid ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  ) : isGrace ? (
-                    <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-                  ) : (
-                    <Lock className="w-3.5 h-3.5 text-slate-300" />
-                  )}
-                </div>
-
-                <p className="font-heading font-extrabold text-sm text-slate-900">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">MONTHLY DEPOSIT</p>
+                <p className="font-heading font-extrabold text-base text-slate-900 mt-1">
                   ₹{monthlyAmount.toLocaleString('en-IN')}
                 </p>
+              </div>
 
-                <p className="text-[10px] mt-1 font-semibold">
-                  {isPaid
-                    ? 'PAID'
-                    : isGrace
-                    ? 'GRACE PERIOD'
-                    : isNext
-                    ? 'DUE NEXT'
-                    : 'UPCOMING'}
-                </p>
+              <div className="md:text-right">
+                <button
+                  onClick={() => onNavigate('/pay')}
+                  className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-sm cursor-pointer inline-flex items-center gap-2"
+                >
+                  View Details & Pay <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
 
-                {isPaid && contrib && (
-                  <button
-                    onClick={() => handleDownloadReceipt(contrib)}
-                    className="mt-2 text-[10px] font-bold text-[#4F5DFF] hover:underline flex items-center justify-center gap-1 w-full cursor-pointer"
-                  >
-                    <Download className="w-3 h-3" /> Receipt
-                  </button>
+            <p className="text-xs text-slate-400 flex items-center gap-1.5 pt-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              Pay your monthly deposit on or before due date. Receipt is generated instantly into your escrow passbook.
+            </p>
+          </div>
+
+          {/* MIDDLE GRID: Deduction Summary, Employee Summary & To Do Tasks (Matching Reference) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left 2 Columns: Deduction & Contribution Summary */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Deduction / Deposit Summary Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="font-bold text-sm text-slate-900">Deposit Summary</h3>
+                    <span className="text-[11px] text-slate-400 font-semibold">12-Month Plan</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="space-y-1">
+                      <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                        <CreditCard className="w-4 h-4" />
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">SAVED</p>
+                      <p className="font-bold text-xs text-slate-900">₹{totalSavedSoFar.toLocaleString('en-IN')}</p>
+                      <button onClick={() => onNavigate('/reports')} className="text-[10px] text-blue-600 font-bold hover:underline">View Details</button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">BONUS</p>
+                      <p className="font-bold text-xs text-slate-900">₹{accruedBonus.toLocaleString('en-IN')}</p>
+                      <button onClick={() => onNavigate('/reports')} className="text-[10px] text-blue-600 font-bold hover:underline">View Details</button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                        <Percent className="w-4 h-4" />
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">LEFT</p>
+                      <p className="font-bold text-xs text-slate-900">₹{remainingAmount.toLocaleString('en-IN')}</p>
+                      <button onClick={() => onNavigate('/reports')} className="text-[10px] text-blue-600 font-bold hover:underline">View Details</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Status / Summary Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 flex flex-col justify-between">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="font-bold text-sm text-slate-900">Account Summary</h3>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">ACTIVE</span>
+                  </div>
+
+                  <div className="text-center space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">COMPLIANCE & PROTECTION</p>
+                    <p className="font-heading font-extrabold text-4xl text-emerald-600">
+                      100%
+                    </p>
+                    <p className="text-xs font-semibold text-slate-600">RBI Escrow Guaranteed</p>
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <button onClick={() => onNavigate('/reports')} className="text-xs font-bold text-blue-600 hover:underline">
+                      View Passbook →
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Savings Growth & Transaction Summary (Matching Reference Bottom Chart Card) */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="font-bold text-sm text-slate-900">Savings Contribution Summary</h3>
+                  <span className="text-xs text-slate-400 font-medium">This Year 2026</span>
+                </div>
+
+                {/* Visual Progress Bar Breakdown */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                    <span>Goal Completed: <strong className="text-blue-600">{goalProgressPct}%</strong></span>
+                    <span>Cycles Paid: <strong className="text-emerald-600">{paidCount} / 12 Months</strong></span>
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5">
+                    <div
+                      className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out"
+                      style={{ width: `${Math.max(5, goalProgressPct)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Latest Paid Transaction Table */}
+                {latestPaid && (
+                  <div className="pt-2 space-y-2">
+                    <p className="text-xs font-bold text-slate-700">Latest Verified Receipt:</p>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+                      <div>
+                        <p className="font-bold text-slate-900">Month #{latestPaid.cycle_number} Deposit - ₹{latestPaid.amount.toLocaleString('en-IN')}</p>
+                        <p className="text-[11px] text-slate-400">Ref: {latestPaid.transaction_ref}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadReceipt(latestPaid)}
+                        className="bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Download
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
-            );
-          })}
+
+            </div>
+
+            {/* Right 1 Column: To Do Tasks (Matching Reference Right Column) */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+              <h3 className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-3">
+                To Do Tasks
+              </h3>
+
+              <div className="space-y-4">
+                
+                {/* Task 1: Monthly Deposit */}
+                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Monthly Deposit Payment</p>
+                      <p className="text-[11px] text-slate-500">
+                        {paidCount < 12 ? 'Pending cycle deposit due' : 'All 12 cycles completed!'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onNavigate('/pay')}
+                    className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs py-2 rounded-lg transition-all text-center cursor-pointer"
+                  >
+                    {paidCount < 12 ? 'Approve & Pay' : 'View Passbook'}
+                  </button>
+                </div>
+
+                {/* Task 2: KYC Verification */}
+                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <FileCheck2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">KYC & Nominee Verification</p>
+                      <p className="text-[11px] text-slate-500">
+                        Status: <strong className="text-emerald-600">{user.kyc_status.toUpperCase()}</strong>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onNavigate('/kyc')}
+                    className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs py-2 rounded-lg transition-all text-center cursor-pointer"
+                  >
+                    View Status
+                  </button>
+                </div>
+
+                {/* Task 3: Gift Hamper */}
+                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Gift className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Gift Hamper Selection</p>
+                      <p className="text-[11px] text-slate-500">
+                        {allocatedHamper ? allocatedHamper.name : 'Eligible for maturity gift'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onNavigate('/hampers')}
+                    className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs py-2 rounded-lg transition-all text-center cursor-pointer"
+                  >
+                    Select Now
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
         </div>
-      </div>
 
-      {/* Gift Hamper Allocation Status */}
-      <div className="bg-gradient-to-r from-purple-900 to-[#1F1F24] text-white p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="space-y-2 text-center md:text-left">
-          <span className="bg-purple-500/20 text-purple-300 border border-purple-400/30 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-            Maturity Gift Perk
-          </span>
-          <h3 className="font-heading font-extrabold text-2xl text-white">
-            {allocatedHamper ? allocatedHamper.name : 'Maturity Gift Hamper Unassigned'}
-          </h3>
-          <p className="text-xs text-slate-300 max-w-md leading-relaxed font-medium">
-            {allocatedHamper
-              ? `Assigned by Admin. Delivered at Month 12 maturity.`
-              : 'Your Admin will allocate a luxury gift hamper before maturity.'}
-          </p>
-        </div>
-
-        <button
-          onClick={() => onNavigate('/hampers')}
-          className="bg-[#8A7BFF] hover:bg-[#6A6DFF] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-purple-900/40 text-xs shrink-0 flex items-center gap-2 cursor-pointer"
-        >
-          <Gift className="w-4 h-4" /> Browse Gift Catalogue
-        </button>
-      </div>
-
-      {/* MEMBER LEDGER VIEW (Toggled via header action) */}
-      {activeSection === 'ledger' && (
-        <MemberLedgerView userId={user.id} />
-      )}
+      </main>
 
       {/* MODAL: Edit Profile */}
       {isProfileModalOpen && (
@@ -506,15 +512,6 @@ Thank you for saving with SamruddiSave Escrow!
           onSuccess={() => {
             setUser(stateStore.getCurrentUser());
           }}
-        />
-      )}
-
-      {/* MODAL: Printable Receipt */}
-      {viewReceiptRecord && (
-        <PrintableReceiptModal
-          record={viewReceiptRecord}
-          member={user}
-          onClose={() => setViewReceiptRecord(null)}
         />
       )}
 
