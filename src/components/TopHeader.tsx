@@ -392,16 +392,16 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 onClick={() => onNavigate('/login')}
-                className="bg-white hover:bg-[#F7F8FC] text-[#1F1F24] border border-[#E8EAF8] px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+                className="bg-white hover:bg-[#F7F8FC] text-[#1F1F24] border border-[#E8EAF8] px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px] shrink-0"
               >
                 Sign In
               </button>
               <button
                 onClick={() => onNavigate('/register')}
-                className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer min-h-[44px]"
+                className="bg-[#4F5DFF] hover:bg-[#6A6DFF] text-white px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all shadow-sm cursor-pointer min-h-[44px] shrink-0"
               >
                 Start Saving
               </button>
@@ -414,67 +414,124 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white/98 backdrop-blur-xl border-b border-[#E8EAF8] px-4 pt-3 pb-6 space-y-4 animate-in fade-in slide-in-from-top-3 duration-200 shadow-2xl">
 
-          {/* Card matching reference screenshot (Hidden on Customer Details Dashboard /dashboard) */}
-          {!isDashboardPage && (
+          {/* If user is NOT signed in or on Landing Page: Render Public Navigation ONLY */}
+          {(!user || currentPath === '/') ? (
             <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
-              
-              {/* Category Header */}
               <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
                 <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
-                  {isAdminPage ? 'ADMIN FUNCTIONAL MODULES' : 'MEMBER FUNCTIONAL MODULES'}
+                  PUBLIC NAVIGATION
                 </span>
                 <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
                   RBI Escrow Certified
                 </span>
               </div>
 
-              {/* Nav Module Items List */}
-              <div className="space-y-1 pt-1">
-                {currentNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = checkIsActive(item);
-                  const isLocked = (item as any).locked;
+              <div className="space-y-1.5 pt-1">
+                <button
+                  onClick={() => handleNavClick('/plans', 'Savings Plans')}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Calculator className="w-4 h-4 text-[#4F5DFF]" />
+                    <span>Savings Plans</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
+                </button>
 
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() => handleNavClick(item.path, item.label, isLocked)}
-                      disabled={isLocked}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
-                        isActive
-                          ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
-                          : isLocked
-                          ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
-                          : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className={`w-4 h-4 shrink-0 ${
-                          isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
-                        }`} />
-                        <span className="truncate">{item.label}</span>
-                      </div>
+                <button
+                  onClick={() => handleNavClick('/hampers', 'Gift Hampers')}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Gift className="w-4 h-4 text-[#4F5DFF]" />
+                    <span>Gift Hampers</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
+                </button>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isLocked && (
-                          <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-medium border border-amber-200 flex items-center gap-1">
-                            <Lock className="w-3 h-3" /> KYC Required
-                          </span>
-                        )}
-                        {item.badge && (
-                          <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
-                            {item.badge}
-                          </span>
-                        )}
-                        <ChevronRight className={`w-4 h-4 ${
-                          isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
-                        }`} />
-                      </div>
-                    </button>
-                  );
-                })}
+                <button
+                  onClick={() => handleNavClick('/#how-it-works', 'How It Works')}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-4 h-4 text-[#4F5DFF]" />
+                    <span>How It Works</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
+                </button>
+
+                <button
+                  onClick={() => handleNavClick('/#security', 'Security & Escrow')}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] transition-all min-h-[44px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Security & Escrow</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#6C7285]" />
+                </button>
               </div>
             </div>
+          ) : (
+            /* Render Member / Admin functional modules ONLY when signed in and not on Landing Page */
+            !isDashboardPage && (
+              <div className="bg-white rounded-3xl p-4 border border-[#E8EAF8] shadow-sm space-y-3">
+                <div className="px-2 pb-2.5 border-b border-[#E8EAF8] flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold text-[#6C7285] tracking-wider uppercase">
+                    {isAdminPage ? 'ADMIN FUNCTIONAL MODULES' : 'MEMBER FUNCTIONAL MODULES'}
+                  </span>
+                  <span className="text-[10px] font-semibold text-[#4F5DFF] bg-[#4F5DFF]/10 px-2 py-0.5 rounded-full border border-[#4F5DFF]/20">
+                    RBI Escrow Certified
+                  </span>
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  {currentNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = checkIsActive(item);
+                    const isLocked = (item as any).locked;
+
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => handleNavClick(item.path, item.label, isLocked)}
+                        disabled={isLocked}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
+                          isActive
+                            ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
+                            : isLocked
+                            ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
+                            : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className={`w-4 h-4 shrink-0 ${
+                            isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
+                          }`} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isLocked && (
+                            <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-medium border border-amber-200 flex items-center gap-1">
+                              <Lock className="w-3 h-3" /> KYC Required
+                            </span>
+                          )}
+                          {item.badge && (
+                            <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                              {item.badge}
+                            </span>
+                          )}
+                          <ChevronRight className={`w-4 h-4 ${
+                            isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
+                          }`} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )
           )}
 
           {/* User Profile Summary Card in Drawer */}
@@ -504,9 +561,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                   setMobileMenuOpen(false);
                   onNavigate('/login');
                 }}
-                className="w-full bg-[#4F5DFF] text-white py-2.5 rounded-xl text-xs font-bold text-center cursor-pointer"
+                className="w-1/2 bg-white text-[#1F1F24] border border-[#E8EAF8] py-2.5 rounded-xl text-xs font-bold text-center cursor-pointer min-h-[44px]"
               >
-                Sign In / Register
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onNavigate('/register');
+                }}
+                className="w-1/2 bg-[#4F5DFF] text-white py-2.5 rounded-xl text-xs font-bold text-center cursor-pointer min-h-[44px]"
+              >
+                Start Saving
               </button>
             </div>
           )}

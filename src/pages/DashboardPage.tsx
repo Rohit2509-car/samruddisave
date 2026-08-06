@@ -122,35 +122,35 @@ Thank you for saving with SamruddiSave Escrow!
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 space-y-8">
+    <div className="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 space-y-6 sm:space-y-8 overflow-x-hidden">
       
       {/* Top Banner / Welcome Row */}
-      <div className="bg-gradient-to-r from-[#1F1F24] via-[#2D2E38] to-[#4F5DFF] text-white p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#1F1F24] via-[#2D2E38] to-[#4F5DFF] text-white p-5 sm:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-[#4F5DFF]/20 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center gap-4 z-10">
+        <div className="flex items-center gap-3 sm:gap-4 z-10 min-w-0 max-w-full">
           {user.avatar_url && (
             <img
               src={user.avatar_url}
               alt={user.full_name}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl object-cover border-2 border-white/40 shadow-lg shrink-0"
+              className="w-12 h-12 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl object-cover border-2 border-white/40 shadow-lg shrink-0"
             />
           )}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-white/10 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-xs border border-white/20">
-                Account ID: {user.id}
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap max-w-full">
+              <span className="bg-white/10 text-white text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full backdrop-blur-xs border border-white/20 truncate max-w-[220px] sm:max-w-none">
+                Account ID: {user.id.length > 22 ? `${user.id.substring(0, 18)}...` : user.id}
               </span>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+              <span className={`text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border shrink-0 ${
                 isKYCPending ? 'bg-amber-500/20 text-amber-300 border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
               }`}>
                 KYC {user.kyc_status.toUpperCase()}
               </span>
             </div>
-            <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-white">
+            <h1 className="font-heading font-extrabold text-2xl sm:text-3xl md:text-4xl text-white truncate leading-tight">
               Welcome back, {user.full_name}!
             </h1>
-            <p className="text-xs text-slate-300">
+            <p className="text-[11px] sm:text-xs text-slate-300 truncate">
               RBI Escrow Custody Account • {plan.name} (₹{plan.monthly_amount.toLocaleString('en-IN')}/mo)
             </p>
           </div>

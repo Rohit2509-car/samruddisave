@@ -541,6 +541,7 @@ class StateStore {
     user.phone = data.phone;
     user.pan_number = data.panNumber;
     user.kyc_status = 'pending';
+    user.onboarding_completed = true;
     (user as any).pipeline_stage = 'pending';
 
     try {
@@ -551,6 +552,7 @@ class StateStore {
         phone: data.phone,
         pan_number: data.panNumber,
         kyc_status: 'pending',
+        onboarding_completed: true,
         pipeline_stage: 'pending'
       });
 

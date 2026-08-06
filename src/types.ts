@@ -41,6 +41,7 @@ export interface UserProfile {
   kyc_status: KYCStatus;
   pipeline_stage: PipelineStage;
   ocr_confidence: number;
+  onboarding_completed?: boolean;
   login_id?: string;
   address?: string;
   emergency_contact?: {

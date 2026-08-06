@@ -99,12 +99,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
       const profile = stateStore.getCurrentUser();
 
       // 3. User Validation: Check if Profile & Onboarding is complete
-      const isCompleteProfile = profile && profile.full_name && profile.phone && profile.pan_number && profile.kyc_status !== 'unsubmitted';
+      const isOnboardingCompleted = profile?.onboarding_completed === true || (profile && profile.full_name && profile.phone && profile.pan_number && profile.kyc_status !== 'unsubmitted');
 
       setSuccessMsg(`Login successful! Checking onboarding status...`);
 
       setTimeout(() => {
-        if (isCompleteProfile) {
+        if (isOnboardingCompleted) {
           onNavigate('/dashboard');
         } else {
           onNavigate('/onboarding');
@@ -137,7 +137,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
 
     try {
       // 1. Register with Supabase Auth
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
+      const { data: authData } = await supabase.auth.signUp({
         email: regEmail.trim(),
         password: regPassword.trim(),
         options: {
@@ -150,7 +150,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
 
       const newUserId = authData?.user?.id || `user-new-${Date.now()}`;
 
-      // 2. Register profile in StateStore
+      // 2. Register profile in StateStore with onboarding_completed = false
       const newProfile: UserProfile = {
         id: newUserId,
         full_name: regFullName.trim() || 'Member',
@@ -160,6 +160,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
         aadhaar_number: '',
         role: 'member' as const,
         kyc_status: 'unsubmitted' as const,
+        onboarding_completed: false,
         pipeline_stage: 'signup' as any,
         ocr_confidence: 0,
         created_at: new Date().toISOString()
