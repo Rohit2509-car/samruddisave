@@ -197,7 +197,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E8EAF8] shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         
-        {/* Left Side: Mobile Menu Toggle & User Profile Controls */}
+        {/* Left Side: Mobile Menu Toggle & Website Logo */}
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -206,6 +206,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
+
+          {/* Website Logo (Positioned on the LEFT side) */}
+          <div
+            onClick={() => handleNavClick(isAdminPage ? '/admin' : '/', 'Overview')}
+            className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95"
+            title="SamruddiSave - RBI Certified Escrow Platform"
+          >
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
+              S
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-heading font-extrabold text-sm sm:text-base tracking-tight text-[#1F1F24] leading-none">
+                Samruddi<span className="text-[#4F5DFF]">Save</span>
+              </span>
+              <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5 whitespace-nowrap">
+                RBI Escrow Certified
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Center Section: Single Modern Navigation Bar with Animated Icons & Hover Reveal Labels */}
@@ -408,25 +427,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
               </button>
             </div>
           )}
-
-          {/* Far Right Corner: Website Logo */}
-          <div
-            onClick={() => handleNavClick(isAdminPage ? '/admin' : '/', 'Overview')}
-            className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95 pl-2 border-l border-[#E8EAF8]"
-            title="SamruddiSave - RBI Certified Escrow Platform"
-          >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
-              S
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="font-heading font-extrabold text-sm sm:text-base tracking-tight text-[#1F1F24] leading-none">
-                Samruddi<span className="text-[#4F5DFF]">Save</span>
-              </span>
-              <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5 whitespace-nowrap">
-                RBI Escrow Certified
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 
