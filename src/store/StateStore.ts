@@ -812,6 +812,43 @@ class StateStore {
       profile.pipeline_stage = 'ACTIVE_SAVING';
     }
 
+    // Persist Contribution and Membership to Supabase Database
+    try {
+      supabase.from('contributions').insert({
+        id: newContrib.id,
+        user_id: newContrib.user_id,
+        membership_id: newContrib.membership_id,
+        amount: newContrib.amount,
+        cycle_number: newContrib.cycle_number,
+        due_date: newContrib.due_date,
+        paid_date: newContrib.paid_date,
+        status: newContrib.status,
+        transaction_ref: newContrib.transaction_ref,
+        payment_method: newContrib.payment_method,
+        escrow_batch_id: newContrib.escrow_batch_id,
+        created_at: newContrib.created_at,
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase contributions insert warning:', error.message);
+      });
+
+      supabase.from('memberships').upsert({
+        id: membership.id,
+        user_id: membership.user_id,
+        plan_id: membership.plan_id,
+        monthly_amount: membership.monthly_amount,
+        current_streak: membership.current_streak,
+        bonus_amount: membership.bonus_amount,
+        status: membership.status,
+        due_day: membership.due_day,
+        grace_days_remaining: membership.grace_days_remaining,
+        next_due_date: membership.next_due_date,
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase memberships upsert warning:', error.message);
+      });
+    } catch (dbErr) {
+      console.warn('Supabase deposit persistence warning:', dbErr);
+    }
+
     if (nextCycle === 12) {
       membership.status = 'matured';
       if (profile) profile.pipeline_stage = 'MATURED';

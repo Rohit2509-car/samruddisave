@@ -68,7 +68,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     { label: 'Maturity Plans', path: '/plans', icon: Calculator },
     { label: 'KYC Verification', path: '/kyc', icon: FileCheck2, badge: isKYCPending ? 'Action' : undefined },
     { label: 'Wallet Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Monthly Deposit', path: '/pay', icon: CreditCard, locked: isKYCPending },
+    { label: 'Monthly Deposit', path: '/pay', icon: CreditCard },
     { label: 'Gift Hampers', path: '/hampers', icon: Gift },
     { label: 'Savings Circles', path: '/circles', icon: Users },
   ];
@@ -120,21 +120,37 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
       setTimeout(() => setTappedLabel(null), 2500);
     }
 
-    if (path.includes('#')) {
-      const [basePath, hash] = path.split('#');
-      if (currentPath !== basePath) {
-        onNavigate(basePath);
-      }
-      window.location.hash = hash;
-      setActiveHash('#' + hash);
-    } else {
-      window.location.hash = '';
-      setActiveHash('');
-      onNavigate(path);
-    }
-
+    // Auto-close mobile drawer and dropdowns
     setDropdownOpen(false);
     setMobileMenuOpen(false);
+
+    if (path.includes('#')) {
+      const [basePath, hash] = path.split('#');
+      const targetHash = '#' + hash;
+      
+      if (currentPath !== basePath && basePath !== '') {
+        onNavigate(basePath);
+        setTimeout(() => {
+          const el = document.getElementById(hash);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }
+        }, 150);
+      } else {
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+      setActiveHash(targetHash);
+    } else {
+      setActiveHash('');
+      onNavigate(path);
+      // Smoothly scroll to the top of the page for new route views
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
   };
 
   const handleSwitchRole = (targetRole: UserRole) => {
