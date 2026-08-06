@@ -127,6 +127,16 @@ export default function App() {
     }
   };
 
+  const isFullScreenApp = currentPath === '/dashboard' || currentPath === '/onboarding' || currentPath === '/admin' || currentPath === '/employee' || currentPath === '/finance';
+
+  if (isFullScreenApp) {
+    return (
+      <div className="min-h-screen w-full bg-[#F4F6F9] text-slate-800 font-sans selection:bg-blue-500/20 selection:text-blue-600">
+        {renderCurrentView()}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] pb-6">
       <div>

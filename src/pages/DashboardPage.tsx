@@ -28,7 +28,9 @@ import {
   Lock,
   LogOut,
   AlertCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Menu,
+  X
 } from 'lucide-react';
 import { UserProfileEditModal } from '../components/UserProfileEditModal';
 import { PrintableReceiptModal } from '../components/PrintableReceiptModal';
@@ -45,6 +47,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [viewReceiptRecord, setViewReceiptRecord] = useState<ContributionRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -92,6 +96,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const paidContribs = contributions.filter(c => c.status === 'PAID');
   const latestPaid = paidContribs.length > 0 ? paidContribs[paidContribs.length - 1] : null;
 
+  // Sign out handler
+  const handleSignOut = async () => {
+    await stateStore.signOut();
+    onNavigate('/');
+  };
+
   // Generate and Download Payment Receipt
   const handleDownloadReceipt = (contrib: ContributionRecord) => {
     const receiptContent = `================================================
@@ -125,27 +135,51 @@ Thank you for saving with SamruddiSave Escrow!
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F6F9] flex flex-col lg:flex-row text-slate-800 font-sans">
+    <div className="min-h-screen bg-[#F4F6F9] flex flex-col lg:flex-row text-slate-800 font-sans relative">
       
-      {/* LEFT SIDEBAR NAVIGATION (Matching Reference Dark Sidebar) */}
-      <aside className="w-full lg:w-64 bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
+      {/* MOBILE BACKDROP OVERLAY */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden"
+        />
+      )}
+
+      {/* LEFT SIDEBAR NAVIGATION (Full Screen Authenticated Area) */}
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 transition-transform duration-300 ease-in-out ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         
-        {/* Brand Header */}
+        {/* Brand Header (Website Logo - Clicking redirects to Public Landing Page) */}
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate('/')}>
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-extrabold text-lg flex items-center justify-center shadow-md">
+          <div
+            className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-all"
+            onClick={() => {
+              setSidebarOpen(false);
+              onNavigate('/');
+            }}
+            title="Click logo to return to Public Landing Page"
+          >
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-extrabold text-lg flex items-center justify-center shadow-md shadow-blue-500/30 group-hover:scale-105 transition-transform">
               S
             </div>
             <span className="font-heading font-extrabold text-lg text-white tracking-tight">
               Samruddi<span className="text-blue-400">Save</span>
             </span>
           </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-slate-400 hover:text-white p-1 cursor-pointer"
+            aria-label="Close Sidebar"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Sidebar Menu Items */}
-        <nav className="flex-1 p-4 space-y-1.5 text-xs font-semibold">
+        {/* Sidebar Menu Items (Internal Navigation strictly inside Dashboard) */}
+        <nav className="flex-1 p-4 space-y-1.5 text-xs font-semibold overflow-y-auto">
           <button
-            onClick={() => onNavigate('/dashboard')}
+            onClick={() => { setSidebarOpen(false); onNavigate('/dashboard'); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#3B82F6] text-white shadow-md font-bold transition-all cursor-pointer"
           >
             <Home className="w-4 h-4 shrink-0" />
@@ -153,7 +187,7 @@ Thank you for saving with SamruddiSave Escrow!
           </button>
 
           <button
-            onClick={() => onNavigate('/circles')}
+            onClick={() => { setSidebarOpen(false); onNavigate('/circles'); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
           >
             <Users className="w-4 h-4 shrink-0" />
@@ -161,7 +195,7 @@ Thank you for saving with SamruddiSave Escrow!
           </button>
 
           <button
-            onClick={() => onNavigate('/pay')}
+            onClick={() => { setSidebarOpen(false); onNavigate('/pay'); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
           >
             <CreditCard className="w-4 h-4 shrink-0" />
@@ -169,7 +203,7 @@ Thank you for saving with SamruddiSave Escrow!
           </button>
 
           <button
-            onClick={() => onNavigate('/reports')}
+            onClick={() => { setSidebarOpen(false); onNavigate('/reports'); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 shrink-0" />
@@ -177,7 +211,7 @@ Thank you for saving with SamruddiSave Escrow!
           </button>
 
           <button
-            onClick={() => onNavigate('/hampers')}
+            onClick={() => { setSidebarOpen(false); onNavigate('/hampers'); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
           >
             <Gift className="w-4 h-4 shrink-0" />
@@ -185,7 +219,7 @@ Thank you for saving with SamruddiSave Escrow!
           </button>
 
           <button
-            onClick={() => onNavigate('/kyc')}
+            onClick={() => { setSidebarOpen(false); onNavigate('/kyc'); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
           >
             <FileCheck2 className="w-4 h-4 shrink-0" />
@@ -193,13 +227,19 @@ Thank you for saving with SamruddiSave Escrow!
           </button>
         </nav>
 
-        {/* Bottom Contact Support */}
-        <div className="p-4 border-t border-slate-800">
+        {/* Bottom Contact Support & Sign Out */}
+        <div className="p-4 border-t border-slate-800 space-y-1">
           <button
-            onClick={() => onNavigate('/support')}
-            className="w-full text-left text-slate-400 hover:text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+            onClick={() => { setSidebarOpen(false); onNavigate('/support'); }}
+            className="w-full text-left text-slate-400 hover:text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all cursor-pointer"
           >
             Contact Support
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="w-full text-left text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Sign Out
           </button>
         </div>
       </aside>
@@ -207,23 +247,34 @@ Thank you for saving with SamruddiSave Escrow!
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col min-w-0">
         
-        {/* TOP APP BAR (Matching Reference Top Header) */}
-        <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between gap-4">
+        {/* TOP APP BAR */}
+        <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-30 shadow-2xs">
           
-          {/* Search Box */}
-          <div className="relative max-w-sm w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search deposits, receipts, plans..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
-            />
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Mobile Hamburger Menu Toggle */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-all shrink-0 cursor-pointer"
+              aria-label="Toggle Sidebar Navigation"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Search Box */}
+            <div className="relative max-w-sm w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search deposits, receipts, plans..."
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
+              />
+            </div>
           </div>
 
           {/* Right Header Controls */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>SamruddiSave Escrow</span>
@@ -239,16 +290,51 @@ Thank you for saving with SamruddiSave Escrow!
               <Settings className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsProfileModalOpen(true)}>
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
-                {user.full_name?.charAt(0) || 'U'}
-              </div>
+            {/* User Avatar & Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-2 cursor-pointer p-1 hover:bg-slate-100 rounded-xl transition-all"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                  {user.full_name?.charAt(0) || 'U'}
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="font-bold text-slate-900">{user.full_name}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => { setDropdownOpen(false); setIsProfileModalOpen(true); }}
+                    className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-semibold"
+                  >
+                    <User className="w-3.5 h-3.5 text-blue-600" /> Edit Profile Details
+                  </button>
+                  <button
+                    onClick={() => { setDropdownOpen(false); onNavigate('/kyc'); }}
+                    className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-semibold"
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" /> KYC Status: {user.kyc_status.toUpperCase()}
+                  </button>
+                  <div className="border-t border-slate-100 my-1" />
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-4 py-2 text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-bold"
+                  >
+                    <LogOut className="w-3.5 h-3.5" /> Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         {/* DASHBOARD BODY */}
-        <div className="p-6 space-y-6 max-w-7xl w-full mx-auto">
+        <div className="p-4 sm:p-6 space-y-6 max-w-7xl w-full mx-auto">
           
           {/* Welcome Greeting */}
           <div className="flex items-center justify-between">
@@ -260,8 +346,8 @@ Thank you for saving with SamruddiSave Escrow!
             </button>
           </div>
 
-          {/* PRIMARY CARD: Process Pay Run / Active Savings Plan Banner (Matching Reference Layout) */}
-          <div className="bg-white rounded-2xl border-l-4 border-l-emerald-500 border border-slate-200 p-6 shadow-sm space-y-4">
+          {/* PRIMARY CARD: Process Pay Run / Active Savings Plan Banner */}
+          <div className="bg-white rounded-2xl border-l-4 border-l-emerald-500 border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-slate-800">
@@ -311,7 +397,7 @@ Thank you for saving with SamruddiSave Escrow!
             </p>
           </div>
 
-          {/* MIDDLE GRID: Deduction Summary, Employee Summary & To Do Tasks (Matching Reference) */}
+          {/* MIDDLE GRID: Deduction Summary, Employee Summary & To Do Tasks */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Left 2 Columns: Deduction & Contribution Summary */}
@@ -320,7 +406,7 @@ Thank you for saving with SamruddiSave Escrow!
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* Deduction / Deposit Summary Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="font-bold text-sm text-slate-900">Deposit Summary</h3>
                     <span className="text-[11px] text-slate-400 font-semibold">12-Month Plan</span>
@@ -357,7 +443,7 @@ Thank you for saving with SamruddiSave Escrow!
                 </div>
 
                 {/* Account Status / Summary Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 flex flex-col justify-between">
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4 flex flex-col justify-between">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="font-bold text-sm text-slate-900">Account Summary</h3>
                     <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">ACTIVE</span>
@@ -380,8 +466,8 @@ Thank you for saving with SamruddiSave Escrow!
 
               </div>
 
-              {/* Savings Growth & Transaction Summary (Matching Reference Bottom Chart Card) */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+              {/* Savings Growth & Transaction Summary */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="font-bold text-sm text-slate-900">Savings Contribution Summary</h3>
                   <span className="text-xs text-slate-400 font-medium">This Year 2026</span>
@@ -424,8 +510,8 @@ Thank you for saving with SamruddiSave Escrow!
 
             </div>
 
-            {/* Right 1 Column: To Do Tasks (Matching Reference Right Column) */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+            {/* Right 1 Column: To Do Tasks */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
               <h3 className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-3">
                 To Do Tasks
               </h3>
