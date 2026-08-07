@@ -105,7 +105,7 @@ export class PasswordMetadataService {
 
     // 1. Admin Account Verification (Strict match for admin email AND admin password)
     if (normalizedEmail === 'admin@samruddisave.com' || normalizedEmail === 'admin' || userId === 'user-admin-1') {
-      const isCorrectAdminPass = cleanPassword === 'admin123' || cleanPassword === 'Admin@123' || cleanPassword === 'admin';
+      const isCorrectAdminPass = cleanPassword === 'admin123';
       if (isCorrectAdminPass) {
         const store = this.getLocalPasswordStore();
         if (userId) store[userId] = inputHash;
