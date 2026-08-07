@@ -624,9 +624,8 @@ Thank you for saving with SamruddiSave Escrow!
 
 
 
-        {/* MONTHLY DEPOSIT TAB (Premium UI) */}
+        {/* MONTHLY DEPOSIT TAB */}
         {activeTab === 'pay' && (
-<<<<<<< HEAD
           <div className="p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300 py-8">
             <div className="flex items-center justify-between">
               <h2 className="font-heading font-extrabold text-2xl text-slate-900">Monthly Deposit</h2>
@@ -694,17 +693,6 @@ Thank you for saving with SamruddiSave Escrow!
                 </button>
                 <p className="text-center text-[10px] text-slate-400 mt-4">100% Secure & encrypted payment gateway. Automatically synced to your passbook.</p>
               </div>
-=======
-          <div className="p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 py-8">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h2 className="font-heading font-extrabold text-3xl text-slate-900 tracking-tight">Monthly Deposit</h2>
-                <p className="text-slate-500 text-sm mt-1">Securely manage your ongoing savings plan contributions.</p>
-              </div>
-              <div className="hidden sm:flex w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-500 text-white rounded-2xl items-center justify-center shadow-lg shadow-blue-500/30 transform rotate-3">
-                <CreditCard className="w-6 h-6" />
-              </div>
->>>>>>> d15925bb9a0633c7442a4dbe9d45cc6c0f10e5a4
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
