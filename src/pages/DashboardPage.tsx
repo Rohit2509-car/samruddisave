@@ -142,6 +142,59 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const goalProgressPct = Math.round((paidCount / 12) * 100);
   const accruedBonus = Math.round((totalSavedSoFar * plan.cash_bonus_pct) / 100);
 
+  // Next Payment Due & Remaining Time Calculator
+  const getNextPaymentDueInfo = () => {
+    const rawDueDate = membership?.next_due_date || '2026-08-20';
+    let targetDate: Date;
+
+    if (rawDueDate.includes('-')) {
+      targetDate = new Date(rawDueDate);
+    } else {
+      const now = new Date();
+      targetDate = new Date(now.getFullYear(), now.getMonth(), 20);
+      if (targetDate < now) {
+        targetDate = new Date(now.getFullYear(), now.getMonth() + 1, 20);
+      }
+    }
+
+    const today = new Date();
+    const d1 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const d2 = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+    const diffTime = d2.getTime() - d1.getTime();
+    const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+    const formattedDate = targetDate.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    let statusLabel = 'UPCOMING';
+    let badgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
+    let timeRemainingText = `${diffDays} Days Remaining`;
+
+    if (diffDays <= 0) {
+      statusLabel = 'DUE TODAY';
+      badgeClass = 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse';
+      timeRemainingText = 'Due Today';
+    } else if (diffDays <= 5) {
+      statusLabel = 'DUE SOON';
+      badgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+      timeRemainingText = `${diffDays} Days Left`;
+    }
+
+    return {
+      rawDueDate,
+      formattedDate,
+      diffDays,
+      timeRemainingText,
+      statusLabel,
+      badgeClass
+    };
+  };
+
+  const dueInfo = getNextPaymentDueInfo();
+
   // Latest paid transaction
   const paidContribs = contributions.filter(c => c.status === 'PAID');
   const latestPaid = paidContribs.length > 0 ? paidContribs[paidContribs.length - 1] : null;
@@ -429,10 +482,18 @@ Thank you for saving with SamruddiSave Escrow!
               </div>
 
               <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PAYMENT DUE DATE</p>
-                <p className="font-heading font-extrabold text-base text-slate-900 mt-1">
-                  {membership?.next_due_date || '15th of Every Month'}
-                </p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">NEXT PAYMENT DUE</p>
+                <div className="flex flex-col mt-1">
+                  <p className="font-heading font-extrabold text-base text-slate-900">
+                    {dueInfo.formattedDate}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Clock className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${dueInfo.badgeClass}`}>
+                      {dueInfo.timeRemainingText}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -701,7 +762,48 @@ Thank you for saving with SamruddiSave Escrow!
         {/* MONTHLY DEPOSIT TAB */}
         {activeTab === 'pay' && (
           <div className="p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300 py-8">
-            <h2 className="font-heading font-extrabold text-2xl text-slate-900">Monthly Deposit</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-heading font-extrabold text-2xl text-slate-900">Monthly Deposit</h2>
+              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                Cycle #{paidCount + 1} of 12
+              </span>
+            </div>
+
+            {/* NEXT PAYMENT DUE ENHANCED SECTION */}
+            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-300" />
+                  <span className="font-bold text-xs uppercase tracking-wider text-blue-100">Next Payment Due</span>
+                </div>
+                <span className={`text-xs font-extrabold px-3 py-1 rounded-full border ${dueInfo.badgeClass}`}>
+                  {dueInfo.statusLabel}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center border-t border-blue-500/30 pt-5">
+                <div>
+                  <p className="text-xs text-blue-200 font-medium uppercase tracking-wider">Upcoming Payment Date</p>
+                  <p className="text-2xl sm:text-3xl font-heading font-extrabold text-white mt-1">
+                    {dueInfo.formattedDate}
+                  </p>
+                  <p className="text-[11px] text-blue-200 mt-1 font-mono">
+                    Ref Date: {dueInfo.rawDueDate}
+                  </p>
+                </div>
+
+                <div className="sm:border-l sm:border-blue-500/30 sm:pl-6">
+                  <p className="text-xs text-blue-200 font-medium uppercase tracking-wider">Remaining Time</p>
+                  <p className="text-2xl sm:text-3xl font-heading font-extrabold text-amber-300 mt-1">
+                    {dueInfo.timeRemainingText}
+                  </p>
+                  <p className="text-[11px] text-blue-200 mt-1">
+                    Cycle #{paidCount + 1} of 12 Monthly Deposit
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200">
               <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6">
                 <CreditCard className="w-6 h-6" />
@@ -714,7 +816,10 @@ Thank you for saving with SamruddiSave Escrow!
                 </div>
                 <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
                   <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Due Date</p>
-                  <p className="text-2xl font-bold text-slate-900">{membership?.next_due_date || '15th of Month'}</p>
+                  <p className="text-xl font-bold text-slate-900">{dueInfo.formattedDate}</p>
+                  <p className="text-xs text-blue-600 font-bold mt-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> {dueInfo.timeRemainingText}
+                  </p>
                 </div>
               </div>
               <div className="mt-8">
