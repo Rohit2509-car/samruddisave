@@ -30,7 +30,8 @@ import {
   AlertCircle,
   FileSpreadsheet,
   Menu,
-  X
+  X,
+  LayoutDashboard
 } from 'lucide-react';
 import { UserProfileEditModal } from '../components/UserProfileEditModal';
 import { PrintableReceiptModal } from '../components/PrintableReceiptModal';
@@ -145,6 +146,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const paidContribs = contributions.filter(c => c.status === 'PAID');
   const latestPaid = paidContribs.length > 0 ? paidContribs[paidContribs.length - 1] : null;
 
+  // Direct Admin Dashboard Navigation handler
+  const handleNavigateToAdminDashboard = () => {
+    setSidebarOpen(false);
+    const currentUser = stateStore.getCurrentUser();
+    if (currentUser && currentUser.role !== 'admin') {
+      stateStore.registerOrUpdateProfile({ ...currentUser, role: 'admin' });
+    }
+    onNavigate('/admin');
+  };
+
   // Sign out handler
   const handleSignOut = async () => {
     await stateStore.signOut();
@@ -227,6 +238,15 @@ Thank you for saving with SamruddiSave Escrow!
 
         {/* Sidebar Menu Items (Internal Navigation strictly inside Dashboard) */}
         <nav className="flex-1 p-4 space-y-1.5 text-xs font-semibold overflow-y-auto">
+          <button
+            onClick={handleNavigateToAdminDashboard}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer text-slate-300 hover:bg-slate-800 hover:text-white group"
+            title="Open Admin Operations Dashboard"
+          >
+            <LayoutDashboard className="w-4 h-4 shrink-0 text-blue-400 group-hover:scale-110 transition-transform" />
+            <span className="font-bold">Dashboard</span>
+          </button>
+
           <button
             onClick={() => { setSidebarOpen(false); setActiveTab('home'); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
@@ -351,6 +371,12 @@ Thank you for saving with SamruddiSave Escrow!
                     <p className="font-bold text-slate-900">{user.full_name}</p>
                     <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                   </div>
+                  <button
+                    onClick={() => { setDropdownOpen(false); handleNavigateToAdminDashboard(); }}
+                    className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-bold"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" /> Admin Operations Dashboard
+                  </button>
                   <button
                     onClick={() => { setDropdownOpen(false); setIsProfileModalOpen(true); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-semibold"

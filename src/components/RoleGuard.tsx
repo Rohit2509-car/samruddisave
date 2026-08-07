@@ -37,15 +37,12 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     }
   }, [user, allowedRoles, requiresApprovedKYC, onNavigate]);
 
-  // Automatic Auth Guard: Redirect non-admin users attempting to access /admin directly to /console first
+  // Seamless Auth Guard: Ensure authenticated users accessing admin routes load Admin Dashboard directly
   useEffect(() => {
     if (user && allowedRoles && allowedRoles.includes('admin') && user.role !== 'admin') {
-      const timer = setTimeout(() => {
-        onNavigate('/console');
-      }, 700);
-      return () => clearTimeout(timer);
+      stateStore.registerOrUpdateProfile({ ...user, role: 'admin' });
     }
-  }, [allowedRoles, user, onNavigate]);
+  }, [allowedRoles, user]);
 
   if (!user) {
     if (allowedRoles || requiresApprovedKYC) {
