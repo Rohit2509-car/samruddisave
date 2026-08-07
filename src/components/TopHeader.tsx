@@ -43,7 +43,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [activeHash, setActiveHash] = useState(window.location.hash);
   const [tappedLabel, setTappedLabel] = useState<string | null>(null);
-  const navContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = stateStore.subscribe(() => {
@@ -65,29 +64,26 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const isDashboardPage = currentPath === '/dashboard';
 
   const memberNavItems = [
-    { label: 'Overview', path: '/', icon: Home },
-    { label: 'Savings Plans', path: '/plans', icon: Calculator },
-    { label: 'Chit Groups', path: '/circles', icon: Users },
-    { label: 'KYC Verification', path: '/kyc', icon: FileCheck2, badge: isKYCPending ? 'Action' : undefined },
-    { label: 'Wallet Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Monthly Deposit', path: '/pay', icon: CreditCard },
-    { label: 'Ledger & Reports', path: '/reports', icon: FileText },
-    { label: 'Gift Hampers', path: '/hampers', icon: Gift },
-    { label: 'How It Works', path: '/#how-it-works', icon: Activity },
-    { label: 'Security & Escrow', path: '/#security', icon: ShieldCheck },
+    { label: 'Home', path: '/', icon: Home },
+    { label: 'Plans', path: '/plans', icon: Calculator },
+    { label: 'Circles', path: '/circles', icon: Users },
+    { label: 'Pay', path: '/pay', icon: CreditCard },
+    { label: 'Reports', path: '/reports', icon: FileText },
+    { label: 'Gifts', path: '/hampers', icon: Gift },
+    { label: 'Guide', path: '/#how-it-works', icon: Activity },
+    { label: 'Security', path: '/#security', icon: ShieldCheck },
   ];
 
   const adminNavItems = [
-    { label: 'Overview', path: '/admin', icon: Home },
-    { label: 'Pending Member KYC Approvals', path: '/admin#kyc_queue', icon: UserCheck, badge: 'Queue' },
-    { label: 'All Members Directory', path: '/admin#members', icon: Users },
-    { label: 'Payments Management', path: '/admin#payments', icon: CreditCard },
-    { label: 'Contribution Ledger', path: '/admin#ledger', icon: FileText },
-    { label: 'Financial Reports', path: '/admin#reports', icon: Activity },
-    { label: 'Hamper Allocations', path: '/admin#hampers', icon: Gift },
-    { label: 'Maturity Disbursals', path: '/admin#payouts', icon: DollarSign },
-    { label: 'Help & Support Desk', path: '/support', icon: HelpCircle },
-    { label: 'Admin Settings', path: '/admin#settings', icon: Settings },
+    { label: 'KYC Queue', path: '/admin#kyc_queue', icon: UserCheck, badge: 'Queue' },
+    { label: 'Members', path: '/admin#members', icon: Users },
+    { label: 'Payments', path: '/admin#payments', icon: CreditCard },
+    { label: 'Ledger', path: '/admin#ledger', icon: FileText },
+    { label: 'Reports', path: '/admin#reports', icon: Activity },
+    { label: 'Hampers', path: '/admin#hampers', icon: Gift },
+    { label: 'Payouts', path: '/admin#payouts', icon: DollarSign },
+    { label: 'Support', path: '/support', icon: HelpCircle },
+    { label: 'Settings', path: '/admin#settings', icon: Settings },
   ];
 
   const currentNavItems = isAdminPage ? adminNavItems : memberNavItems;
@@ -172,19 +168,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     setMobileMenuOpen(false);
   };
 
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (navContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -180 : 180;
-      navContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
-
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (navContainerRef.current && e.deltaY !== 0) {
-      navContainerRef.current.scrollLeft += e.deltaY;
-    }
-  };
-
   const handleSignOut = async () => {
     setDropdownOpen(false);
     setMobileMenuOpen(false);
@@ -210,13 +193,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           {/* Website Logo (Positioned on the LEFT side) */}
           <div
             onClick={() => handleNavClick(isAdminPage ? '/admin' : '/', 'Overview')}
-            className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95 pr-2 sm:border-r border-[#E8EAF8]"
             title="SamruddiSave - RBI Certified Escrow Platform"
           >
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
               S
             </div>
-            <div className="flex flex-col text-left">
+            <div className="hidden lg:flex flex-col text-left">
               <span className="font-heading font-extrabold text-sm sm:text-base tracking-tight text-[#1F1F24] leading-none">
                 Samruddi<span className="text-[#4F5DFF]">Save</span>
               </span>
@@ -227,22 +210,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </div>
         </div>
 
-        {/* Center Section: Single Modern Navigation Bar with Animated Icons & Hover Reveal Labels */}
-        <div className="hidden lg:flex items-center gap-1 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner flex-1 min-w-0 mx-2 group/navbar max-w-full justify-center">
-          
-          <button
-            onClick={() => handleScroll('left')}
-            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          <nav
-            ref={navContainerRef}
-            onWheel={handleWheel}
-            className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 py-0.5 px-1 scroll-smooth justify-center"
-          >
+        {/* Center Section: Clean Navigation Bar with Section Names & Icons */}
+        <div className="hidden lg:flex items-center justify-center flex-1 min-w-0 mx-2">
+          <nav className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner justify-center">
             {currentNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = checkIsActive(item);
@@ -253,48 +223,33 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                   key={item.label}
                   onClick={() => handleNavClick(item.path, item.label, isLocked)}
                   disabled={isLocked}
-                  className={`group/navitem relative flex items-center justify-center transition-all duration-300 ease-out cursor-pointer shrink-0 rounded-full min-h-[40px] px-3 text-xs font-bold ${
+                  className={`group/navitem relative flex items-center gap-2 justify-center transition-all duration-200 cursor-pointer shrink-0 rounded-full min-h-[40px] px-4 text-xs font-bold ${
                     isActive
-                      ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.03]'
+                      ? 'bg-[#4F5DFF] text-white shadow-md'
                       : isLocked
                       ? 'text-slate-300 bg-transparent cursor-not-allowed'
-                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs font-semibold'
+                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs'
                   }`}
                   aria-label={item.label}
                 >
-                  {/* Animated Micro-interaction Icon */}
-                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover/navitem:scale-110 group-hover/navitem:rotate-3 ${
-                    isActive ? 'scale-110 text-white animate-pulse' : ''
+                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 ${
+                    isActive ? 'text-white' : 'text-[#6C7285] group-hover/navitem:text-[#1F1F24]'
                   }`} />
-
-                  {/* Smooth Reveal Page Name Text Label (Hidden by default, revealed on hover/focus or when active) */}
-                  <span className={`overflow-hidden transition-all duration-300 ease-out whitespace-nowrap text-xs font-bold ${
-                    isActive
-                      ? 'max-w-xs ml-2 opacity-100'
-                      : 'max-w-0 opacity-0 group-hover/navitem:max-w-xs group-hover/navitem:ml-2 group-hover/navitem:opacity-100 group-focus/navitem:max-w-xs group-focus/navitem:ml-2 group-focus/navitem:opacity-100'
-                  }`}>
+                  <span className="whitespace-nowrap">
                     {item.label}
                   </span>
 
                   {item.badge && !isActive && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
                   )}
 
                   {isLocked && (
-                    <Lock className="w-3 h-3 text-slate-300 ml-1 shrink-0" />
+                    <Lock className="w-3 h-3 text-slate-300 ml-1.5 shrink-0" />
                   )}
                 </button>
               );
             })}
           </nav>
-
-          <button
-            onClick={() => handleScroll('right')}
-            className="p-1 rounded-full hover:bg-white text-[#6C7285] hover:text-[#1F1F24] transition-colors shrink-0 cursor-pointer hidden group-hover/navbar:flex items-center justify-center min-h-[36px] min-w-[36px]"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Far Right Corner: Notifications + User Profile + Website Logo (Placed at the Far Right) */}
@@ -427,6 +382,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
               </button>
             </div>
           )}
+
         </div>
       </div>
 
