@@ -78,26 +78,26 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
           <Lock className="w-8 h-8" />
         </div>
         <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3.5 py-1 rounded-full border border-amber-300 uppercase tracking-wider">
-          Admin Portal Access Required
+          Admin Operations Required
         </span>
         <h2 className="font-heading font-extrabold text-2xl text-slate-900">
-          Admin Role Required for /admin
+          Admin Portal Authentication Required
         </h2>
         <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-          You are attempting to access Admin features. Please switch to Admin mode or log in to continue.
+          Access to this area requires authenticated Operations Admin privileges. Please log in with valid Admin credentials to continue.
         </p>
         <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
           <button
-            onClick={() => stateStore.switchRole('admin')}
+            onClick={() => onNavigate('/admin-login')}
             className="bg-[#4F5DFF] text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-[#4F5DFF]/90 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
-            ⚡ 1-Click Demo Admin Login <ArrowRight className="w-4 h-4" />
+            Authenticate with Admin Credentials <ArrowRight className="w-4 h-4" />
           </button>
           <button
-            onClick={() => onNavigate('/console')}
+            onClick={() => onNavigate('/dashboard')}
             className="bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            Log in with Credentials
+            Back to Member Dashboard
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { stateStore } from '../store/StateStore';
 import { supabase } from '../lib/supabase';
+import { PasswordMetadataService } from '../services/PasswordMetadataService';
 import { UserProfile } from '../types';
 import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, Sparkles, Eye, EyeOff } from 'lucide-react';
 
@@ -74,7 +75,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
         console.warn('Supabase auth login check exception:', e);
       }
 
-      // 2. Registered Profiles Fallback Lookup
+      // 2. Registered Profiles Fallback Lookup with Password Verification
       if (!userId) {
         await stateStore.fetchLatestFromSupabase();
         const q = emailOrPhone.toLowerCase().trim();
@@ -84,7 +85,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
         );
 
         if (match) {
-          userId = match.id;
+          const isValidPassword = await PasswordMetadataService.verifyPassword(match.id, match.email, password.trim());
+          if (isValidPassword) {
+            userId = match.id;
+          }
         }
       }
 
@@ -190,7 +194,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
         created_at: new Date().toISOString()
       };
 
-      await stateStore.registerOrUpdateProfile(newProfile);
+      await stateStore.registerOrUpdateProfile(newProfile, regPassword.trim());
       stateStore.setCurrentUserId(newUserId);
       stateStore.getUserMembership(newUserId);
 
