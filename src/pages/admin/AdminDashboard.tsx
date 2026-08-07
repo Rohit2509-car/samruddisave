@@ -18,12 +18,30 @@ import {
   UserCheck,
   Settings,
   ChevronRight,
+  ChevronLeft,
   AlertTriangle,
   TrendingUp,
   Zap,
-  RefreshCw
+  RefreshCw,
+  LayoutDashboard,
+  Layers,
+  Gavel,
+  Wallet,
+  Receipt,
+  BarChart3,
+  Bell,
+  User,
+  LogOut,
+  Menu,
+  ShieldAlert,
+  Lock,
+  Building2,
+  Send,
+  UserPlus,
+  Check,
+  Clock
 } from 'lucide-react';
-import { GIFT_HAMPERS } from '../../data/mockData';
+import { GIFT_HAMPERS, INITIAL_CHIT_GROUPS } from '../../data/mockData';
 import { AdminCashCollectionModal } from '../../components/AdminCashCollectionModal';
 import { PrintableReceiptModal } from '../../components/PrintableReceiptModal';
 
@@ -38,9 +56,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const [contributions, setContributions] = useState<ContributionRecord[]>(stateStore.getContributions());
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(stateStore.getAuditLogs());
 
-  // Navigation Active Tab
+  // Sidebar Collapse & Mobile Drawer States
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Navigation Active Tab (Supporting 15 Navigation Items)
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'kyc_queue' | 'members' | 'payments' | 'offline_payments' | 'ledger' | 'reports' | 'hampers' | 'payouts' | 'audit' | 'settings'
+    | 'overview'
+    | 'members'
+    | 'chit_groups'
+    | 'auctions'
+    | 'monthly_deposits'
+    | 'payments'
+    | 'transactions'
+    | 'ledger'
+    | 'reports'
+    | 'notifications'
+    | 'kyc_queue'
+    | 'roles_permissions'
+    | 'settings'
+    | 'profile'
   >('overview');
 
   useEffect(() => {
@@ -48,12 +83,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       const hash = window.location.hash.replace('#', '');
       const path = window.location.pathname;
 
-      if (hash && ['overview', 'kyc_queue', 'members', 'payments', 'ledger', 'reports', 'hampers', 'payouts', 'audit', 'settings'].includes(hash)) {
+      if (hash && [
+        'overview', 'members', 'chit_groups', 'auctions', 'monthly_deposits', 
+        'payments', 'transactions', 'ledger', 'reports', 'notifications', 
+        'kyc_queue', 'roles_permissions', 'settings', 'profile'
+      ].includes(hash)) {
         setActiveTab(hash as any);
       } else if (path === '/employee') {
         setActiveTab('kyc_queue');
       } else if (path === '/finance') {
-        setActiveTab('payouts');
+        setActiveTab('payments');
       } else if (path === '/ledger') {
         setActiveTab('ledger');
       } else if (path === '/admin') {
@@ -68,12 +107,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
-  const [filterMemberId, setFilterMemberId] = useState<string>('all');
   const [inspectedMember, setInspectedMember] = useState<any | null>(null);
 
-  // 6 Lifecycle Stages Definition (Simplified Admin Workflow)
+  // Notification Broadcast State
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifMessage, setNotifMessage] = useState('');
+  const [notifTarget, setNotifTarget] = useState('all');
+  const [notifSentMsg, setNotifSentMsg] = useState(false);
+
+  // 6 Lifecycle Stages Definition
   const lifecycleStages = [
     { id: 'signup', name: '1. Member Signup', badgeStyle: 'bg-slate-100 text-slate-700 border-slate-200' },
     { id: 'pending', name: '2. Approval Pending', badgeStyle: 'bg-amber-50 text-amber-800 border-amber-300' },
@@ -117,15 +159,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     alert(`Member ${member.full_name} successfully moved to ${targetStage.name}! Update synced to Supabase.`);
   };
 
-  // Offline Payment Reconciliation & Cash Collection Modal
+  // Modals State
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
   const [isCashCollectionModalOpen, setIsCashCollectionModalOpen] = useState(false);
   const [viewReceiptRecord, setViewReceiptRecord] = useState<ContributionRecord | null>(null);
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
-  const [offlineAmount, setOfflineAmount] = useState<number>(1000);
-  const [offlineMethod, setOfflineMethod] = useState<'offline_cash' | 'offline_upi'>('offline_upi');
-  const [offlineTxnRef, setOfflineTxnRef] = useState<string>('');
-  const [offlineNotes, setOfflineNotes] = useState<string>('');
 
   useEffect(() => {
     stateStore.fetchLatestFromSupabase();
@@ -139,7 +176,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     return unsubscribe;
   }, []);
 
-  // Operational Metrics
+  // Metrics
   const totalMembers = profiles.filter((p) => p.role === 'member').length;
   const activeMembers = memberships.filter((m) => m.status === 'active').length;
   const pendingKYCMembers = profiles.filter((p) => {
@@ -149,48 +186,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     return p.kyc_status === 'pending' || p.kyc_status === 'unsubmitted' || (p as any).pipeline_stage === 'pending';
   });
   const gracePeriodMembers = memberships.filter((m) => m.status === 'grace_period');
-  const maturedMembers = memberships.filter((m) => m.status === 'matured' || m.status === 'disbursed');
   const totalCollection = contributions
     .filter((c) => c.status === 'PAID')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // Manual Offline Payment Submission to Backend API
-  const handleReconcileOfflinePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedMemberId) return;
-
-    const membership = stateStore.getUserMembership(selectedMemberId);
-    if (!membership) {
-      alert('Selected member does not have an active membership!');
-      return;
-    }
-
-    const memberProfile = profiles.find((p) => p.id === selectedMemberId);
-    const txnRef = offlineTxnRef || `OFFLINE_${offlineMethod === 'offline_cash' ? 'CASH' : 'UPI'}_${Date.now().toString().slice(-6)}`;
-    
-    await stateStore.recordOfflinePaymentBackend({
-      userId: selectedMemberId,
-      membershipId: membership.id,
-      amount: offlineAmount || membership.monthly_amount,
-      paymentMethod: offlineMethod,
-      transactionRef: txnRef,
-      notes: offlineNotes || `Admin (${adminUser.full_name}) manually recorded ${offlineMethod.replace('_', ' ')} deposit`,
-      adminId: adminUser.id,
-      adminName: adminUser.full_name,
-    });
-
-    setIsReconcileModalOpen(false);
-    setSelectedMemberId('');
-    setOfflineTxnRef('');
-    setOfflineNotes('');
-    alert(`Offline payment of ₹${offlineAmount} for ${memberProfile?.full_name || 'Member'} successfully recorded into Backend Escrow Ledger and verified for Customer view!`);
+  // Sign out handler
+  const handleSignOut = async () => {
+    await stateStore.signOut();
+    onNavigate('/login');
   };
 
   // Download Individual Official Escrow Receipt
   const handleDownloadReceipt = (contrib: ContributionRecord) => {
     const member = profiles.find((p) => p.id === contrib.user_id);
-    const memberName = member?.full_name || 'Rohit Sharma';
-    const memberEmail = member?.email || 'rohitxcvmhss@gmail.com';
+    const memberName = member?.full_name || 'Member';
+    const memberEmail = member?.email || 'N/A';
 
     const receiptContent = `================================================
 SAMRUDDISAVE RBI ESCROW OFFICIAL RECEIPT
@@ -222,1083 +232,684 @@ Generated By: SamruddiSave Admin Console
     document.body.removeChild(link);
   };
 
-  // Download Full Member Passbook & Receipt Batch
-  const handleDownloadMemberBatchReceipts = (memberId: string) => {
-    const member = profiles.find((p) => p.id === memberId);
-    const name = member?.full_name || 'Member';
-    const memberContribs = contributions.filter((c) => c.user_id === memberId && c.status === 'PAID');
-
-    if (memberContribs.length === 0) {
-      alert(`No paid contributions found for ${name}.`);
-      return;
-    }
-
-    const statementText = `================================================
-SAMRUDDISAVE RBI ESCROW COMPLETE MEMBER PASSBOOK
-================================================
-Member Name: ${name}
-Email: ${member?.email || 'N/A'}
-Member Account ID: ${memberId}
-Total Paid Contributions: ${memberContribs.length} Cycles
-Total Amount Deposited: INR ${memberContribs.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('en-IN')}
-Generated Date: ${new Date().toLocaleString()}
-================================================
-
-TRANSACTION ENTRIES & INDIVIDUAL RECEIPTS:
-
-${memberContribs
-  .map(
-    (c) => `--- CYCLE #${c.cycle_number} RECEIPT ---
-Receipt ID: ${c.id}
-Paid Date: ${c.paid_date ? new Date(c.paid_date).toLocaleString() : 'N/A'}
-Amount: INR ${c.amount.toLocaleString('en-IN')}
-Method: ${(c.payment_method || 'razorpay').toUpperCase()}
-Txn Ref: ${c.transaction_ref}
-Escrow Batch: ${c.escrow_batch_id || 'ESC_BATCH_2026'}
-Status: VERIFIED & DEPOSITED`
-  )
-  .join('\n\n')}
-
-================================================
-End of Official Member Passbook & Escrow Ledger
-`;
-
-    const blob = new Blob([statementText], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Full_Passbook_Receipts_${name.replace(/\s+/g, '_')}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // CSV Export Handler
   const handleExportCSV = () => {
     const csvData = stateStore.exportLedgerCSV();
     stateStore.downloadCSV(csvData, `samruddisave_ledger_export_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
-  return (
-    <div className="min-h-screen bg-[#F7F8FC] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* Header Title Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#4F5DFF] uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4" /> Member Operations & Lifecycle
-            </div>
-            <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-[#1F1F24] mt-1">
-              Admin Operations Dashboard
-            </h1>
-            <p className="text-xs text-[#6C7285] mt-1">
-              Logged in as <span className="font-semibold text-[#1F1F24]">{adminUser.full_name}</span> (Operations Administrator)
-            </p>
-          </div>
+  // Send Announcement Handler
+  const handleSendNotification = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifTitle.trim() || !notifMessage.trim()) return;
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={async () => {
-                await stateStore.fetchLatestFromSupabase();
-                setProfiles([...stateStore.getProfiles()]);
-              }}
-              className="min-h-[44px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs px-4 py-3 rounded-2xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-              title="Fetch newest registered members from Supabase database"
-            >
-              <RefreshCw className="w-4 h-4" /> Sync Live Members
-            </button>
-            <button
-              onClick={() => setIsCashCollectionModalOpen(true)}
-              className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] focus-visible:ring-offset-2 active:scale-95"
-            >
-              <DollarSign className="w-4 h-4" /> Record Cash Collection
-            </button>
-            <button
-              onClick={() => setIsReconcileModalOpen(true)}
-              className="min-h-[44px] bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-800 focus-visible:ring-offset-2 active:scale-95"
-            >
-              <PlusCircle className="w-4 h-4" /> Record Offline Payment
-            </button>
-            <button
-              onClick={handleExportCSV}
-              className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 active:scale-95"
-            >
-              <Download className="w-4 h-4" /> Export Ledger CSV
-            </button>
+    setNotifSentMsg(true);
+    setTimeout(() => {
+      setNotifTitle('');
+      setNotifMessage('');
+      setNotifSentMsg(false);
+      alert(`Announcement "${notifTitle}" successfully broadcasted to ${notifTarget === 'all' ? 'all customers' : notifTarget}!`);
+    }, 800);
+  };
+
+  // 15 Menu Navigation Options Requested
+  const navItems = [
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'members', label: 'Customer Management', icon: Users },
+    { id: 'chit_groups', label: 'Chit Groups', icon: Layers },
+    { id: 'auctions', label: 'Auctions', icon: Gavel },
+    { id: 'monthly_deposits', label: 'Monthly Deposits', icon: CreditCard },
+    { id: 'payments', label: 'Payments & Collections', icon: Wallet },
+    { id: 'transactions', label: 'Transactions', icon: Receipt },
+    { id: 'ledger', label: 'Ledger', icon: FileSpreadsheet },
+    { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'kyc_queue', label: 'Documents', icon: FileText, badge: pendingKYCMembers.length > 0 ? pendingKYCMembers.length : undefined },
+    { id: 'roles_permissions', label: 'User Roles & Permissions', icon: ShieldCheck },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'profile', label: 'Profile', icon: User },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#F4F6F9] flex text-slate-800 font-sans relative">
+      
+      {/* MOBILE BACKDROP OVERLAY */}
+      {isMobileOpen && (
+        <div
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden"
+        />
+      )}
+
+      {/* MODERN ADMIN SIDE NAVIGATION BAR (Collapsible & Responsive) */}
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-50 ${
+          isSidebarCollapsed ? 'w-20' : 'w-64'
+        } bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {/* Sidebar Brand Header */}
+        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between min-h-[65px]">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] text-white font-extrabold text-base flex items-center justify-center shadow-md shadow-[#4F5DFF]/30 shrink-0">
+              S
+            </div>
+            {!isSidebarCollapsed && (
+              <div className="flex flex-col text-left truncate">
+                <span className="font-heading font-extrabold text-sm text-white tracking-tight leading-tight truncate">
+                  Samruddi<span className="text-[#4F5DFF]">Save</span>
+                </span>
+                <span className="text-[9px] font-bold text-emerald-400 tracking-wider uppercase mt-0.5">
+                  Admin Operations
+                </span>
+              </div>
+            )}
           </div>
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-xl transition-all cursor-pointer"
+            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setIsMobileOpen(false)}
+            className="lg:hidden text-slate-400 hover:text-white p-1.5 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Main Module Display Area (Full Width, Sidebar Moved to Top Navbar) */}
-        <div className="w-full space-y-6">
-            
-            {/* OVERVIEW TAB */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6 animate-in fade-in duration-200">
-                
-                {/* Operational KPI Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
-                    <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Total Registered Members</p>
-                    <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">{totalMembers}</p>
-                    <span className="inline-block mt-1 text-xs text-emerald-600 font-semibold">{activeMembers} Active Savers</span>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
-                    <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Pending KYC Approvals</p>
-                    <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">{pendingKYCMembers.length}</p>
-                    <span className="inline-block mt-1 text-xs text-amber-600 font-semibold">Requires Admin Sign-off</span>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
-                    <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Grace Period 5-Day Alert</p>
-                    <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">{gracePeriodMembers.length}</p>
-                    <span className="inline-block mt-1 text-xs text-rose-600 font-semibold">Action Required</span>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
-                    <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Total Collection Pool</p>
-                    <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">₹{totalCollection.toLocaleString()}</p>
-                    <span className="inline-block mt-1 text-xs text-[#4F5DFF] font-semibold">HDFC Escrow Trustee</span>
-                  </div>
+        {/* Sidebar Navigation Items */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id as any);
+                  setIsMobileOpen(false);
+                }}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3.5'
+                } py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
+                  isActive
+                    ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/25 font-bold'
+                    : 'text-slate-400 hover:bg-slate-800/80 hover:text-white'
+                }`}
+                title={isSidebarCollapsed ? item.label : undefined}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Icon className={`w-4 h-4 shrink-0 transition-transform ${
+                    isActive ? 'text-white scale-110' : 'text-slate-400 group-hover:text-white'
+                  }`} />
+                  {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
                 </div>
-
-                {/* Explicit 8-Stage Lifecycle Pipeline Board */}
-                {/* Near 12-Month Plan Maturity Approaching Alerts (Point 5) */}
-                {profiles.filter((p) => ['hamper', 'payout', 'matured'].includes(((p as any).pipeline_stage || '').toLowerCase())).length > 0 && (
-                  <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 text-xs shadow-xs animate-in fade-in duration-200">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 mt-0.5" />
-                      <div>
-                        <p className="font-extrabold text-sm text-amber-900">
-                          ⚠️ 12-Month Plan Maturity Approaching Alerts ({profiles.filter((p) => ['hamper', 'payout', 'matured'].includes(((p as any).pipeline_stage || '').toLowerCase())).length} Members)
-                        </p>
-                        <p className="mt-0.5 text-amber-800 leading-normal">
-                          The following members are approaching or have reached 12 months maturity:{' '}
-                          <span className="font-bold">
-                            {profiles
-                              .filter((p) => ['hamper', 'payout', 'matured'].includes(((p as any).pipeline_stage || '').toLowerCase()))
-                              .map((p) => `${p.full_name} (${p.pipeline_stage || 'Matured'})`)
-                              .join(', ')}
-                          </span>
-                          . Review hamper allocations & maturity payout disbursals.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('payouts')}
-                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shrink-0 shadow-sm transition-all cursor-pointer"
-                    >
-                      Manage Disbursals &rarr;
-                    </button>
-                  </div>
-                )}
-
-                <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4">
-                  <div>
-                    <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">
-                      Explicit 6-Stage Lifecycle Pipeline Board
-                    </h3>
-                    <p className="text-xs text-[#6C7285] font-medium mt-0.5">
-                      1. Member Signup → 2. Approval Pending → 3. Savings Active → 4. Grace Period → 5. Hamper Select → 6. Completed / Matured
-                    </p>
-                  </div>
-
-                  {/* Horizontal Scrollable Pipeline Kanban Board */}
-                  <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-thin">
-                    {lifecycleStages.map((stage) => {
-                      const stageMembers = getMembersForStage(stage.id);
-                      return (
-                        <div
-                          key={stage.id}
-                          className="min-w-[260px] max-w-[280px] flex-1 bg-[#F8FAFC] p-3.5 rounded-2xl border border-[#E2E8F0] space-y-3 flex flex-col justify-between"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${stage.badgeStyle}`}>
-                              {stage.name}
-                            </span>
-                            <span className="font-mono font-bold text-xs text-slate-500">{stageMembers.length}</span>
-                          </div>
-
-                          <div className="space-y-2.5 min-h-[160px] flex-1">
-                            {stageMembers.length === 0 ? (
-                              <div className="h-full flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-4 text-[11px] text-slate-400 font-medium text-center">
-                                No Members in Stage
-                              </div>
-                            ) : (
-                              stageMembers.map((m: any, idx: number) => (
-                                <div
-                                  key={`${m.id || m.email}-${m.pipeline_stage || idx}`}
-                                  className="bg-white p-3 rounded-xl border border-[#E8EAF8] shadow-2xs hover:shadow-md transition-all space-y-2"
-                                >
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] text-white font-bold text-xs flex items-center justify-center shrink-0">
-                                      {m.full_name.charAt(0)}
-                                    </div>
-                                    <div className="overflow-hidden">
-                                      <p className="font-bold text-xs text-[#1F1F24] truncate">{m.full_name}</p>
-                                      <p className="text-xs text-[#6C7285] font-medium">{m.phone}</p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center justify-between pt-2 border-t border-[#F1F5F9] text-xs">
-                                    <span className="font-semibold text-slate-600">Streak: <span className="font-bold text-[#1F1F24]">{m.streak || '0m'}</span></span>
-                                    <button
-                                      onClick={() => setInspectedMember(m)}
-                                      className="bg-[#4F5DFF]/10 hover:bg-[#4F5DFF] text-[#4F5DFF] hover:text-white font-bold text-[11px] px-2.5 py-1 rounded-xl transition-all inline-flex items-center gap-1 cursor-pointer shrink-0"
-                                    >
-                                      Inspect 360° &rarr;
-                                    </button>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* PENDING MEMBER KYC APPROVALS MODULE TAB */}
-            {activeTab === 'kyc_queue' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8EAF8] pb-4">
-                  <div>
-                    <h3 className="font-heading font-extrabold text-2xl text-[#1F1F24] flex items-center gap-2">
-                      <UserCheck className="w-6 h-6 text-amber-500" /> Pending Member KYC Approvals
-                    </h3>
-                    <p className="text-xs text-[#6C7285] font-medium mt-1">
-                      Review identity documents, PAN, Aadhaar, and approve member accounts for deposit access
-                    </p>
-                  </div>
-                  <span className="bg-amber-100 text-amber-800 text-xs font-bold px-4 py-2 rounded-full border border-amber-200">
-                    {pendingKYCMembers.length} Pending Approvals
+                {!isSidebarCollapsed && item.badge && (
+                  <span className="bg-amber-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full animate-pulse shrink-0">
+                    {item.badge}
                   </span>
-                </div>
-
-                {pendingKYCMembers.length === 0 ? (
-                  <div className="p-10 text-center bg-[#F7F8FC] rounded-3xl border border-[#E8EAF8] space-y-3">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-                    <p className="font-heading font-extrabold text-base text-[#1F1F24]">All Clear! No Pending KYC Registrations</p>
-                    <p className="text-xs text-[#6C7285] max-w-md mx-auto">
-                      All active customer accounts are fully verified under RBI Escrow and compliance standards.
-                    </p>
-                    <button
-                      onClick={async () => {
-                        await stateStore.submitKYCForApproval('demo-karthik-01', {
-                          full_name: 'Karthickeyan M (Member Account)',
-                          email: 'karthickeyan@gmail.com',
-                          phone: '+91 98765 43210',
-                          pan_number: 'BNKPI9876K',
-                          aadhaar_number: '9876 5432 1098',
-                          ocr_confidence: 99.8,
-                        });
-                      }}
-                      className="mt-2 bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md cursor-pointer transition-all inline-flex items-center gap-2"
-                    >
-                      ⚡ Add Pending Member KYC Submission for Testing
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingKYCMembers.map((member) => (
-                      <div
-                        key={member.id}
-                        className="p-5 bg-[#F7F8FC] border border-[#E8EAF8] rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs hover:shadow-sm transition-all"
-                      >
-                        <div className="flex items-center gap-4">
-                          <img
-                            src={member.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
-                            alt={member.full_name}
-                            className="w-14 h-14 rounded-2xl object-cover border-2 border-[#4F5DFF] shadow-md shrink-0"
-                          />
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-extrabold text-base text-[#1F1F24]">{member.full_name}</span>
-                              <span className="text-xs text-[#6C7285] bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono">
-                                ID: {member.id}
-                              </span>
-                              <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                ⏱️ 12h SLA Auto-Verify Active
-                              </span>
-                            </div>
-                            <p className="text-xs text-[#6C7285]">
-                              Phone: <span className="font-medium text-[#1F1F24]">{member.phone}</span> • Email: <span className="font-medium text-[#1F1F24]">{member.email}</span>
-                            </p>
-                            <p className="text-xs text-[#6C7285]">
-                              PAN: <span className="font-mono font-bold text-[#1F1F24]">{member.pan_number || 'ABCDE1234F'}</span> • Aadhaar: <span className="font-mono font-bold text-[#1F1F24]">{member.aadhaar_number || '9876 5432 1098'}</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            onClick={() => setInspectedMember(member)}
-                            className="min-h-[44px] bg-white hover:bg-slate-100 border border-[#E8EAF8] text-slate-700 font-bold text-xs px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer"
-                          >
-                            Inspect Docs 360°
-                          </button>
-                          <button
-                            onClick={async () => {
-                              await stateStore.fastForward12HourAutoApproval(member.id);
-                              alert(`⏱️ 12-Hour SLA Auto-Verification triggered for ${member.full_name}! Account has been verified without manual Admin delay.`);
-                            }}
-                            className="min-h-[44px] bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer"
-                          >
-                            ⚡ Fast-Forward 12h SLA
-                          </button>
-                          <button
-                            onClick={async () => {
-                              await stateStore.updateKYCStatus(member.id, 'approved', adminUser.id, 'Admin approved KYC');
-                              alert(`KYC for ${member.full_name} has been approved successfully!`);
-                            }}
-                            className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-2xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <CheckCircle2 className="w-4 h-4" /> Approve Member
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Admin Profile & Logout Footer */}
+        <div className="p-3 border-t border-slate-800/80 space-y-1">
+          <button
+            onClick={() => { setActiveTab('profile'); setIsMobileOpen(false); }}
+            className={`w-full flex items-center ${
+              isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-3.5'
+            } py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800/80 transition-all cursor-pointer`}
+            title={isSidebarCollapsed ? "Admin Profile" : undefined}
+          >
+            <User className="w-4 h-4 text-blue-400 shrink-0" />
+            {!isSidebarCollapsed && (
+              <div className="text-left truncate flex-1">
+                <p className="font-bold text-white text-xs truncate">{adminUser.full_name}</p>
+                <p className="text-[10px] text-slate-400 truncate">{adminUser.email}</p>
               </div>
             )}
+          </button>
+          <button
+            onClick={handleSignOut}
+            className={`w-full flex items-center ${
+              isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-3.5'
+            } py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 hover:text-rose-300 transition-all cursor-pointer`}
+            title="Secure Logout"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!isSidebarCollapsed && <span>Logout</span>}
+          </button>
+        </div>
+      </aside>
 
-            {/* MEMBERS DIRECTORY TAB */}
-            {activeTab === 'members' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">All Members Directory</h3>
-                  
-                  <div className="relative">
-                    <Search className="w-4 h-4 text-[#6C7285] absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      placeholder="Search member by name, email, or PAN..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 pr-4 py-2 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs text-[#1F1F24] w-full sm:w-64 focus:outline-none focus:border-[#4F5DFF]"
-                    />
-                  </div>
-                </div>
+      {/* MAIN CONTENT WORKSPACE */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        
+        {/* Top Header Mobile Toggle & Status */}
+        <header className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileOpen(true)}
+              className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+              aria-label="Open Sidebar Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <span className="font-heading font-extrabold text-slate-900 text-sm">
+              Admin Operations
+            </span>
+          </div>
+          <span className="text-xs font-bold text-[#4F5DFF] bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+            {navItems.find(i => i.id === activeTab)?.label || 'Dashboard'}
+          </span>
+        </header>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold">
-                        <th className="p-3">Member</th>
-                        <th className="p-3">Role</th>
-                        <th className="p-3">KYC Status</th>
-                        <th className="p-3">Pipeline Stage</th>
-                        <th className="p-3">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8EAF8]">
-                      {profiles
-                        .filter((p) => p.role === 'member')
-                        .filter((p) => p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || p.email.toLowerCase().includes(searchQuery.toLowerCase()))
-                        .map((p) => (
-                          <tr key={p.id} className="hover:bg-[#F7F8FC]/50">
-                            <td className="p-3 font-semibold text-[#1F1F24]">
-                              <div className="flex items-center gap-2.5">
-                                <img
-                                  src={p.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
-                                  alt={p.full_name}
-                                  className="w-8 h-8 rounded-full object-cover border border-[#4F5DFF]/30 shadow-2xs"
-                                />
-                                <div>
-                                  <div className="font-bold text-[#1F1F24]">{p.full_name}</div>
-                                  <div className="text-[10px] text-[#6C7285] font-normal">{p.email} • {p.phone}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-3 uppercase font-bold text-[#4F5DFF]">{p.role}</td>
-                            <td className="p-3">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                                p.kyc_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                {p.kyc_status}
-                              </span>
-                            </td>
-                            <td className="p-3 font-medium text-slate-700">{p.pipeline_stage}</td>
-                            <td className="p-3">
-                              {p.kyc_status !== 'approved' && (
-                                <button
-                                  onClick={() => stateStore.updateKYCStatus(p.id, 'approved', adminUser.id)}
-                                  className="text-xs font-bold text-emerald-600 hover:underline"
-                                >
-                                  Approve KYC
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
+        {/* Main Content Area */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+          
+          {/* Header Title Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold text-[#4F5DFF] uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4" /> Member Operations & Escrow Ledger
               </div>
-            )}
+              <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-[#1F1F24] mt-1">
+                {navItems.find(i => i.id === activeTab)?.label || 'Admin Operations Dashboard'}
+              </h1>
+              <p className="text-xs text-[#6C7285] mt-1">
+                Authenticated Admin: <span className="font-semibold text-[#1F1F24]">{adminUser.full_name}</span> ({adminUser.email})
+              </p>
+            </div>
 
-            {/* PAYMENTS MANAGEMENT TAB */}
-            {activeTab === 'payments' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Payments Management</h3>
-                    <p className="text-xs text-[#6C7285]">Due Today, Overdue Contributions, Razorpay & Offline Transactions</p>
-                  </div>
-
-                  <button
-                    onClick={() => setIsReconcileModalOpen(true)}
-                    className="bg-[#4F5DFF] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md cursor-pointer"
-                  >
-                    + Record Offline Payment
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4">
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-                    <p className="text-xs font-bold text-amber-800 uppercase">Due Today</p>
-                    <p className="font-extrabold text-xl text-amber-900 mt-1">₹5,000</p>
-                  </div>
-                  <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl">
-                    <p className="text-xs font-bold text-rose-800 uppercase">Overdue Contributions</p>
-                    <p className="font-extrabold text-xl text-rose-900 mt-1">{gracePeriodMembers.length} Members</p>
-                  </div>
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-                    <p className="text-xs font-bold text-emerald-800 uppercase">Total Collected</p>
-                    <p className="font-extrabold text-xl text-emerald-900 mt-1">₹{totalCollection.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold">
-                        <th className="p-3">Txn Ref</th>
-                        <th className="p-3">Member Details</th>
-                        <th className="p-3">Cycle #</th>
-                        <th className="p-3">Amount</th>
-                        <th className="p-3">Method</th>
-                        <th className="p-3">Status</th>
-                        <th className="p-3 text-right">Official Receipt</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8EAF8]">
-                      {contributions.map((c) => {
-                        const m = profiles.find((p) => p.id === c.user_id);
-                        return (
-                          <tr key={c.id} className="hover:bg-[#F7F8FC]/50">
-                            <td className="p-3 font-mono font-bold text-[#1F1F24]">{c.transaction_ref}</td>
-                            <td className="p-3">
-                              <p className="font-semibold text-[#1F1F24]">{m?.full_name || 'Rohit Sharma'}</p>
-                              <p className="text-[10px] text-[#6C7285]">{c.user_id}</p>
-                            </td>
-                            <td className="p-3 font-semibold">Month {c.cycle_number}</td>
-                            <td className="p-3 font-bold text-[#1F1F24]">₹{c.amount.toLocaleString()}</td>
-                            <td className="p-3 uppercase font-semibold text-[#4F5DFF]">{c.payment_method || 'razorpay'}</td>
-                            <td className="p-3">
-                              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                                {c.status}
-                              </span>
-                            </td>
-                            <td className="p-3 text-right">
-                              <button
-                                onClick={() => handleDownloadReceipt(c)}
-                                className="min-h-[44px] bg-[#4F5DFF]/10 hover:bg-[#4F5DFF] text-[#4F5DFF] hover:text-white border border-[#4F5DFF]/20 px-4 py-2.5 rounded-2xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF]"
-                                title="Download Official Escrow Receipt"
-                              >
-                                <Download className="w-3.5 h-3.5" /> Download Receipt
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* OFFLINE PAYMENTS TAB */}
-            {activeTab === 'offline_payments' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8EAF8] pb-4">
-                  <div>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-                      Backend Manual Offline Ledger
-                    </span>
-                    <h3 className="font-heading font-extrabold text-2xl text-[#1F1F24] mt-1">
-                      Offline Payment Reconciliation & Records
-                    </h3>
-                    <p className="text-xs text-[#6C7285] mt-0.5">
-                      All manual cash and offline UPI payments entered by Admins, synced to Customer Dashboard & Ledger.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setIsReconcileModalOpen(true)}
-                    className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer"
-                  >
-                    <PlusCircle className="w-4 h-4" /> Record New Offline Payment
-                  </button>
-                </div>
-
-                {/* Offline Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200">
-                    <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Total Offline Collection</p>
-                    <p className="font-heading font-extrabold text-2xl text-emerald-950 mt-1">
-                      ₹{contributions.filter(c => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi').reduce((a, b) => a + b.amount, 0).toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[11px] text-emerald-700 font-semibold mt-1">
-                      {contributions.filter(c => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi').length} Records Reconciled
-                    </p>
-                  </div>
-
-                  <div className="bg-purple-50/80 p-5 rounded-2xl border border-purple-200">
-                    <p className="text-xs font-bold text-purple-800 uppercase tracking-wider">Offline Cash Entries</p>
-                    <p className="font-heading font-extrabold text-2xl text-purple-950 mt-1">
-                      ₹{contributions.filter(c => c.payment_method === 'offline_cash').reduce((a, b) => a + b.amount, 0).toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[11px] text-purple-700 font-semibold mt-1">
-                      Branch Office Cash Collections
-                    </p>
-                  </div>
-
-                  <div className="bg-blue-50/80 p-5 rounded-2xl border border-blue-200">
-                    <p className="text-xs font-bold text-blue-800 uppercase tracking-wider">Offline UPI / Direct Bank</p>
-                    <p className="font-heading font-extrabold text-2xl text-blue-950 mt-1">
-                      ₹{contributions.filter(c => c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer').reduce((a, b) => a + b.amount, 0).toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[11px] text-blue-700 font-semibold mt-1">
-                      Direct QR & Bank Transfers
-                    </p>
-                  </div>
-                </div>
-
-                {/* Offline Records Table */}
-                <div className="overflow-x-auto rounded-2xl border border-[#E8EAF8]">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] font-semibold uppercase">
-                        <th className="p-3.5">Customer / Member</th>
-                        <th className="p-3.5">Cycle #</th>
-                        <th className="p-3.5">Amount</th>
-                        <th className="p-3.5">Payment Method</th>
-                        <th className="p-3.5">Txn Reference</th>
-                        <th className="p-3.5">Reconciled By Admin</th>
-                        <th className="p-3.5">Admin Notes</th>
-                        <th className="p-3.5 text-right">Receipt</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8EAF8]">
-                      {contributions
-                        .filter((c) => c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer')
-                        .map((c) => {
-                          const member = profiles.find((p) => p.id === c.user_id || p.email === 'karthickeyan@gmail.com');
-                          return (
-                            <tr key={c.id} className="hover:bg-[#F7F8FC] transition-colors">
-                              <td className="p-3.5">
-                                <p className="font-bold text-[#1F1F24]">{member?.full_name || 'karthickeyan M'}</p>
-                                <p className="text-[11px] text-slate-500">{member?.email || 'karthickeyan@gmail.com'}</p>
-                              </td>
-                              <td className="p-3.5 font-bold text-slate-700">Month #{c.cycle_number}</td>
-                              <td className="p-3.5 font-mono font-bold text-[#4F5DFF]">₹{c.amount.toLocaleString('en-IN')}</td>
-                              <td className="p-3.5">
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                  c.payment_method === 'offline_cash' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'
-                                }`}>
-                                  {c.payment_method === 'offline_cash' ? '💵 Offline Cash' : '📱 Offline UPI'}
-                                </span>
-                              </td>
-                              <td className="p-3.5 font-mono text-[11px] font-bold text-purple-800">{c.transaction_ref}</td>
-                              <td className="p-3.5">
-                                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 font-semibold px-2 py-0.5 rounded border border-emerald-200">
-                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                  {c.reconciled_by_admin_name || 'Admin'}
-                                </span>
-                              </td>
-                              <td className="p-3.5 text-slate-600 max-w-[200px] truncate" title={c.admin_notes || 'Manually entered by admin'}>
-                                {c.admin_notes || 'Manually entered by admin'}
-                              </td>
-                              <td className="p-3.5 text-right">
-                                <button
-                                  onClick={() => handleDownloadReceipt(c)}
-                                  className="text-xs font-bold text-[#4F5DFF] hover:underline inline-flex items-center gap-1"
-                                >
-                                  <Download className="w-3.5 h-3.5" /> Receipt
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* CONTRIBUTION LEDGER TAB */}
-            {activeTab === 'ledger' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Global Contribution Ledger</h3>
-                    <p className="text-xs text-[#6C7285]">Audit-ready transaction entries for all active member savings cycles</p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    {/* Member Filter Selector */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#6C7285]">Filter Member:</span>
-                      <select
-                        value={filterMemberId}
-                        onChange={(e) => setFilterMemberId(e.target.value)}
-                        className="bg-[#F7F8FC] border border-[#E8EAF8] text-xs font-semibold rounded-xl px-3 py-2 text-[#1F1F24] focus:outline-none focus:border-[#4F5DFF]"
-                      >
-                        <option value="all">All Members ({profiles.filter((p) => p.role === 'member').length})</option>
-                        {profiles
-                          .filter((p) => p.role === 'member')
-                          .map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.full_name} ({m.email})
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-
-                    {filterMemberId !== 'all' && (
-                      <button
-                        onClick={() => handleDownloadMemberBatchReceipts(filterMemberId)}
-                        className="min-h-[44px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-sm flex items-center gap-1.5 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF]"
-                      >
-                        <FileText className="w-4 h-4" /> Download Passbook & Receipts
-                      </button>
-                    )}
-
-                    <button
-                      onClick={handleExportCSV}
-                      className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-md flex items-center gap-2 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-                    >
-                      <Download className="w-4 h-4" /> Export CSV
-                    </button>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold">
-                        <th className="p-3">Ledger ID</th>
-                        <th className="p-3">Member Details</th>
-                        <th className="p-3">Amount</th>
-                        <th className="p-3">Cycle</th>
-                        <th className="p-3">Paid Date</th>
-                        <th className="p-3">Status</th>
-                        <th className="p-3">Txn Ref</th>
-                        <th className="p-3 text-right">Official Receipt</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8EAF8]">
-                      {(filterMemberId === 'all'
-                        ? contributions
-                        : contributions.filter((c) => c.user_id === filterMemberId)
-                      ).map((c) => {
-                        const m = profiles.find((p) => p.id === c.user_id || p.email === 'karthickeyan@gmail.com');
-                        return (
-                          <tr key={c.id} className="hover:bg-[#F7F8FC]/50">
-                            <td className="p-3 font-mono font-medium text-slate-600">{c.id}</td>
-                            <td className="p-3">
-                              <p className="font-semibold text-[#1F1F24]">{m?.full_name || 'karthickeyan M'}</p>
-                              <p className="text-[10px] text-[#6C7285]">{c.user_id} • {m?.email || 'karthickeyan@gmail.com'}</p>
-                            </td>
-                            <td className="p-3 font-bold text-[#1F1F24]">₹{c.amount.toLocaleString()}</td>
-                            <td className="p-3 font-medium">Cycle #{c.cycle_number}</td>
-                            <td className="p-3 text-[#6C7285]">
-                              {c.paid_date ? new Date(c.paid_date).toLocaleDateString() : 'N/A'}
-                            </td>
-                            <td className="p-3">
-                              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                                {c.status}
-                              </span>
-                            </td>
-                            <td className="p-3 font-mono text-slate-700">{c.transaction_ref}</td>
-                            <td className="p-3 text-right">
-                              <button
-                                onClick={() => handleDownloadReceipt(c)}
-                                className="min-h-[44px] bg-[#4F5DFF]/10 hover:bg-[#4F5DFF] text-[#4F5DFF] hover:text-white border border-[#4F5DFF]/20 px-4 py-2.5 rounded-2xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF]"
-                                title="Download Official Escrow Receipt"
-                              >
-                                <Download className="w-3.5 h-3.5" /> Download Receipt
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* FINANCIAL REPORTS TAB */}
-            {activeTab === 'reports' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Financial & Collection Reports</h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-5 bg-[#F7F8FC] border border-[#E8EAF8] rounded-2xl space-y-2">
-                    <h4 className="font-bold text-sm text-[#1F1F24]">Monthly Collection Summary</h4>
-                    <p className="text-xs text-[#6C7285]">Total escrow principal deposited across all 12-month savings plans.</p>
-                    <p className="font-heading font-extrabold text-2xl text-[#4F5DFF] mt-2">₹{totalCollection.toLocaleString()}</p>
-                    <button onClick={handleExportCSV} className="text-xs font-bold text-[#4F5DFF] hover:underline">
-                      Download Detailed CSV Report →
-                    </button>
-                  </div>
-
-                  <div className="p-5 bg-[#F7F8FC] border border-[#E8EAF8] rounded-2xl space-y-2">
-                    <h4 className="font-bold text-sm text-[#1F1F24]">Grace Period & Defaulters</h4>
-                    <p className="text-xs text-[#6C7285]">Members with active 5-day grace alert notices.</p>
-                    <p className="font-heading font-extrabold text-2xl text-rose-600 mt-2">{gracePeriodMembers.length} Members</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* HAMPER ALLOCATIONS TAB */}
-            {activeTab === 'hampers' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Maturity Gift Hamper Allocations</h3>
-                <p className="text-xs text-[#6C7285]">Assign gift hampers to members for Month 12 maturity dispatch</p>
-
-                <div className="space-y-3">
-                  {profiles
-                    .filter((p) => p.role === 'member')
-                    .map((member) => (
-                      <div
-                        key={member.id}
-                        className="p-4 bg-[#F7F8FC] border border-[#E8EAF8] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                      >
-                        <div>
-                          <p className="font-bold text-sm text-[#1F1F24]">{member.full_name}</p>
-                          <p className="text-xs text-[#6C7285]">ID: {member.id}</p>
-                        </div>
-
-                        <select
-                          value={member.allocated_hamper_id || ''}
-                          onChange={(e) => stateStore.allocateHamper(member.id, e.target.value, adminUser.id)}
-                          className="bg-white border border-[#E8EAF8] rounded-xl px-4 py-2 text-xs font-semibold text-[#1F1F24] focus:outline-none focus:border-[#4F5DFF]"
-                        >
-                          <option value="">-- Select Gift Hamper --</option>
-                          {GIFT_HAMPERS.map((h) => (
-                            <option key={h.id} value={h.id}>
-                              {h.name} ({h.tier} Tier - ₹{h.retail_value})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* MATURITY PAYOUTS TAB */}
-            {activeTab === 'payouts' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Maturity Disbursal Approvals</h3>
-                <p className="text-xs text-[#6C7285]">Execute final maturity disbursals and hamper dispatches</p>
-
-                {stateStore.getPayouts().length === 0 ? (
-                  <div className="p-8 text-center bg-[#F7F8FC] rounded-2xl text-xs text-[#6C7285]">
-                    No pending maturity payouts queue at present.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {stateStore.getPayouts().map((pay) => (
-                      <div key={pay.id} className="p-4 bg-[#F7F8FC] border border-[#E8EAF8] rounded-2xl space-y-2">
-                        <div className="flex justify-between items-center">
-                          <p className="font-bold text-sm text-[#1F1F24]">{pay.user_name}</p>
-                          <span className="font-extrabold text-sm text-emerald-600">₹{pay.total_disbursal_amount.toLocaleString()}</span>
-                        </div>
-                        <p className="text-xs text-[#6C7285]">Hamper: {pay.hamper_name}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* AUDIT LOGS TAB */}
-            {activeTab === 'audit' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">System Audit Logs</h3>
-                <p className="text-xs text-[#6C7285]">Immutable audit trail tracking admin reconciliations, approvals, and system events</p>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold">
-                        <th className="p-3">Timestamp</th>
-                        <th className="p-3">Action</th>
-                        <th className="p-3">Admin</th>
-                        <th className="p-3">Member ID</th>
-                        <th className="p-3">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8EAF8]">
-                      {auditLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-[#F7F8FC]/50">
-                          <td className="p-3 text-[#6C7285]">{new Date(log.timestamp).toLocaleString()}</td>
-                          <td className="p-3 font-bold text-[#4F5DFF]">{log.action}</td>
-                          <td className="p-3 font-semibold text-[#1F1F24]">{log.admin_id}</td>
-                          <td className="p-3 text-slate-700">{log.member_id || 'System'}</td>
-                          <td className="p-3 text-[#6C7285]">{log.notes || JSON.stringify(log.details)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* SETTINGS TAB */}
-            {activeTab === 'settings' && (
-              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
-                <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Admin Portal Settings</h3>
-                <p className="text-xs text-[#6C7285]">Platform parameters, security configuration, and escrow disclosures</p>
-                <div className="p-4 bg-[#F7F8FC] rounded-2xl border border-[#E8EAF8] text-xs text-[#1F1F24]">
-                  Admin Profile: <span className="font-bold">{adminUser.full_name} ({adminUser.email})</span>
-                  <div className="mt-2 text-slate-500">Security Encryption: 256-bit AES • Supabase RLS Active</div>
-                </div>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={async () => {
+                  await stateStore.fetchLatestFromSupabase();
+                  setProfiles([...stateStore.getProfiles()]);
+                }}
+                className="min-h-[42px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl shadow-2xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <RefreshCw className="w-4 h-4" /> Sync Live Data
+              </button>
+              <button
+                onClick={() => setIsCashCollectionModalOpen(true)}
+                className="min-h-[42px] bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-md shadow-[#4F5DFF]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <DollarSign className="w-4 h-4" /> Record Cash Collection
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="min-h-[42px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Download className="w-4 h-4" /> Export CSV
+              </button>
+            </div>
           </div>
 
-        {/* MODAL: Record Offline Payment Reconciliation */}
-        {isReconcileModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-[#E8EAF8] shadow-2xl space-y-5">
-              <div className="flex items-center justify-between border-b border-[#E8EAF8] pb-4">
-                <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Record Offline Payment</h3>
-                <button
-                  onClick={() => setIsReconcileModalOpen(false)}
-                  className="text-[#6C7285] hover:text-[#1F1F24]"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          {/* 1. DASHBOARD OVERVIEW TAB */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
+                  <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Total Customer Accounts</p>
+                  <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">{totalMembers}</p>
+                  <span className="inline-block mt-1 text-xs text-emerald-600 font-semibold">{activeMembers} Active Savers</span>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
+                  <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Pending Documents / KYC</p>
+                  <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">{pendingKYCMembers.length}</p>
+                  <span className="inline-block mt-1 text-xs text-amber-600 font-semibold">Requires Approval</span>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
+                  <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Grace Period Dues</p>
+                  <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">{gracePeriodMembers.length}</p>
+                  <span className="inline-block mt-1 text-xs text-rose-600 font-semibold">5-Day Alert Active</span>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-[#E8EAF8] shadow-sm">
+                  <p className="text-[11px] font-bold text-[#6C7285] uppercase tracking-wider">Total Collection Pool</p>
+                  <p className="font-heading font-extrabold text-3xl text-[#1F1F24] mt-2">₹{totalCollection.toLocaleString()}</p>
+                  <span className="inline-block mt-1 text-xs text-[#4F5DFF] font-semibold">HDFC Escrow Trustee</span>
+                </div>
               </div>
 
-              <form onSubmit={handleReconcileOfflinePayment} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#1F1F24] mb-1">Select Member</label>
-                  <select
-                    required
-                    value={selectedMemberId}
-                    onChange={(e) => setSelectedMemberId(e.target.value)}
-                    className="w-full p-3 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4F5DFF]"
-                  >
-                    <option value="">-- Select Member --</option>
-                    {profiles
-                      .filter(
-                        (p) =>
-                          p.role === 'member' &&
-                          (p.kyc_status === 'approved' ||
-                            ['active', 'approved', 'grace', 'hamper', 'payout', 'matured'].includes(
-                              (p.pipeline_stage || '').toLowerCase()
+              {/* Lifecycle Pipeline Kanban Board */}
+              <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4">
+                <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">6-Stage Customer Lifecycle Pipeline</h3>
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
+                  {lifecycleStages.map((stage) => {
+                    const stageMembers = getMembersForStage(stage.id);
+                    return (
+                      <div key={stage.id} className="min-w-[260px] max-w-[280px] flex-1 bg-[#F8FAFC] p-3.5 rounded-2xl border border-[#E2E8F0] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold border ${stage.badgeStyle}`}>{stage.name}</span>
+                          <span className="font-mono font-bold text-xs text-slate-500">{stageMembers.length}</span>
+                        </div>
+                        <div className="space-y-2.5 min-h-[160px]">
+                          {stageMembers.length === 0 ? (
+                            <div className="h-full flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-4 text-[11px] text-slate-400 font-medium text-center">No Members</div>
+                          ) : (
+                            stageMembers.map((m: any, idx: number) => (
+                              <div key={`${m.id}-${idx}`} className="bg-white p-3 rounded-xl border border-[#E8EAF8] shadow-2xs space-y-2">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">{m.full_name.charAt(0)}</div>
+                                  <div className="overflow-hidden">
+                                    <p className="font-bold text-xs text-[#1F1F24] truncate">{m.full_name}</p>
+                                    <p className="text-[11px] text-slate-500">{m.phone}</p>
+                                  </div>
+                                </div>
+                              </div>
                             ))
-                      )
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.full_name} ({p.email}) - {p.pipeline_stage || 'Approved'}
-                        </option>
-                      ))}
-                  </select>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
+              </div>
+            </div>
+          )}
 
-                <div>
-                  <label className="block text-xs font-bold text-[#1F1F24] mb-1">Amount (INR)</label>
-                  <input
-                    type="number"
-                    required
-                    value={offlineAmount}
-                    onChange={(e) => setOfflineAmount(Number(e.target.value))}
-                    className="w-full p-3 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4F5DFF]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1F1F24] mb-1">Payment Method</label>
-                  <select
-                    value={offlineMethod}
-                    onChange={(e) => setOfflineMethod(e.target.value as any)}
-                    className="w-full p-3 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4F5DFF]"
-                  >
-                    <option value="offline_upi">Offline UPI (GPay/PhonePe)</option>
-                    <option value="offline_cash">Offline Cash</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1F1F24] mb-1">
-                    {offlineMethod === 'offline_cash' ? 'Cash Voucher / Receipt Reference (Optional)' : 'Bank UTR / UPI Reference Number'}
-                  </label>
+          {/* 2. CUSTOMER MANAGEMENT TAB */}
+          {activeTab === 'members' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h3 className="font-heading font-extrabold text-lg text-[#1F1F24]">Customer Accounts Management</h3>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-[#6C7285] absolute left-3 top-3" />
                   <input
                     type="text"
-                    placeholder={offlineMethod === 'offline_cash' ? 'Auto-generated (e.g. CASH_REC_918237)' : 'e.g. UPI_REF_91823749'}
-                    value={offlineTxnRef}
-                    onChange={(e) => setOfflineTxnRef(e.target.value)}
-                    className="w-full p-3 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4F5DFF]"
+                    placeholder="Search customer by name, email, phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-4 py-2 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs text-[#1F1F24] w-full sm:w-64 focus:outline-none focus:border-[#4F5DFF]"
                   />
-                  {offlineMethod === 'offline_cash' && (
-                    <p className="text-[11px] text-slate-500 mt-1 font-medium">
-                      💡 <strong>For Offline Cash</strong>: Leave blank to automatically generate an official Cash Receipt Voucher ID (e.g., <code className="bg-[#E8EAF8] px-1.5 py-0.5 rounded font-mono text-indigo-900 font-bold">OFFLINE_CASH_891203</code>).
-                    </p>
-                  )}
                 </div>
+              </div>
 
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold">
+                      <th className="p-3">Customer</th>
+                      <th className="p-3">Role</th>
+                      <th className="p-3">KYC Status</th>
+                      <th className="p-3">Stage</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E8EAF8]">
+                    {profiles
+                      .filter((p) => p.role === 'member')
+                      .filter((p) => p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || p.email.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((p) => (
+                        <tr key={p.id} className="hover:bg-[#F7F8FC]">
+                          <td className="p-3 font-semibold text-[#1F1F24]">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">{p.full_name?.charAt(0) || 'U'}</div>
+                              <div>
+                                <div className="font-bold text-[#1F1F24]">{p.full_name}</div>
+                                <div className="text-[10px] text-slate-500">{p.email} • {p.phone}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3 uppercase font-bold text-[#4F5DFF]">{p.role}</td>
+                          <td className="p-3">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${p.kyc_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                              {p.kyc_status}
+                            </span>
+                          </td>
+                          <td className="p-3 font-medium text-slate-700">{p.pipeline_stage || 'Approved'}</td>
+                          <td className="p-3 text-right space-x-2">
+                            <button onClick={() => setInspectedMember(p)} className="text-xs font-bold text-[#4F5DFF] hover:underline">Inspect 360°</button>
+                            {p.kyc_status !== 'approved' && (
+                              <button onClick={() => stateStore.updateKYCStatus(p.id, 'approved', adminUser.id)} className="text-xs font-bold text-emerald-600 hover:underline">Approve</button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 3. CHIT GROUPS TAB */}
+          {activeTab === 'chit_groups' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#1F1F24] mb-1">Admin Reconciliation Notes</label>
-                  <textarea
-                    placeholder="Reason or verification details for manual payment entry..."
-                    value={offlineNotes}
-                    onChange={(e) => setOfflineNotes(e.target.value)}
-                    rows={3}
-                    className="w-full p-3 bg-[#F7F8FC] border border-[#E8EAF8] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4F5DFF]"
-                  />
+                  <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Chit Fund Groups</h3>
+                  <p className="text-xs text-slate-500">Create, configure, and monitor monthly chit fund groups</p>
                 </div>
+                <button className="bg-[#4F5DFF] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer">
+                  <PlusCircle className="w-4 h-4" /> Create New Group
+                </button>
+              </div>
 
-                <div className="pt-2 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsReconcileModalOpen(false)}
-                    className="px-4 py-2.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-[#4F5DFF] hover:bg-[#4F5DFF]/90 text-white text-xs font-bold rounded-xl shadow-md"
-                  >
-                    Reconcile & Write Audit Log
-                  </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {INITIAL_CHIT_GROUPS.map((group) => (
+                  <div key={group.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-sm">{group.name}</span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">{group.status}</span>
+                    </div>
+                    <div className="text-xs space-y-1 text-slate-600">
+                      <p>Total Value: <strong className="text-slate-900">₹{group.total_value.toLocaleString()}</strong></p>
+                      <p>Monthly Deposit: <strong className="text-slate-900">₹{group.monthly_installment.toLocaleString()}</strong></p>
+                      <p>Duration: <strong className="text-slate-900">{group.duration_months} Months</strong></p>
+                      <p>Members Count: <strong className="text-slate-900">{group.max_members} Seats</strong></p>
+                    </div>
+                    <button className="w-full bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer">
+                      Manage Group & Seats
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. AUCTIONS TAB */}
+          {activeTab === 'auctions' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Auctions & Bidding Management</h3>
+                  <p className="text-xs text-slate-500">Conduct chit auctions, accept bids, and disburse auction prize money</p>
                 </div>
+                <button className="bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer">
+                  <Gavel className="w-4 h-4" /> Start Live Auction
+                </button>
+              </div>
+
+              <div className="p-5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-6 h-6 text-amber-600" />
+                  <div>
+                    <p className="font-bold text-amber-900 text-sm">Next Scheduled Monthly Auction</p>
+                    <p className="text-xs text-amber-800">Group A1 (12-Month ₹12,000 Pool) - Scheduled for 15th of this month at 4:00 PM IST</p>
+                  </div>
+                </div>
+                <button className="bg-amber-600 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer">Enter Auction Room</button>
+              </div>
+            </div>
+          )}
+
+          {/* 5. MONTHLY DEPOSITS TAB */}
+          {activeTab === 'monthly_deposits' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Monthly Customer Deposits</h3>
+                  <p className="text-xs text-slate-500">Monitor and verify all monthly installment deposits</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase">
+                      <th className="p-3">Member</th>
+                      <th className="p-3">Cycle Number</th>
+                      <th className="p-3">Amount</th>
+                      <th className="p-3">Payment Method</th>
+                      <th className="p-3">Date</th>
+                      <th className="p-3 text-right">Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {contributions.map((c) => {
+                      const m = profiles.find((p) => p.id === c.user_id);
+                      return (
+                        <tr key={c.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-bold text-slate-900">{m?.full_name || 'Customer'}</td>
+                          <td className="p-3 font-semibold">Cycle #{c.cycle_number} of 12</td>
+                          <td className="p-3 font-mono font-bold text-blue-600">₹{c.amount.toLocaleString()}</td>
+                          <td className="p-3 uppercase font-semibold text-slate-700">{c.payment_method || 'Razorpay'}</td>
+                          <td className="p-3 text-slate-500">{c.paid_date ? new Date(c.paid_date).toLocaleDateString() : 'N/A'}</td>
+                          <td className="p-3 text-right">
+                            <button onClick={() => handleDownloadReceipt(c)} className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1">
+                              <Download className="w-3.5 h-3.5" /> Receipt
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 6. PAYMENTS & COLLECTIONS TAB */}
+          {activeTab === 'payments' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Payments & Collections</h3>
+                  <p className="text-xs text-slate-500">Track incoming collections, cash entries, and pending customer dues</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setIsCashCollectionModalOpen(true)} className="bg-[#4F5DFF] text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer">+ Cash Collection</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                  <p className="text-xs font-bold text-emerald-800 uppercase">Total Collected</p>
+                  <p className="font-extrabold text-2xl text-emerald-900 mt-1">₹{totalCollection.toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                  <p className="text-xs font-bold text-amber-800 uppercase">Pending Dues</p>
+                  <p className="font-extrabold text-2xl text-amber-900 mt-1">{gracePeriodMembers.length} Accounts</p>
+                </div>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                  <p className="text-xs font-bold text-blue-800 uppercase">RBI Escrow Balance</p>
+                  <p className="font-extrabold text-2xl text-blue-900 mt-1">₹48,50,000</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 7. TRANSACTIONS TAB */}
+          {activeTab === 'transactions' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
+              <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Financial Transaction Logs</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase">
+                      <th className="p-3">Txn Reference</th>
+                      <th className="p-3">Customer</th>
+                      <th className="p-3">Amount</th>
+                      <th className="p-3">Method</th>
+                      <th className="p-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {contributions.map((c) => {
+                      const m = profiles.find((p) => p.id === c.user_id);
+                      return (
+                        <tr key={c.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-mono font-bold text-purple-800">{c.transaction_ref}</td>
+                          <td className="p-3 font-bold text-slate-900">{m?.full_name || 'Customer'}</td>
+                          <td className="p-3 font-mono font-bold text-emerald-600">₹{c.amount.toLocaleString()}</td>
+                          <td className="p-3 uppercase font-semibold">{c.payment_method || 'Online'}</td>
+                          <td className="p-3"><span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">VERIFIED</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 8. LEDGER TAB */}
+          {activeTab === 'ledger' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Escrow General Ledger Records</h3>
+                <button onClick={handleExportCSV} className="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1 cursor-pointer">
+                  <Download className="w-4 h-4" /> Download Ledger CSV
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">Customer-wise and group-wise verified accounting entries synced to Supabase</p>
+            </div>
+          )}
+
+          {/* 9. REPORTS & ANALYTICS TAB */}
+          {activeTab === 'reports' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+              <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Reports & Analytics Summary</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
+                  <BarChart3 className="w-8 h-8 text-blue-600 mx-auto" />
+                  <p className="font-bold text-slate-900 text-sm">Collection Report 2026</p>
+                  <button onClick={handleExportCSV} className="text-xs text-blue-600 font-bold hover:underline">Download Summary &rarr;</button>
+                </div>
+                <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
+                  <PieChart className="w-8 h-8 text-emerald-600 mx-auto" />
+                  <p className="font-bold text-slate-900 text-sm">Chit Auction Summary</p>
+                  <button onClick={handleExportCSV} className="text-xs text-emerald-600 font-bold hover:underline">Download Summary &rarr;</button>
+                </div>
+                <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
+                  <FileText className="w-8 h-8 text-purple-600 mx-auto" />
+                  <p className="font-bold text-slate-900 text-sm">Escrow Audit Statement</p>
+                  <button onClick={handleExportCSV} className="text-xs text-purple-600 font-bold hover:underline">Download Summary &rarr;</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 10. NOTIFICATIONS TAB */}
+          {activeTab === 'notifications' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200 max-w-2xl mx-auto">
+              <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Send Customer Announcements & Reminders</h3>
+              <form onSubmit={handleSendNotification} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Target Customer Group</label>
+                  <select value={notifTarget} onChange={(e) => setNotifTarget(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900">
+                    <option value="all">All Active Customers ({totalMembers})</option>
+                    <option value="grace">Grace Period Dues ({gracePeriodMembers.length})</option>
+                    <option value="pending">Pending KYC Registrations ({pendingKYCMembers.length})</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Announcement Title</label>
+                  <input type="text" placeholder="e.g. Monthly Deposit Reminder" value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Notification Body Message</label>
+                  <textarea rows={4} placeholder="Type announcement text here..." value={notifMessage} onChange={(e) => setNotifMessage(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900" />
+                </div>
+                <button type="submit" className="w-full bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
+                  <Send className="w-4 h-4" /> Broadcast Announcement to Customers
+                </button>
               </form>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* MODAL: Inspect 360° Member Profile & Lifecycle */}
-        {inspectedMember && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-40 animate-in fade-in duration-200">
-            <div className="relative z-50 bg-white rounded-3xl max-w-2xl w-full p-6 border border-[#E8EAF8] shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
-              
-              <div className="flex items-center justify-between border-b border-[#E8EAF8] pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] text-white font-bold text-lg flex items-center justify-center">
-                    {inspectedMember.full_name.charAt(0)}
-                  </div>
+          {/* 11. DOCUMENTS / KYC QUEUE TAB */}
+          {activeTab === 'kyc_queue' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">KYC Documents Verification</h3>
+                  <p className="text-xs text-slate-500">Review customer Aadhaar, PAN, and identity files</p>
+                </div>
+                <span className="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">{pendingKYCMembers.length} Pending Approval</span>
+              </div>
+
+              {pendingKYCMembers.map((member) => (
+                <div key={member.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
                   <div>
-                    <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">{inspectedMember.full_name}</h3>
-                    <p className="text-xs text-[#6C7285]">{inspectedMember.email} • {inspectedMember.phone}</p>
+                    <p className="font-bold text-slate-900 text-sm">{member.full_name}</p>
+                    <p className="text-xs text-slate-500">PAN: {member.pan_number || 'ABCDE1234F'} • Aadhaar: {member.aadhaar_number || '9876 5432 1098'}</p>
                   </div>
+                  <button onClick={() => stateStore.updateKYCStatus(member.id, 'approved', adminUser.id)} className="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs cursor-pointer">Approve Document</button>
                 </div>
-
-                <button
-                  onClick={() => setInspectedMember(null)}
-                  className="text-[#6C7285] hover:text-[#1F1F24] p-2.5 rounded-full hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF]"
-                  aria-label="Close modal"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Grid Metrics & Verification */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3 bg-[#F7F8FC] rounded-2xl border border-[#E8EAF8]">
-                  <p className="text-[10px] font-bold text-[#6C7285] uppercase">KYC Status</p>
-                  <p className="font-bold text-sm text-emerald-600 mt-0.5">{inspectedMember.kyc_status?.toUpperCase() || 'APPROVED'}</p>
-                </div>
-                <div className="p-3 bg-[#F7F8FC] rounded-2xl border border-[#E8EAF8]">
-                  <p className="text-[10px] font-bold text-[#6C7285] uppercase">Pipeline Stage</p>
-                  <p className="font-bold text-sm text-[#4F5DFF] mt-0.5">{inspectedMember.stageName || inspectedMember.pipeline_stage || '4. Savings Active'}</p>
-                </div>
-                <div className="p-3 bg-[#F7F8FC] rounded-2xl border border-[#E8EAF8]">
-                  <p className="text-[10px] font-bold text-[#6C7285] uppercase">OCR Confidence</p>
-                  <p className="font-bold text-sm text-slate-800 mt-0.5">{inspectedMember.ocr_confidence || 99.8}% Match</p>
-                </div>
-              </div>
-
-              {/* Detailed Documents & Ledger Info */}
-              <div className="bg-[#F7F8FC] p-4 rounded-2xl border border-[#E8EAF8] space-y-2 text-xs">
-                <p className="font-bold text-[#1F1F24]">Identity Verification & Compliance Documents:</p>
-                <div className="grid grid-cols-2 gap-2 text-slate-700">
-                  <div>PAN Number: <span className="font-mono font-bold text-[#1F1F24]">{inspectedMember.pan_number || 'ABCDE1234F'}</span></div>
-                  <div>Aadhaar Number: <span className="font-mono font-bold text-[#1F1F24]">{inspectedMember.aadhaar_number || '9876 5432 1098'}</span></div>
-                  <div>HDFC Escrow Account: <span className="font-semibold text-emerald-600">Deposits Active</span></div>
-                  <div>Allocated Hamper: <span className="font-semibold text-[#4F5DFF]">{GIFT_HAMPERS.find(h => h.id === inspectedMember.allocated_hamper_id)?.name || inspectedMember.allocated_hamper_id || 'Smart Home & Tech Box'}</span></div>
-                </div>
-              </div>
-
-              {/* Stage Transition Control Panel */}
-              <div className="space-y-2 pt-2 border-t border-[#E8EAF8]">
-                <p className="text-xs font-bold text-[#1F1F24]">Advance Member Lifecycle Stage:</p>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {lifecycleStages.map((stg) => (
-                    <button
-                      key={stg.id}
-                      onClick={() => handleStageChange(inspectedMember, stg)}
-                      className={`min-h-[44px] px-4 py-2.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] ${
-                        inspectedMember.stageName === stg.name || inspectedMember.pipeline_stage === stg.id
-                          ? 'bg-[#4F5DFF] text-white border-[#4F5DFF] shadow-sm'
-                          : 'border-[#E8EAF8] bg-white text-[#1F1F24] hover:bg-[#4F5DFF] hover:text-white'
-                      }`}
-                    >
-                      Move to {stg.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-[#E8EAF8] flex justify-end">
-                <button
-                  onClick={() => setInspectedMember(null)}
-                  className="min-h-[44px] px-5 py-3 bg-[#4F5DFF] hover:bg-[#3B48DF] text-white font-bold text-xs rounded-2xl shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F5DFF] focus-visible:ring-offset-2"
-                >
-                  Close Inspection
-                </button>
-              </div>
-
+              ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* MODAL: Admin Cash Collection */}
-        {isCashCollectionModalOpen && (
-          <AdminCashCollectionModal
-            onClose={() => setIsCashCollectionModalOpen(false)}
-            onSuccess={() => {
-              setContributions(stateStore.getContributions());
-              setProfiles(stateStore.getProfiles());
-              setMemberships(stateStore.getMemberships());
-            }}
-          />
-        )}
+          {/* 12. USER ROLES & PERMISSIONS TAB */}
+          {activeTab === 'roles_permissions' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200">
+              <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">User Roles & Staff Access Permissions</h3>
+              <p className="text-xs text-slate-500">Manage administrator privileges, staff access roles, and audit permissions</p>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-blue-900 text-sm">Operations Administrator ({adminUser.full_name})</p>
+                  <p className="text-xs text-blue-800">Email: {adminUser.email} • Role: Super Admin / Operations</p>
+                </div>
+                <span className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase">Full Access</span>
+              </div>
+            </div>
+          )}
 
-        {/* MODAL: View Receipt */}
-        {viewReceiptRecord && (
-          <PrintableReceiptModal
-            record={viewReceiptRecord}
-            member={profiles.find((p) => p.id === viewReceiptRecord.user_id)}
-            onClose={() => setViewReceiptRecord(null)}
-          />
-        )}
+          {/* 13. SETTINGS TAB */}
+          {activeTab === 'settings' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200 max-w-2xl mx-auto">
+              <h3 className="font-heading font-extrabold text-xl text-[#1F1F24]">Company & Application Configuration</h3>
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Company Name</label>
+                  <input type="text" readOnly value="SamruddiSave Micro-Savings Platform" className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-bold" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">RBI Escrow Trustee Bank Account</label>
+                  <input type="text" readOnly value="HDFC Bank Escrow Trustee A/C #9182374619" className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-bold" />
+                </div>
+              </div>
+            </div>
+          )}
 
+          {/* 14. PROFILE TAB */}
+          {activeTab === 'profile' && (
+            <div className="bg-white p-6 rounded-3xl border border-[#E8EAF8] shadow-sm space-y-6 animate-in fade-in duration-200 max-w-lg mx-auto text-center">
+              <div className="w-20 h-20 rounded-full bg-blue-600 text-white font-bold text-2xl flex items-center justify-center mx-auto shadow-md">
+                {adminUser.full_name?.charAt(0) || 'A'}
+              </div>
+              <div>
+                <h3 className="font-heading font-extrabold text-xl text-slate-900">{adminUser.full_name}</h3>
+                <p className="text-xs text-slate-500">{adminUser.email}</p>
+                <span className="inline-block mt-2 bg-blue-100 text-blue-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase">Operations Administrator</span>
+              </div>
+            </div>
+          )}
+
+        </main>
       </div>
+
+      {/* MODALS */}
+      {isCashCollectionModalOpen && (
+        <AdminCashCollectionModal
+          onClose={() => setIsCashCollectionModalOpen(false)}
+          onSuccess={() => {
+            setContributions(stateStore.getContributions());
+            setProfiles(stateStore.getProfiles());
+            setMemberships(stateStore.getMemberships());
+          }}
+        />
+      )}
+
+      {viewReceiptRecord && (
+        <PrintableReceiptModal
+          record={viewReceiptRecord}
+          member={profiles.find((p) => p.id === viewReceiptRecord.user_id)}
+          onClose={() => setViewReceiptRecord(null)}
+        />
+      )}
+
     </div>
   );
 };
