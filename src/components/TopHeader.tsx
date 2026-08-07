@@ -313,18 +313,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                       {user.role === 'member' && (
                         <>
                           <button
-                            onClick={() => {
-                              setDropdownOpen(false);
-                              if (user.role !== 'admin') {
-                                stateStore.registerOrUpdateProfile({ ...user, role: 'admin' });
-                              }
-                              onNavigate('/admin');
-                            }}
-                            className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] font-bold cursor-pointer min-h-[44px]"
-                          >
-                            <LayoutDashboard className="w-4 h-4 text-[#4F5DFF]" /> Dashboard
-                          </button>
-                          <button
                             onClick={() => handleNavClick('/dashboard', 'Wallet Dashboard')}
                             className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
                           >
