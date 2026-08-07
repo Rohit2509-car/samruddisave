@@ -12,30 +12,40 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    setTimeout(() => {
-      const success = stateStore.adminLogin(email, password);
+    try {
+      const success = await stateStore.adminLogin(email, password);
       setLoading(false);
       if (success) {
         onNavigate('/admin');
       } else {
         setError('Invalid Admin credentials or your profile does not have Admin privileges.');
       }
-    }, 400);
+    } catch (err) {
+      setLoading(false);
+      setError('Invalid Admin credentials or authentication error.');
+    }
   };
 
-  const handleQuickDemoAdmin = () => {
+  const handleQuickDemoAdmin = async () => {
     setError(null);
     setLoading(true);
-    setTimeout(() => {
-      stateStore.switchRole('admin');
+    try {
+      const success = await stateStore.adminLogin('admin@samruddisave.com', 'admin123');
       setLoading(false);
-      onNavigate('/admin');
-    }, 300);
+      if (success) {
+        onNavigate('/admin');
+      } else {
+        setError('Invalid Admin credentials.');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError('Authentication error.');
+    }
   };
 
   return (

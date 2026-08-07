@@ -134,12 +134,27 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
+-- 11. User Password Metadata Table (For Password Hashing & Security Lockouts)
+CREATE TABLE IF NOT EXISTS public.user_password_metadata (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT DEFAULT NULL,
+    password_last_updated TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    failed_login_attempts INT DEFAULT 0,
+    is_locked BOOLEAN DEFAULT FALSE,
+    lockout_until TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    requires_password_change BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
 -- Indexes for Ultra-Fast Queries
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON public.payments (user_id);
 CREATE INDEX IF NOT EXISTS idx_ledger_user_id ON public.ledger_entries (user_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_group ON public.chit_group_members (group_id);
 CREATE INDEX IF NOT EXISTS idx_bids_auction ON public.bids (auction_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON public.notifications (user_id);
+CREATE INDEX IF NOT EXISTS idx_password_meta_user ON public.user_password_metadata (user_id);
 
 -- Enable RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -152,3 +167,67 @@ ALTER TABLE public.ledger_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.auctions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bids ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_password_metadata ENABLE ROW LEVEL SECURITY;
+
+-- ==============================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES FOR USER DATA ISOLATION & ADMIN ACCESS
+-- ==============================================================================
+
+-- Profiles Policies
+DROP POLICY IF EXISTS "Users can view own profile or admins view all" ON public.profiles;
+CREATE POLICY "Users can view own profile or admins view all" ON public.profiles
+    FOR SELECT USING (
+        auth.uid() = id OR 
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    );
+
+DROP POLICY IF EXISTS "Users can update own profile or admins update all" ON public.profiles;
+CREATE POLICY "Users can update own profile or admins update all" ON public.profiles
+    FOR UPDATE USING (
+        auth.uid() = id OR 
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    );
+
+-- Payments Policies
+DROP POLICY IF EXISTS "Users view own payments or admins view all" ON public.payments;
+CREATE POLICY "Users view own payments or admins view all" ON public.payments
+    FOR SELECT USING (
+        auth.uid() = user_id OR 
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    );
+
+DROP POLICY IF EXISTS "Users insert own payments" ON public.payments;
+CREATE POLICY "Users insert own payments" ON public.payments
+    FOR INSERT WITH CHECK (
+        auth.uid() = user_id OR 
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    );
+
+-- Ledger Entries Policies
+DROP POLICY IF EXISTS "Users view own ledger or admins view all" ON public.ledger_entries;
+CREATE POLICY "Users view own ledger or admins view all" ON public.ledger_entries
+    FOR SELECT USING (
+        auth.uid() = user_id OR 
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    );
+
+-- Chit Group Members Policies
+DROP POLICY IF EXISTS "Users view own memberships or admins view all" ON public.chit_group_members;
+CREATE POLICY "Users view own memberships or admins view all" ON public.chit_group_members
+    FOR SELECT USING (
+        auth.uid() = user_id OR 
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    );
+
+-- Notifications Policies
+DROP POLICY IF EXISTS "Users view own notifications" ON public.notifications;
+CREATE POLICY "Users view own notifications" ON public.notifications
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Password Metadata Policies
+DROP POLICY IF EXISTS "Users manage own password metadata" ON public.user_password_metadata;
+CREATE POLICY "Users manage own password metadata" ON public.user_password_metadata
+    FOR ALL USING (
+        auth.uid() = user_id OR 
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    );

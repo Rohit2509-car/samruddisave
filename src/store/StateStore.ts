@@ -108,7 +108,7 @@ class StateStore {
     }
   }
 
-  public async registerOrUpdateProfile(profile: UserProfile): Promise<UserProfile> {
+  public async registerOrUpdateProfile(profile: UserProfile, password?: string): Promise<UserProfile> {
     const existingIdx = this.profiles.findIndex(
       (p) => p.id === profile.id || (p.email && p.email.toLowerCase() === profile.email.toLowerCase())
     );
@@ -138,7 +138,7 @@ class StateStore {
       });
 
       // Record password metadata relationship in user_password_metadata table
-      await PasswordMetadataService.recordPasswordMetadata(profile.id, profile.email);
+      await PasswordMetadataService.recordPasswordMetadata(profile.id, profile.email, password);
     } catch (e) {
       console.warn('Supabase profile & password metadata upsert sync error:', e);
     }
@@ -767,26 +767,36 @@ class StateStore {
     this.saveToStorage();
   }
 
-  public adminLogin(email: string, _password: string): boolean {
-    let admin = this.profiles.find((p) => p.email.toLowerCase() === email.toLowerCase() && p.role === 'admin');
-    if (!admin) {
+  public async adminLogin(email: string, password: string): Promise<boolean> {
+    const q = email.toLowerCase().trim();
+    let admin = this.profiles.find((p) => p.email.toLowerCase() === q && (p.role === 'admin' || p.role === 'super_admin'));
+    if (!admin && q === 'admin@samruddisave.com') {
       admin = this.profiles.find((p) => p.role === 'admin');
     }
     if (admin) {
-      this.currentUserId = admin.id;
-      this.recordAuditLog({
-        admin_id: admin.id,
-        action: 'ADMIN_LOGIN',
-        notes: `Admin ${admin.full_name} logged into Admin Console`,
-        details: { email, timestamp: new Date().toISOString() }
-      });
-      this.saveToStorage();
-      return true;
+      const isValid = await PasswordMetadataService.verifyPassword(admin.id, admin.email, password);
+      if (isValid) {
+        this.currentUserId = admin.id;
+        this.recordAuditLog({
+          admin_id: admin.id,
+          action: 'ADMIN_LOGIN',
+          notes: `Admin ${admin.full_name} authenticated into Admin Console`,
+          details: { email, timestamp: new Date().toISOString() }
+        });
+        this.saveToStorage();
+        return true;
+      }
     }
     return false;
   }
 
   public switchRole(role: UserRole) {
+    const currentUser = this.getCurrentUser();
+    // Only allow switching to admin if current user is already an admin/super_admin
+    if (role === 'admin' && currentUser?.role !== 'admin' && currentUser?.role !== 'super_admin') {
+      console.warn('Unauthorized role switch attempt blocked.');
+      return;
+    }
     const rep = this.profiles.find((p) => p.role === role);
     if (rep) {
       this.currentUserId = rep.id;

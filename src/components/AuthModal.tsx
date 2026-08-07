@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { stateStore } from '../store/StateStore';
 import { supabase } from '../lib/supabase';
+import { PasswordMetadataService } from '../services/PasswordMetadataService';
 import { ShieldCheck, User, Mail, Phone, Lock, KeyRound, ArrowRight, CheckCircle2, AlertCircle, X, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
@@ -73,7 +74,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       console.warn('Supabase Auth login fallback:', err);
     }
 
-    // 2. Authenticate with StateStore local profiles
+    // 2. Authenticate with StateStore local profiles & PasswordMetadataService
     const profiles = stateStore.getProfiles();
     const q = loginIdentifier.toLowerCase().trim();
     const user = profiles.find(
@@ -85,6 +86,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     );
 
     if (!user) {
+      setErrorMsg('Invalid email or password. Please check your credentials and try again.');
+      return;
+    }
+
+    const isPasswordValid = await PasswordMetadataService.verifyPassword(user.id, user.email, loginPassword.trim());
+    if (!isPasswordValid) {
       setErrorMsg('Invalid email or password. Please check your credentials and try again.');
       return;
     }
@@ -144,7 +151,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg(`OTP verification code sent to ${regMobile} and ${regEmail}. (Demo OTP: 123456)`);
   };
 
-  const handleVerifyOTP = (e: React.FormEvent) => {
+  const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -153,8 +160,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    // Register user profile
-    const newUserId = `user-${Date.now()}`;
+    let newUserId: string | null = null;
+    try {
+      const { data: authData } = await supabase.auth.signUp({
+        email: regEmail.trim(),
+        password: regPassword.trim(),
+        options: {
+          data: {
+            full_name: regFullName.trim(),
+            phone: regMobile.trim(),
+          }
+        }
+      });
+      newUserId = authData?.user?.id || null;
+    } catch (e) {
+      console.warn('Supabase auth signup fallback:', e);
+    }
+
+    if (!newUserId) {
+      newUserId = `user-${Date.now()}`;
+    }
+
+    // Register user profile & save password hash metadata
     const newProfile = {
       id: newUserId,
       full_name: regFullName.trim() || 'Member',
@@ -170,7 +197,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       created_at: new Date().toISOString()
     };
 
-    stateStore.registerOrUpdateProfile(newProfile);
+    await stateStore.registerOrUpdateProfile(newProfile, regPassword.trim());
     stateStore.setCurrentUserId(newUserId);
     stateStore.getUserMembership(newUserId);
 
