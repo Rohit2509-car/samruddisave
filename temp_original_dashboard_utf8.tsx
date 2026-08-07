@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { stateStore } from '../store/StateStore';
 import { UserProfile, Membership, ContributionRecord, GiftHamper } from '../types';
 import { SAVINGS_PLANS, GIFT_HAMPERS } from '../data/mockData';
@@ -50,7 +50,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'pay'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'circles' | 'pay' | 'hampers' | 'kyc'>('home');
   const [activeHamperTab, setActiveHamperTab] = useState<'upcoming' | 'claimed'>('upcoming');
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([
@@ -141,59 +141,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const remainingAmount = Math.max(0, totalGoalTarget - totalSavedSoFar);
   const goalProgressPct = Math.round((paidCount / 12) * 100);
   const accruedBonus = Math.round((totalSavedSoFar * plan.cash_bonus_pct) / 100);
-
-  // Next Payment Due & Remaining Time Calculator
-  const getNextPaymentDueInfo = () => {
-    const rawDueDate = membership?.next_due_date || '2026-08-20';
-    let targetDate: Date;
-
-    if (rawDueDate.includes('-')) {
-      targetDate = new Date(rawDueDate);
-    } else {
-      const now = new Date();
-      targetDate = new Date(now.getFullYear(), now.getMonth(), 20);
-      if (targetDate < now) {
-        targetDate = new Date(now.getFullYear(), now.getMonth() + 1, 20);
-      }
-    }
-
-    const today = new Date();
-    const d1 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const d2 = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-    const diffTime = d2.getTime() - d1.getTime();
-    const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
-    const formattedDate = targetDate.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-
-    let statusLabel = 'UPCOMING';
-    let badgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
-    let timeRemainingText = `${diffDays} Days Remaining`;
-
-    if (diffDays <= 0) {
-      statusLabel = 'DUE TODAY';
-      badgeClass = 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse';
-      timeRemainingText = 'Due Today';
-    } else if (diffDays <= 5) {
-      statusLabel = 'DUE SOON';
-      badgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
-      timeRemainingText = `${diffDays} Days Left`;
-    }
-
-    return {
-      rawDueDate,
-      formattedDate,
-      diffDays,
-      timeRemainingText,
-      statusLabel,
-      badgeClass
-    };
-  };
-
-  const dueInfo = getNextPaymentDueInfo();
 
   // Latest paid transaction
   const paidContribs = contributions.filter(c => c.status === 'PAID');
@@ -291,6 +238,14 @@ Thank you for saving with SamruddiSave Escrow!
 
         {/* Sidebar Menu Items (Internal Navigation strictly inside Dashboard) */}
         <nav className="flex-1 p-4 space-y-1.5 text-xs font-semibold overflow-y-auto">
+          <button
+            onClick={handleNavigateToAdminDashboard}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer text-slate-300 hover:bg-slate-800 hover:text-white group"
+            title="Open Admin Operations Dashboard"
+          >
+            <LayoutDashboard className="w-4 h-4 shrink-0 text-blue-400 group-hover:scale-110 transition-transform" />
+            <span className="font-bold">Dashboard</span>
+          </button>
 
           <button
             onClick={() => { setSidebarOpen(false); setActiveTab('home'); }}
@@ -387,6 +342,12 @@ Thank you for saving with SamruddiSave Escrow!
                     <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                   </div>
                   <button
+                    onClick={() => { setDropdownOpen(false); handleNavigateToAdminDashboard(); }}
+                    className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-bold"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" /> Admin Operations Dashboard
+                  </button>
+                  <button
                     onClick={() => { setDropdownOpen(false); setIsProfileModalOpen(true); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-semibold"
                   >
@@ -433,29 +394,21 @@ Thank you for saving with SamruddiSave Escrow!
               <div>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL SAVINGS VALUE</p>
                 <p className="font-heading font-extrabold text-2xl text-slate-900 mt-1">
-                  ₹{totalGoalTarget.toLocaleString('en-IN')}
+                  Γé╣{totalGoalTarget.toLocaleString('en-IN')}
                 </p>
               </div>
 
               <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">NEXT PAYMENT DUE</p>
-                <div className="flex flex-col mt-1">
-                  <p className="font-heading font-extrabold text-base text-slate-900">
-                    {dueInfo.formattedDate}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <Clock className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${dueInfo.badgeClass}`}>
-                      {dueInfo.timeRemainingText}
-                    </span>
-                  </div>
-                </div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PAYMENT DUE DATE</p>
+                <p className="font-heading font-extrabold text-base text-slate-900 mt-1">
+                  {membership?.next_due_date || '15th of Every Month'}
+                </p>
               </div>
 
               <div>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">MONTHLY DEPOSIT</p>
                 <p className="font-heading font-extrabold text-base text-slate-900 mt-1">
-                  ₹{monthlyAmount.toLocaleString('en-IN')}
+                  Γé╣{monthlyAmount.toLocaleString('en-IN')}
                 </p>
               </div>
 
@@ -496,7 +449,7 @@ Thank you for saving with SamruddiSave Escrow!
                         <CreditCard className="w-4 h-4" />
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase">SAVED</p>
-                      <p className="font-bold text-xs text-slate-900">₹{totalSavedSoFar.toLocaleString('en-IN')}</p>
+                      <p className="font-bold text-xs text-slate-900">Γé╣{totalSavedSoFar.toLocaleString('en-IN')}</p>
                       <button onClick={() => setActiveTab('pay')} className="text-[10px] text-blue-600 font-bold hover:underline">View Details</button>
                     </div>
 
@@ -505,7 +458,7 @@ Thank you for saving with SamruddiSave Escrow!
                         <ShieldCheck className="w-4 h-4" />
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase">BONUS</p>
-                      <p className="font-bold text-xs text-slate-900">₹{accruedBonus.toLocaleString('en-IN')}</p>
+                      <p className="font-bold text-xs text-slate-900">Γé╣{accruedBonus.toLocaleString('en-IN')}</p>
                       <button onClick={() => setActiveTab('pay')} className="text-[10px] text-blue-600 font-bold hover:underline">View Details</button>
                     </div>
 
@@ -514,7 +467,7 @@ Thank you for saving with SamruddiSave Escrow!
                         <Percent className="w-4 h-4" />
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase">LEFT</p>
-                      <p className="font-bold text-xs text-slate-900">₹{remainingAmount.toLocaleString('en-IN')}</p>
+                      <p className="font-bold text-xs text-slate-900">Γé╣{remainingAmount.toLocaleString('en-IN')}</p>
                       <button onClick={() => setActiveTab('pay')} className="text-[10px] text-blue-600 font-bold hover:underline">View Details</button>
                     </div>
                   </div>
@@ -537,7 +490,7 @@ Thank you for saving with SamruddiSave Escrow!
 
                   <div className="text-center pt-2">
                     <button onClick={() => setActiveTab('pay')} className="text-xs font-bold text-blue-600 hover:underline">
-                      View Passbook →
+                      View Passbook ΓåÆ
                     </button>
                   </div>
                 </div>
@@ -572,7 +525,7 @@ Thank you for saving with SamruddiSave Escrow!
                     <p className="text-xs font-bold text-slate-700">Latest Verified Receipt:</p>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
                       <div>
-                        <p className="font-bold text-slate-900">Month #{latestPaid.cycle_number} Deposit - ₹{latestPaid.amount.toLocaleString('en-IN')}</p>
+                        <p className="font-bold text-slate-900">Month #{latestPaid.cycle_number} Deposit - Γé╣{latestPaid.amount.toLocaleString('en-IN')}</p>
                         <p className="text-[11px] text-slate-400">Ref: {latestPaid.transaction_ref}</p>
                       </div>
                       <button
@@ -626,75 +579,6 @@ Thank you for saving with SamruddiSave Escrow!
 
         {/* MONTHLY DEPOSIT TAB (Premium UI) */}
         {activeTab === 'pay' && (
-<<<<<<< HEAD
-          <div className="p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300 py-8">
-            <div className="flex items-center justify-between">
-              <h2 className="font-heading font-extrabold text-2xl text-slate-900">Monthly Deposit</h2>
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                Cycle #{paidCount + 1} of 12
-              </span>
-            </div>
-
-            {/* NEXT PAYMENT DUE ENHANCED SECTION */}
-            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-5">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-blue-300" />
-                  <span className="font-bold text-xs uppercase tracking-wider text-blue-100">Next Payment Due</span>
-                </div>
-                <span className={`text-xs font-extrabold px-3 py-1 rounded-full border ${dueInfo.badgeClass}`}>
-                  {dueInfo.statusLabel}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center border-t border-blue-500/30 pt-5">
-                <div>
-                  <p className="text-xs text-blue-200 font-medium uppercase tracking-wider">Upcoming Payment Date</p>
-                  <p className="text-2xl sm:text-3xl font-heading font-extrabold text-white mt-1">
-                    {dueInfo.formattedDate}
-                  </p>
-                  <p className="text-[11px] text-blue-200 mt-1 font-mono">
-                    Ref Date: {dueInfo.rawDueDate}
-                  </p>
-                </div>
-
-                <div className="sm:border-l sm:border-blue-500/30 sm:pl-6">
-                  <p className="text-xs text-blue-200 font-medium uppercase tracking-wider">Remaining Time</p>
-                  <p className="text-2xl sm:text-3xl font-heading font-extrabold text-amber-300 mt-1">
-                    {dueInfo.timeRemainingText}
-                  </p>
-                  <p className="text-[11px] text-blue-200 mt-1">
-                    Cycle #{paidCount + 1} of 12 Monthly Deposit
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6">
-                <CreditCard className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-xl mb-6">Deposit Details</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Amount Due</p>
-                  <p className="text-3xl font-heading font-extrabold text-slate-900">₹{monthlyAmount.toLocaleString('en-IN')}</p>
-                </div>
-                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Due Date</p>
-                  <p className="text-xl font-bold text-slate-900">{dueInfo.formattedDate}</p>
-                  <p className="text-xs text-blue-600 font-bold mt-1 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> {dueInfo.timeRemainingText}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-8">
-                <button className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold text-sm py-4 rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer flex items-center justify-center gap-2">
-                  <Lock className="w-4 h-4" /> Pay Securely via Razorpay
-                </button>
-                <p className="text-center text-[10px] text-slate-400 mt-4">100% Secure & encrypted payment gateway. Automatically synced to your passbook.</p>
-              </div>
-=======
           <div className="p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 py-8">
             <div className="flex items-center justify-between mb-2">
               <div>
@@ -704,7 +588,6 @@ Thank you for saving with SamruddiSave Escrow!
               <div className="hidden sm:flex w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-500 text-white rounded-2xl items-center justify-center shadow-lg shadow-blue-500/30 transform rotate-3">
                 <CreditCard className="w-6 h-6" />
               </div>
->>>>>>> d15925bb9a0633c7442a4dbe9d45cc6c0f10e5a4
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -727,7 +610,7 @@ Thank you for saving with SamruddiSave Escrow!
                       </div>
                       <p className="text-sm text-slate-300 font-medium mb-1">Total Amount Due</p>
                       <p className="text-4xl font-heading font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">
-                        ₹{monthlyAmount.toLocaleString('en-IN')}
+                        Γé╣{monthlyAmount.toLocaleString('en-IN')}
                       </p>
                     </div>
 
@@ -736,10 +619,7 @@ Thank you for saving with SamruddiSave Escrow!
                       <p className="text-lg font-bold text-white">{membership?.next_due_date || '15th of Month'}</p>
                     </div>
 
-                    <button 
-                      onClick={() => alert(`Redirecting to secure Razorpay gateway to pay ₹${monthlyAmount.toLocaleString('en-IN')}...`)}
-                      className="w-full relative group bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-2xl transition-all overflow-hidden flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] cursor-pointer"
-                    >
+                    <button className="w-full relative group bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-2xl transition-all overflow-hidden flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] cursor-pointer">
                       <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700"></div>
                       <Lock className="w-4 h-4 relative z-10" /> 
                       <span className="relative z-10">Pay Securely</span>
@@ -795,26 +675,15 @@ Thank you for saving with SamruddiSave Escrow!
                             </p>
                           </div>
                         </div>
-                        <div className="text-right flex flex-col items-end gap-2">
-                          <div>
-                            <p className="font-bold text-base text-slate-900 mb-1">₹{c.amount.toLocaleString('en-IN')}</p>
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase ${
-                              c.status === 'PAID' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 
-                              'bg-amber-100 text-amber-700 border border-amber-200'
-                            }`}>
-                              {c.status === 'PAID' && <CheckCircle2 className="w-3 h-3" />}
-                              {c.status}
-                            </span>
-                          </div>
-                          {c.status === 'PAID' && (
-                            <button
-                              onClick={() => handleDownloadReceipt(c)}
-                              className="bg-slate-100 hover:bg-blue-50 text-slate-500 hover:text-blue-600 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer"
-                              title="Download Payment Receipt"
-                            >
-                              <Download className="w-3 h-3" /> Receipt
-                            </button>
-                          )}
+                        <div className="text-right">
+                          <p className="font-bold text-base text-slate-900 mb-1">Γé╣{c.amount.toLocaleString('en-IN')}</p>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase ${
+                            c.status === 'PAID' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 
+                            'bg-amber-100 text-amber-700 border border-amber-200'
+                          }`}>
+                            {c.status === 'PAID' && <CheckCircle2 className="w-3 h-3" />}
+                            {c.status}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -840,7 +709,7 @@ Thank you for saving with SamruddiSave Escrow!
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-base text-slate-900 mb-1">₹{monthlyAmount.toLocaleString('en-IN')}</p>
+                            <p className="font-bold text-base text-slate-900 mb-1">Γé╣{monthlyAmount.toLocaleString('en-IN')}</p>
                             <span className="inline-block text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase bg-slate-100 text-slate-500 border border-slate-200">
                               PENDING
                             </span>
