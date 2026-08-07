@@ -66,7 +66,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const memberNavItems = [
     { label: 'Home', path: '/', icon: Home },
     { label: 'Plans', path: '/plans', icon: Calculator },
-    { label: 'Circles', path: '/circles', icon: Users },
     { label: 'Pay', path: '/pay', icon: CreditCard },
     { label: 'Reports', path: '/reports', icon: FileText },
     { label: 'Gifts', path: '/hampers', icon: Gift },
@@ -332,10 +331,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                             <User className="w-4 h-4 text-[#4F5DFF]" /> My Wallet Dashboard
                           </button>
                           <button
-                            onClick={() => handleNavClick('/kyc', 'KYC Verification')}
-                            className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
+                            disabled
+                            className="w-full text-left px-4 py-2.5 opacity-50 cursor-not-allowed flex items-center justify-between text-slate-400 font-semibold min-h-[44px]"
+                            title="KYC Verification option is disabled"
                           >
-                            <FileCheck2 className="w-4 h-4 text-[#4F5DFF]" /> KYC Verification Status
+                            <span className="flex items-center gap-2">
+                              <FileCheck2 className="w-4 h-4 text-slate-400" /> KYC Verification Status
+                            </span>
+                            <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold uppercase">Disabled</span>
                           </button>
                         </>
                       )}
