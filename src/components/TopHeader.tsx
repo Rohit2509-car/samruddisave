@@ -300,12 +300,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
                     <div className="py-1 space-y-0.5">
                       {user.role === 'admin' && (
-                        <button
-                          onClick={() => handleSwitchRole('member')}
-                          className="w-full text-left px-4 py-3 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-emerald-700 font-bold cursor-pointer min-h-[44px]"
-                        >
-                          <User className="w-4 h-4 text-emerald-600" /> Switch to Member Portal
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleSwitchRole('member')}
+                            className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-emerald-700 font-bold cursor-pointer min-h-[44px]"
+                          >
+                            <User className="w-4 h-4 text-emerald-600" /> Switch to Member Portal
+                          </button>
+                          <button
+                            onClick={() => handleNavClick('/admin', 'Admin Operations Dashboard')}
+                            className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2.5 text-[#1F1F24] font-bold cursor-pointer min-h-[44px]"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-[#4F5DFF]" /> Admin Dashboard
+                          </button>
+                        </>
                       )}
 
                       <div className="border-t border-[#E8EAF8] my-1" />
