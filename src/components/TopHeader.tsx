@@ -64,7 +64,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const isDashboardPage = currentPath === '/dashboard';
 
   const memberNavItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Home', path: '/', icon: Home },
     { label: 'Plans', path: '/plans', icon: Calculator },
     { label: 'Circles', path: '/circles', icon: Users },
@@ -76,7 +75,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   ];
 
   const adminNavItems = [
-    { label: 'Dashboard', path: '/admin', icon: Home },
     { label: 'KYC Queue', path: '/admin#kyc_queue', icon: UserCheck, badge: 'Queue' },
     { label: 'Members', path: '/admin#members', icon: Users },
     { label: 'Payments', path: '/admin#payments', icon: CreditCard },
