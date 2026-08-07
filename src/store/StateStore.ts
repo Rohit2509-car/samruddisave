@@ -768,13 +768,17 @@ class StateStore {
   }
 
   public async adminLogin(email: string, password: string): Promise<boolean> {
-    const q = (email || '').toLowerCase().trim();
-    let admin = this.profiles.find(
-      (p) => p.email && p.email.toLowerCase() === q && (p.role === 'admin' || p.role === 'super_admin')
-    );
-    if (!admin) {
-      admin = this.profiles.find((p) => p.role === 'admin');
+    if (!email || !password || !email.trim() || !password.trim()) {
+      return false;
     }
+    const q = email.toLowerCase().trim();
+
+    // 1. Strict email match for registered admin profile
+    let admin = this.profiles.find(
+      (p) => p.email && p.email.toLowerCase() === q && p.role === 'admin'
+    );
+
+    // 2. Auto-provision default admin ONLY if email typed is admin@samruddisave.com
     if (!admin && (q === 'admin@samruddisave.com' || q === 'admin')) {
       admin = {
         id: 'user-admin-1',
@@ -793,27 +797,32 @@ class StateStore {
       this.profiles.push(admin);
     }
 
-    if (admin) {
-      const isValid = await PasswordMetadataService.verifyPassword(admin.id, admin.email, password);
-      if (isValid) {
-        this.currentUserId = admin.id;
-        this.recordAuditLog({
-          admin_id: admin.id,
-          action: 'ADMIN_LOGIN',
-          notes: `Admin ${admin.full_name} authenticated into Admin Console`,
-          details: { email, timestamp: new Date().toISOString() }
-        });
-        this.saveToStorage();
-        return true;
-      }
+    // If email typed is NOT an admin email, reject immediately!
+    if (!admin) {
+      return false;
     }
+
+    // 3. Verify password strictly for this admin user
+    const isValid = await PasswordMetadataService.verifyPassword(admin.id, admin.email, password);
+    if (isValid) {
+      this.currentUserId = admin.id;
+      this.recordAuditLog({
+        admin_id: admin.id,
+        action: 'ADMIN_LOGIN',
+        notes: `Admin ${admin.full_name} authenticated into Admin Console`,
+        details: { email: admin.email, timestamp: new Date().toISOString() }
+      });
+      this.saveToStorage();
+      return true;
+    }
+
     return false;
   }
 
   public switchRole(role: UserRole) {
     const currentUser = this.getCurrentUser();
-    // Only allow switching to admin if current user is already an admin/super_admin
-    if (role === 'admin' && currentUser?.role !== 'admin' && currentUser?.role !== 'super_admin') {
+    // Only allow switching to admin if current user is already an admin
+    if (role === 'admin' && currentUser?.role !== 'admin') {
       console.warn('Unauthorized role switch attempt blocked.');
       return;
     }

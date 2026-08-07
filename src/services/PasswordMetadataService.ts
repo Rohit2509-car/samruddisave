@@ -93,18 +93,35 @@ export class PasswordMetadataService {
   }
 
   /**
-   * Verify password input against hashed password metadata from Supabase DB or local storage store
+   * Verify password input strictly against hashed password metadata from Supabase DB, local storage store, or preset credentials.
+   * Requires BOTH correct email AND correct password to return true.
    */
   public static async verifyPassword(userId: string, email?: string, inputPassword?: string): Promise<boolean> {
-    if (!inputPassword) return false;
-    const inputHash = await this.hashPassword(inputPassword);
-    const normalizedEmail = (email || '').toLowerCase().trim();
+    if (!inputPassword || !inputPassword.trim()) return false;
 
-    // 1. Try fetching password hash from Supabase user_password_metadata
+    const normalizedEmail = (email || '').toLowerCase().trim();
+    const cleanPassword = inputPassword.trim();
+    const inputHash = await this.hashPassword(cleanPassword);
+
+    // 1. Admin Account Verification (Strict match for admin email AND admin password)
+    if (normalizedEmail === 'admin@samruddisave.com' || normalizedEmail === 'admin' || userId === 'user-admin-1') {
+      const isCorrectAdminPass = cleanPassword === 'admin123' || cleanPassword === 'Admin@123' || cleanPassword === 'admin';
+      if (isCorrectAdminPass) {
+        const store = this.getLocalPasswordStore();
+        if (userId) store[userId] = inputHash;
+        store['admin@samruddisave.com'] = inputHash;
+        this.setLocalPasswordStore(store);
+        return true;
+      }
+      // If wrong password provided for Admin, REJECT IMMEDIATELY!
+      return false;
+    }
+
+    // 2. Check Supabase DB user_password_metadata table
     try {
       if (userId) {
         const meta = await this.getPasswordMetadata(userId);
-        if (meta && meta.password_hash) {
+        if (meta && meta.password_hash && meta.password_hash.length === 64) {
           if (meta.password_hash === inputHash) return true;
         }
       }
@@ -112,19 +129,15 @@ export class PasswordMetadataService {
       console.warn('Supabase password verification fallback:', e);
     }
 
-    // 2. Fallback check local password store
+    // 3. Check local password store (localStorage)
     const store = this.getLocalPasswordStore();
     const storedHash = (userId ? store[userId] : null) || (normalizedEmail ? store[normalizedEmail] : null);
-    if (storedHash) {
+    if (storedHash && storedHash.length === 64) {
       return storedHash === inputHash;
     }
 
-    // 3. Fallback for default demo accounts (admin / demo user)
-    if (normalizedEmail === 'admin@samruddisave.com' || normalizedEmail === 'admin' || userId === 'user-admin-1') {
-      return true;
-    }
-    if (inputPassword === '123456' || inputPassword === 'password123' || inputPassword.length >= 4) {
-      // For existing mock profiles, allow initial password verification and save inputHash for future checks
+    // 4. Initial Seed Member Verification (Default demo passwords: 123456 / password123)
+    if (cleanPassword === '123456' || cleanPassword === 'password123') {
       if (userId) store[userId] = inputHash;
       if (normalizedEmail) store[normalizedEmail] = inputHash;
       this.setLocalPasswordStore(store);

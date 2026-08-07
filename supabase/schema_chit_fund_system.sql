@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     occupation VARCHAR(100) DEFAULT NULL,
     pan_number VARCHAR(10) DEFAULT '',
     aadhaar_number VARCHAR(14) DEFAULT '',
-    role VARCHAR(30) DEFAULT 'member', -- 'member', 'admin', 'staff', 'super_admin'
+    role VARCHAR(30) DEFAULT 'member', -- 'member', 'admin', 'staff'
     kyc_status VARCHAR(30) DEFAULT 'unsubmitted', -- 'unsubmitted', 'pending', 'approved', 'rejected', 'correction_requested'
     onboarding_completed BOOLEAN DEFAULT FALSE,
     pipeline_stage VARCHAR(50) DEFAULT 'signup',
@@ -178,14 +178,14 @@ DROP POLICY IF EXISTS "Users can view own profile or admins view all" ON public.
 CREATE POLICY "Users can view own profile or admins view all" ON public.profiles
     FOR SELECT USING (
         auth.uid() = id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
     );
 
 DROP POLICY IF EXISTS "Users can update own profile or admins update all" ON public.profiles;
 CREATE POLICY "Users can update own profile or admins update all" ON public.profiles
     FOR UPDATE USING (
         auth.uid() = id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
     );
 
 -- Payments Policies
@@ -193,14 +193,14 @@ DROP POLICY IF EXISTS "Users view own payments or admins view all" ON public.pay
 CREATE POLICY "Users view own payments or admins view all" ON public.payments
     FOR SELECT USING (
         auth.uid() = user_id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
     );
 
 DROP POLICY IF EXISTS "Users insert own payments" ON public.payments;
 CREATE POLICY "Users insert own payments" ON public.payments
     FOR INSERT WITH CHECK (
         auth.uid() = user_id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
     );
 
 -- Ledger Entries Policies
@@ -208,7 +208,7 @@ DROP POLICY IF EXISTS "Users view own ledger or admins view all" ON public.ledge
 CREATE POLICY "Users view own ledger or admins view all" ON public.ledger_entries
     FOR SELECT USING (
         auth.uid() = user_id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
     );
 
 -- Chit Group Members Policies
@@ -216,7 +216,7 @@ DROP POLICY IF EXISTS "Users view own memberships or admins view all" ON public.
 CREATE POLICY "Users view own memberships or admins view all" ON public.chit_group_members
     FOR SELECT USING (
         auth.uid() = user_id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
     );
 
 -- Notifications Policies
@@ -229,5 +229,230 @@ DROP POLICY IF EXISTS "Users manage own password metadata" ON public.user_passwo
 CREATE POLICY "Users manage own password metadata" ON public.user_password_metadata
     FOR ALL USING (
         auth.uid() = user_id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
     );
+
+-- ==============================================================================
+-- DEFAULT ADMIN SEED DATA (Admin ID & SHA-256 Hashed Password)
+-- ==============================================================================
+
+-- 0. Ensure onboarding_completed column exists on profiles table
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
+
+-- 1. Insert or update Admin user profile
+INSERT INTO public.profiles (
+    id,
+    full_name,
+    email,
+    phone,
+    pan_number,
+    aadhaar_number,
+    role,
+    kyc_status,
+    onboarding_completed,
+    pipeline_stage
+) VALUES (
+    '00000000-0000-0000-0000-000000000002',
+    'Operations Admin',
+    'admin@samruddisave.com',
+    '+91 98765 00000',
+    'ADM000000A',
+    '0000 0000 0000',
+    'admin',
+    'approved',
+    TRUE,
+    'approved'
+)
+ON CONFLICT (email) DO UPDATE SET
+    role = 'admin',
+    kyc_status = 'approved';
+
+-- 2. Insert or update Admin SHA-256 password hash metadata using the linked profile ID
+INSERT INTO public.user_password_metadata (
+    user_id,
+    email,
+    password_hash,
+    password_last_updated
+)
+SELECT 
+    id,
+    email,
+    '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', -- SHA-256 hash of 'admin123'
+    NOW()
+FROM public.profiles
+WHERE email = 'admin@samruddisave.com'
+ON CONFLICT (user_id) DO UPDATE SET
+    password_hash = EXCLUDED.password_hash,
+    password_last_updated = NOW();
+
+-- ==============================================================================
+-- REGISTER SEED MEMBER USERS INTO SUPABASE AUTH (auth.users) & PUBLIC PROFILES
+-- ==============================================================================
+
+-- 3. Insert seed members into auth.users (Supabase Authentication Dashboard Users)
+INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+) VALUES
+(
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000001',
+    'authenticated',
+    'authenticated',
+    'karthickeyan@gmail.com',
+    crypt('password123', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"karthickeyan M"}',
+    NOW(),
+    NOW()
+),
+(
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000003',
+    'authenticated',
+    'authenticated',
+    'sneha.roy@example.com',
+    crypt('password123', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Sneha Roy"}',
+    NOW(),
+    NOW()
+),
+(
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000004',
+    'authenticated',
+    'authenticated',
+    'arjun.deshmukh@example.com',
+    crypt('password123', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Arjun Deshmukh"}',
+    NOW(),
+    NOW()
+),
+(
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000005',
+    'authenticated',
+    'authenticated',
+    'vikas.sharma@example.com',
+    crypt('password123', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Vikas Sharma"}',
+    NOW(),
+    NOW()
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 4. Insert corresponding member profiles into public.profiles
+INSERT INTO public.profiles (
+    id,
+    full_name,
+    email,
+    phone,
+    pan_number,
+    aadhaar_number,
+    role,
+    kyc_status,
+    onboarding_completed,
+    pipeline_stage
+) VALUES
+(
+    '00000000-0000-0000-0000-000000000001',
+    'karthickeyan M',
+    'karthickeyan@gmail.com',
+    '+91 98765 43210',
+    'ABCDE1234F',
+    '9876 5432 1098',
+    'member',
+    'approved',
+    TRUE,
+    'approved'
+),
+(
+    '00000000-0000-0000-0000-000000000003',
+    'Sneha Roy',
+    'sneha.roy@example.com',
+    '+91 98765 11111',
+    'SNEHA1234R',
+    '1111 2222 3333',
+    'member',
+    'pending',
+    TRUE,
+    'pending'
+),
+(
+    '00000000-0000-0000-0000-000000000004',
+    'Arjun Deshmukh',
+    'arjun.deshmukh@example.com',
+    '+91 98765 22222',
+    'ARJUN1234D',
+    '2222 3333 4444',
+    'member',
+    'approved',
+    TRUE,
+    'approved'
+),
+(
+    '00000000-0000-0000-0000-000000000005',
+    'Vikas Sharma',
+    'vikas.sharma@example.com',
+    '+91 98765 33333',
+    'VIKAS1234S',
+    '3333 4444 5555',
+    'member',
+    'approved',
+    TRUE,
+    'approved'
+)
+ON CONFLICT (email) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
+    kyc_status = EXCLUDED.kyc_status;
+
+-- 5. Insert password metadata for members (default password: password123)
+INSERT INTO public.user_password_metadata (
+    user_id,
+    email,
+    password_hash,
+    password_last_updated
+) VALUES
+(
+    '00000000-0000-0000-0000-000000000001',
+    'karthickeyan@gmail.com',
+    'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', -- SHA-256 hash of 'password123'
+    NOW()
+),
+(
+    '00000000-0000-0000-0000-000000000003',
+    'sneha.roy@example.com',
+    'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f',
+    NOW()
+),
+(
+    '00000000-0000-0000-0000-000000000004',
+    'arjun.deshmukh@example.com',
+    'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f',
+    NOW()
+),
+(
+    '00000000-0000-0000-0000-000000000005',
+    'vikas.sharma@example.com',
+    'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f',
+    NOW()
+)
+ON CONFLICT (user_id) DO UPDATE SET
+    password_hash = EXCLUDED.password_hash;
+
