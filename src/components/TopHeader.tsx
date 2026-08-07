@@ -36,6 +36,14 @@ interface TopHeaderProps {
   onNavigate: (path: string) => void;
 }
 
+type NavItemType = {
+  label: string;
+  path: string;
+  icon: any;
+  badge?: string;
+  locked?: boolean;
+};
+
 export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate }) => {
   const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -63,7 +71,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   const isAdminPage = user?.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login' || user?.role === 'employee' || user?.role === 'finance_admin';
   const isDashboardPage = currentPath === '/dashboard';
 
-  const memberNavItems = [
+  const memberNavItems: NavItemType[] = [
     { label: 'Home', path: '/', icon: Home },
     { label: 'Plans', path: '/plans', icon: Calculator },
     { label: 'Pay', path: '/pay', icon: CreditCard },
@@ -73,7 +81,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     { label: 'Security', path: '/#security', icon: ShieldCheck },
   ];
 
-  const adminNavItems = [
+  const adminNavItems: NavItemType[] = [
     { label: 'KYC Queue', path: '/admin#kyc_queue', icon: UserCheck, badge: 'Queue' },
     { label: 'Members', path: '/admin#members', icon: Users },
     { label: 'Payments', path: '/admin#payments', icon: CreditCard },
@@ -215,7 +223,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
             {currentNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = checkIsActive(item);
-              const isLocked = (item as any).locked;
+              const isLocked = item.locked;
 
               return (
                 <button
@@ -424,7 +432,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
               {currentNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = checkIsActive(item);
-                const isLocked = (item as any).locked;
+                const isLocked = item.locked;
 
                 return (
                   <button
