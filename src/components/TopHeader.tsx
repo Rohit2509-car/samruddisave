@@ -199,9 +199,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
 
           {/* Website Logo (Positioned on the LEFT side) */}
           <div
-            onClick={() => handleNavClick(isAdminPage ? '/admin' : '/', 'Overview')}
+            onClick={() => handleNavClick('/', 'Home')}
             className="flex items-center gap-2 cursor-pointer shrink-0 group/logo transition-all hover:scale-105 active:scale-95 pr-2 sm:border-r border-[#E8EAF8]"
-            title="SamruddiSave - RBI Certified Escrow Platform"
+            title="SamruddiSave - Go to Landing Page"
           >
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4F5DFF] to-[#8A7BFF] flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-[#4F5DFF]/25 shrink-0 group-hover/logo:shadow-lg transition-all">
               S
