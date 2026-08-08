@@ -35,6 +35,11 @@ import {
 } from 'lucide-react';
 import { UserProfileEditModal } from '../components/UserProfileEditModal';
 import { PrintableReceiptModal } from '../components/PrintableReceiptModal';
+import { SavingsCirclesPage } from './SavingsCirclesPage';
+import { HamperSelectionPage } from './HamperSelectionPage';
+import { KYCPage } from './KYCPage';
+
+export type DashboardTabType = 'dashboard' | 'home' | 'circles' | 'pay' | 'hampers' | 'kyc';
 
 interface DashboardPageProps {
   onNavigate: (path: string) => void;
@@ -50,7 +55,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'pay'>('home');
+  const [activeTab, setActiveTab] = useState<DashboardTabType>(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (['dashboard', 'home', 'pay'].includes(hash)) {
+      return hash as DashboardTabType;
+    }
+    return 'dashboard';
+  });
+
+  const handleTabSelect = (tab: DashboardTabType) => {
+    if (['circles', 'hampers', 'kyc'].includes(tab)) return;
+    setActiveTab(tab);
+    window.location.hash = tab;
+  };
   const [activeHamperTab, setActiveHamperTab] = useState<'upcoming' | 'claimed'>('upcoming');
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([
@@ -248,7 +265,7 @@ Thank you for saving with SamruddiSave Escrow!
   };
 
   return (
-    <div className={`bg-[#F4F6F9] flex flex-col lg:flex-row text-slate-800 font-sans relative ${activeTab === 'circles' ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+    <div className="bg-[#F4F6F9] flex flex-col lg:flex-row text-slate-800 font-sans relative min-h-screen">
       
       {/* MOBILE BACKDROP OVERLAY */}
       {sidebarOpen && (
@@ -290,27 +307,50 @@ Thank you for saving with SamruddiSave Escrow!
         </div>
 
         {/* Sidebar Menu Items (Internal Navigation strictly inside Dashboard) */}
-        <nav className="flex-1 p-4 space-y-1.5 text-xs font-semibold overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2 text-xs font-semibold overflow-y-auto">
+          {[
+            { id: 'dashboard' as DashboardTabType, label: 'Dashboard', icon: LayoutDashboard, disabled: false },
+            { id: 'home' as DashboardTabType, label: 'Home', icon: Home, disabled: false },
+            { id: 'circles' as DashboardTabType, label: 'Chit Groups', icon: Users, disabled: true },
+            { id: 'pay' as DashboardTabType, label: 'Monthly Deposit', icon: CreditCard, disabled: false },
+            { id: 'hampers' as DashboardTabType, label: 'Gift Hampers', icon: Gift, disabled: true },
+            { id: 'kyc' as DashboardTabType, label: 'KYC Verification', icon: FileCheck2, disabled: true },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            const isDisabled = item.disabled;
 
-          <button
-            onClick={() => { setSidebarOpen(false); setActiveTab('home'); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'home' ? 'bg-[#3B82F6] text-white shadow-md font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Home className="w-4 h-4 shrink-0" />
-            <span>Home</span>
-          </button>
+            return (
+              <button
+                key={item.id}
+                disabled={isDisabled}
+                onClick={() => {
+                  if (isDisabled) return;
+                  setSidebarOpen(false);
+                  handleTabSelect(item.id);
+                }}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${
+                  isDisabled
+                    ? 'opacity-40 cursor-not-allowed text-slate-500 hover:bg-transparent'
+                    : isActive
+                    ? 'bg-[#3B82F6] text-white shadow-md shadow-blue-500/25 font-bold cursor-pointer'
+                    : 'text-slate-300 hover:bg-slate-800/70 hover:text-white cursor-pointer'
+                }`}
+                title={isDisabled ? `${item.label} is currently disabled` : undefined}
+              >
+                <div className="flex items-center gap-3.5">
+                  <Icon className="w-5 h-5 shrink-0" />
+                  <span className="text-sm font-semibold">{item.label}</span>
+                </div>
 
-          <button
-            onClick={() => { setSidebarOpen(false); setActiveTab('pay'); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'pay' ? 'bg-[#3B82F6] text-white shadow-md font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <CreditCard className="w-4 h-4 shrink-0" />
-            <span>Monthly Deposit</span>
-          </button>
+                {isDisabled && (
+                  <span className="text-[9px] bg-slate-800/90 text-slate-400 font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider border border-slate-700/50 flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> Disabled
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         {/* Bottom Contact Support & Sign Out */}
@@ -406,7 +446,7 @@ Thank you for saving with SamruddiSave Escrow!
         </header>
 
         {/* DASHBOARD BODY */}
-        {activeTab === 'home' && (
+        {(activeTab === 'dashboard' || activeTab === 'home') && (
         <div className="p-4 sm:p-6 space-y-6 max-w-7xl w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
           
           {/* Welcome Greeting */}
@@ -840,6 +880,27 @@ Thank you for saving with SamruddiSave Escrow!
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* CHIT GROUPS TAB */}
+        {activeTab === 'circles' && (
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <SavingsCirclesPage onNavigate={onNavigate} />
+          </div>
+        )}
+
+        {/* GIFT HAMPERS TAB */}
+        {activeTab === 'hampers' && (
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <HamperSelectionPage onNavigate={onNavigate} />
+          </div>
+        )}
+
+        {/* KYC VERIFICATION TAB */}
+        {activeTab === 'kyc' && (
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <KYCPage onNavigate={onNavigate} />
           </div>
         )}
 
