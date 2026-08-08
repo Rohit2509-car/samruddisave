@@ -66,48 +66,52 @@ export const MemberLedgerView: React.FC<MemberLedgerViewProps> = ({ userId }) =>
       </div>
 
       {/* Ledger Entries Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold">
-              <th className="p-3">Date</th>
-              <th className="p-3">Transaction Details</th>
-              <th className="p-3 text-right">Opening Bal (₹)</th>
-              <th className="p-3 text-right">Credit (+) (₹)</th>
-              <th className="p-3 text-right">Debit (-) (₹)</th>
-              <th className="p-3 text-right">Closing Bal (₹)</th>
-              <th className="p-3 text-right">Remaining (₹)</th>
-              <th className="p-3 text-center">Receipt Ref</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E8EAF8]">
-            {ledgerEntries.length === 0 ? (
+      <div className="w-full max-w-full rounded-2xl border border-[#E8EAF8] overflow-hidden shadow-2xs bg-white">
+        <div className="table-scroll-container max-h-[480px]">
+          <table className="w-full text-left text-xs border-collapse min-w-max">
+            <thead className="sticky top-0 z-10 bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold shadow-2xs">
               <tr>
-                <td colSpan={8} className="p-6 text-center text-xs text-[#6C7285] italic">
-                  No installment payments recorded yet. Make your first deposit to generate passbook entries.
-                </td>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Date</th>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Transaction Details</th>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 text-right font-bold">Opening Bal (₹)</th>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 text-right font-bold">Credit (+) (₹)</th>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 text-right font-bold">Debit (-) (₹)</th>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 text-right font-bold">Closing Bal (₹)</th>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 text-right font-bold">Remaining (₹)</th>
+                <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 text-center font-bold">Receipt Ref</th>
               </tr>
-            ) : (
-              ledgerEntries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-[#F7F8FC]/50 transition-colors">
-                  <td className="p-3 font-semibold text-[#1F1F24] whitespace-nowrap">{entry.date}</td>
-                  <td className="p-3">
-                    <p className="font-bold text-[#1F1F24]">{entry.description}</p>
-                    <p className="text-[10px] text-[#6C7285]">RBI Escrow Trust Batch Verified</p>
-                  </td>
-                  <td className="p-3 text-right font-mono text-[#6C7285]">₹{entry.opening_balance.toLocaleString()}</td>
-                  <td className="p-3 text-right font-mono font-bold text-emerald-600">+₹{entry.credit.toLocaleString()}</td>
-                  <td className="p-3 text-right font-mono text-[#6C7285]">₹{entry.debit}</td>
-                  <td className="p-3 text-right font-mono font-bold text-[#1F1F24]">₹{entry.closing_balance.toLocaleString()}</td>
-                  <td className="p-3 text-right font-mono font-bold text-[#4F5DFF]">₹{entry.remaining_balance.toLocaleString()}</td>
-                  <td className="p-3 text-center font-mono text-[10px] bg-slate-50 font-bold text-slate-700 rounded-lg">
-                    {entry.receipt_ref || 'VERIFIED'}
+            </thead>
+            <tbody className="divide-y divide-[#E8EAF8]">
+              {ledgerEntries.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-6 text-center text-xs text-[#6C7285] italic">
+                    No installment payments recorded yet. Make your first deposit to generate passbook entries.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                ledgerEntries.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-[#F7F8FC]/50 transition-colors">
+                    <td className="p-3.5 font-semibold text-[#1F1F24] whitespace-nowrap">{entry.date}</td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      <p className="font-bold text-[#1F1F24]">{entry.description}</p>
+                      <p className="text-[10px] text-[#6C7285]">RBI Escrow Trust Batch Verified</p>
+                    </td>
+                    <td className="p-3.5 text-right font-mono text-[#6C7285] whitespace-nowrap">₹{entry.opening_balance.toLocaleString()}</td>
+                    <td className="p-3.5 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">+₹{entry.credit.toLocaleString()}</td>
+                    <td className="p-3.5 text-right font-mono text-[#6C7285] whitespace-nowrap">₹{entry.debit}</td>
+                    <td className="p-3.5 text-right font-mono font-bold text-[#1F1F24] whitespace-nowrap">₹{entry.closing_balance.toLocaleString()}</td>
+                    <td className="p-3.5 text-right font-mono font-bold text-[#4F5DFF] whitespace-nowrap">₹{entry.remaining_balance.toLocaleString()}</td>
+                    <td className="p-3.5 text-center whitespace-nowrap">
+                      <span className="font-mono text-[10px] bg-slate-100 px-2 py-1 font-bold text-slate-700 rounded-lg inline-block">
+                        {entry.receipt_ref || 'VERIFIED'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>

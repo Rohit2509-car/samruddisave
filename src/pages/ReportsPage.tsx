@@ -113,39 +113,41 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
           {activeTab === 'overdue' && 'Overdue & Grace Period Watchlist'}
         </h3>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider">
-                <th className="p-3.5 font-bold">Cycle</th>
-                <th className="p-3.5 font-bold">Date</th>
-                <th className="p-3.5 font-bold">Amount</th>
-                <th className="p-3.5 font-bold">Payment Mode</th>
-                <th className="p-3.5 font-bold">Ref / Receipt #</th>
-                <th className="p-3.5 font-bold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E8EAF8]">
-              {contributions.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-3.5 font-bold text-[#1F1F24]">Cycle {c.cycle_number}</td>
-                  <td className="p-3.5 text-[#6C7285]">{new Date(c.paid_date).toLocaleDateString()}</td>
-                  <td className="p-3.5 font-bold font-mono text-[#1F1F24]">₹{c.amount.toLocaleString('en-IN')}</td>
-                  <td className="p-3.5">
-                    <span className="capitalize bg-slate-100 text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                      {c.payment_method.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="p-3.5 font-mono text-[11px] text-[#6C7285]">{c.transaction_ref}</td>
-                  <td className="p-3.5">
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                      {c.status}
-                    </span>
-                  </td>
+        <div className="w-full max-w-full rounded-2xl border border-[#E8EAF8] overflow-hidden shadow-2xs bg-white">
+          <div className="table-scroll-container max-h-[480px]">
+            <table className="w-full text-xs text-left border-collapse min-w-max">
+              <thead className="sticky top-0 z-10 bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] uppercase tracking-wider font-bold shadow-2xs">
+                <tr>
+                  <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Cycle</th>
+                  <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Date</th>
+                  <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Amount</th>
+                  <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Payment Mode</th>
+                  <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Ref / Receipt #</th>
+                  <th className="p-3.5 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 font-bold">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[#E8EAF8]">
+                {contributions.map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-3.5 whitespace-nowrap font-bold text-[#1F1F24]">Cycle {c.cycle_number}</td>
+                    <td className="p-3.5 whitespace-nowrap text-[#6C7285]">{new Date(c.paid_date).toLocaleDateString()}</td>
+                    <td className="p-3.5 whitespace-nowrap font-bold font-mono text-[#1F1F24]">₹{c.amount.toLocaleString('en-IN')}</td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      <span className="capitalize bg-slate-100 text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                        {c.payment_method.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap font-mono text-[11px] text-[#6C7285]">{c.transaction_ref}</td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                        {c.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

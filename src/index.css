@@ -59,3 +59,29 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+
+/* Smooth Horizontal Table Scroll Container & Grid Lines */
+.table-scroll-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.table-scroll-container table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.table-scroll-container table th,
+.table-scroll-container table td {
+  border: 1px solid #E2E8F0;
+}
+
+.table-scroll-container table th {
+  background-clip: padding-box;
+}

@@ -140,18 +140,18 @@ Thank you for saving with SamruddiSave Escrow!
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-3xl border border-[#E8EAF8] overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] font-semibold uppercase tracking-wider">
-                <th className="py-3.5 px-6">Cycle</th>
-                <th className="py-3.5 px-6">Amount</th>
-                <th className="py-3.5 px-6">Payment Method & Verification</th>
-                <th className="py-3.5 px-6">Paid Date</th>
-                <th className="py-3.5 px-6">Transaction Ref</th>
-                <th className="py-3.5 px-6">Admin Notes / Verification</th>
-                <th className="py-3.5 px-6 text-right">Escrow Receipt</th>
+      <div className="w-full max-w-full bg-white rounded-3xl border border-[#E8EAF8] overflow-hidden shadow-xs">
+        <div className="table-scroll-container max-h-[500px]">
+          <table className="w-full text-left border-collapse text-xs min-w-max">
+            <thead className="sticky top-0 z-10 bg-[#F7F8FC] border-b border-[#E8EAF8] text-[#6C7285] font-semibold uppercase tracking-wider shadow-2xs">
+              <tr>
+                <th className="py-3.5 px-6 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10">Cycle</th>
+                <th className="py-3.5 px-6 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10">Amount</th>
+                <th className="py-3.5 px-6 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10">Payment Method & Verification</th>
+                <th className="py-3.5 px-6 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10">Paid Date</th>
+                <th className="py-3.5 px-6 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10">Transaction Ref</th>
+                <th className="py-3.5 px-6 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10">Admin Notes / Verification</th>
+                <th className="py-3.5 px-6 whitespace-nowrap bg-[#F7F8FC] sticky top-0 z-10 text-right">Escrow Receipt</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E8EAF8]">
@@ -159,9 +159,9 @@ Thank you for saving with SamruddiSave Escrow!
                 const isOffline = c.is_offline || c.payment_method === 'offline_cash' || c.payment_method === 'offline_upi' || c.payment_method === 'bank_transfer';
                 return (
                   <tr key={c.id} className="hover:bg-[#F7F8FC] transition-colors">
-                    <td className="py-4 px-6 font-bold text-[#1F1F24]">Month {c.cycle_number}</td>
-                    <td className="py-4 px-6 font-mono font-bold text-[#4F5DFF]">₹{c.amount.toLocaleString('en-IN')}</td>
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 whitespace-nowrap font-bold text-[#1F1F24]">Month {c.cycle_number}</td>
+                    <td className="py-4 px-6 whitespace-nowrap font-mono font-bold text-[#4F5DFF]">₹{c.amount.toLocaleString('en-IN')}</td>
+                    <td className="py-4 px-6 whitespace-nowrap">
                       {isOffline ? (
                         <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1 rounded-full text-[11px] font-bold">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -173,8 +173,8 @@ Thank you for saving with SamruddiSave Escrow!
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-[#6C7285]">{c.paid_date ? new Date(c.paid_date).toLocaleDateString() : '—'}</td>
-                    <td className="py-4 px-6 font-mono text-[11px] font-bold text-purple-900">{c.transaction_ref}</td>
+                    <td className="py-4 px-6 whitespace-nowrap text-[#6C7285]">{c.paid_date ? new Date(c.paid_date).toLocaleDateString() : '—'}</td>
+                    <td className="py-4 px-6 whitespace-nowrap font-mono text-[11px] font-bold text-purple-900">{c.transaction_ref}</td>
                     <td className="py-4 px-6 text-slate-600 max-w-[220px]">
                       {isOffline ? (
                         <div>
@@ -187,7 +187,7 @@ Thank you for saving with SamruddiSave Escrow!
                         <span className="text-[11px] text-slate-400 italic">Automated Gateway</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-4 px-6 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleDownloadReceipt(c)}
                         className="text-xs font-bold text-[#4F5DFF] hover:underline inline-flex items-center gap-1 cursor-pointer"
