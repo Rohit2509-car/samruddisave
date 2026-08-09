@@ -265,7 +265,7 @@ Thank you for saving with SamruddiSave Escrow!
   };
 
   return (
-    <div className="bg-[#F4F6F9] flex flex-col lg:flex-row text-slate-800 font-sans relative min-h-screen">
+    <div className="bg-[#F4F6F9] flex h-screen max-h-screen w-full overflow-hidden text-slate-800 font-sans relative">
       
       {/* MOBILE BACKDROP OVERLAY */}
       {sidebarOpen && (
@@ -276,7 +276,7 @@ Thank you for saving with SamruddiSave Escrow!
       )}
 
       {/* LEFT SIDEBAR NAVIGATION (Full Screen Authenticated Area) */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-screen h-full bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         
@@ -370,7 +370,7 @@ Thank you for saving with SamruddiSave Escrow!
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 h-screen overflow-y-auto overflow-x-hidden flex flex-col min-w-0 lg:pl-64 transition-all duration-300">
         
         {/* TOP APP BAR */}
         <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-30 shadow-2xs">

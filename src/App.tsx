@@ -131,49 +131,52 @@ export default function App() {
 
   if (isFullScreenApp) {
     return (
-      <div className="min-h-screen w-full bg-[#F4F6F9] text-slate-800 font-sans selection:bg-blue-500/20 selection:text-blue-600">
+      <div className="h-screen max-h-screen w-full overflow-hidden bg-[#F4F6F9] text-slate-800 font-sans selection:bg-blue-500/20 selection:text-blue-600">
         {renderCurrentView()}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] pb-6">
-      <div>
+    <div className="h-screen max-h-screen w-full overflow-hidden bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF]">
+      {/* Fixed Top Navigation Bar Stack */}
+      <div className="shrink-0 z-40 w-full bg-white">
         {/* Sticky Top Header */}
         <TopHeader currentPath={currentPath} onNavigate={handleNavigate} />
 
         {/* Navigation Navbar */}
         <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
+      </div>
 
-        {/* Main Content Area */}
+      {/* Independently Scrollable Main Content Area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-between pb-6">
         <main className="animate-in fade-in duration-200">
           {renderCurrentView()}
         </main>
-      </div>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-[#E8EAF8] py-8 px-4 mt-12 text-center text-xs text-[#6C7285] space-y-3">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#4F5DFF] text-white font-heading font-extrabold flex items-center justify-center text-xs">
-              S
+        {/* Footer */}
+        <footer className="bg-white border-t border-[#E8EAF8] py-8 px-4 mt-12 text-center text-xs text-[#6C7285] space-y-3">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-[#4F5DFF] text-white font-heading font-extrabold flex items-center justify-center text-xs">
+                S
+              </div>
+              <span className="font-heading font-extrabold text-[#1F1F24]">SamruddiSave™</span>
+              <span className="text-[10px] text-[#6C7285]">© 2026 All Rights Reserved</span>
             </div>
-            <span className="font-heading font-extrabold text-[#1F1F24]">SamruddiSave™</span>
-            <span className="text-[10px] text-[#6C7285]">© 2026 All Rights Reserved</span>
+
+            <div className="flex flex-wrap justify-center gap-4 text-[11px] font-semibold">
+              <button onClick={() => handleNavigate('/')} className="hover:text-[#4F5DFF]">RBI Escrow Disclosures</button>
+              <button onClick={() => handleNavigate('/plans')} className="hover:text-[#4F5DFF]">Savings Plans</button>
+              <button onClick={() => handleNavigate('/hampers')} className="hover:text-[#4F5DFF]">Gift Perks</button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4 text-[11px] font-semibold">
-            <button onClick={() => handleNavigate('/')} className="hover:text-[#4F5DFF]">RBI Escrow Disclosures</button>
-            <button onClick={() => handleNavigate('/plans')} className="hover:text-[#4F5DFF]">Savings Plans</button>
-            <button onClick={() => handleNavigate('/hampers')} className="hover:text-[#4F5DFF]">Gift Perks</button>
-          </div>
-        </div>
-
-        <p className="text-[10px] text-slate-400 max-w-4xl mx-auto">
-          SamruddiSave is an RBI Escrow certified fixed micro-savings & maturity perks platform. All member principal contributions are deposited directly into HDFC Escrow Trustee Account #9182374619 under 256-bit encrypted audit trails.
-        </p>
-      </footer>
+          <p className="text-[10px] text-slate-400 max-w-4xl mx-auto">
+            SamruddiSave is an RBI Escrow certified fixed micro-savings & maturity perks platform. All member principal contributions are deposited directly into HDFC Escrow Trustee Account #9182374619 under 256-bit encrypted audit trails.
+          </p>
+        </footer>
+      </div>
 
       {/* Mobile Bottom Dock Navigation */}
       <BottomNavDock currentPath={currentPath} onNavigate={handleNavigate} />
