@@ -310,7 +310,6 @@ Thank you for saving with SamruddiSave Escrow!
         <nav className="flex-1 p-4 space-y-2 text-xs font-semibold overflow-y-auto">
           {[
             { id: 'dashboard' as DashboardTabType, label: 'Dashboard', icon: LayoutDashboard, disabled: false },
-            { id: 'home' as DashboardTabType, label: 'Home', icon: Home, disabled: false },
             { id: 'circles' as DashboardTabType, label: 'Chit Groups', icon: Users, disabled: true },
             { id: 'pay' as DashboardTabType, label: 'Monthly Deposit', icon: CreditCard, disabled: false },
             { id: 'hampers' as DashboardTabType, label: 'Gift Hampers', icon: Gift, disabled: true },
@@ -457,7 +456,7 @@ Thank you for saving with SamruddiSave Escrow!
         </header>
 
         {/* DASHBOARD BODY */}
-        {(activeTab === 'dashboard' || activeTab === 'home') && (
+        {activeTab === 'dashboard' && (
         <div className="p-4 sm:p-6 space-y-6 max-w-7xl w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
           
           {/* Welcome Greeting */}
