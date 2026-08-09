@@ -816,7 +816,7 @@ Thank you for saving with SamruddiSave Escrow!
                     </span>
                   </div>
                   
-                  <div className="flex-1 p-6 space-y-4 max-h-[600px] overflow-y-auto bg-slate-50">
+                  <div className="flex-1 p-6 space-y-4 max-h-[600px] overflow-y-auto bg-slate-50 overscroll-contain">
                     {/* Render Paid/Past Contributions */}
                     {contributions.map((c, index) => (
                       <div 

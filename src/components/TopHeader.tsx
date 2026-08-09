@@ -169,7 +169,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     } else {
       window.location.hash = '';
       setActiveHash('');
-      onNavigate('/');
+      onNavigate('/dashboard');
     }
     setDropdownOpen(false);
     setMobileMenuOpen(false);

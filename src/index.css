@@ -16,6 +16,8 @@
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
     touch-action: manipulation;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   body {
@@ -60,14 +62,18 @@
   background: #94A3B8;
 }
 
-/* Smooth Horizontal Table Scroll Container & Grid Lines */
+/* Smooth Horizontal & Vertical Table Scroll Container */
 .table-scroll-container {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
+  display: block;
   overflow-x: auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  box-sizing: border-box;
 }
 
 .table-scroll-container table {
@@ -85,3 +91,4 @@
 .table-scroll-container table th {
   background-clip: padding-box;
 }
+

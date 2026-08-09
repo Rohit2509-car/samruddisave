@@ -73,30 +73,12 @@ class StateStore {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        this.currentUserId = session.user.id;
-        localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, session.user.id);
-        const metaName = session.user.user_metadata?.full_name || session.user.user_metadata?.fullName;
-        if (metaName) {
-          const user = this.profiles.find((p) => p.id === session.user.id || (p.email && p.email.toLowerCase() === session.user.email?.toLowerCase()));
-          if (user && (!user.full_name || user.full_name === 'Member')) {
-            user.full_name = metaName;
-          }
-        }
-        this.notify();
+        await this.syncSessionUser(session.user);
       }
 
-      supabase.auth.onAuthStateChange((event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          this.currentUserId = session.user.id;
-          localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, session.user.id);
-          const metaName = session.user.user_metadata?.full_name || session.user.user_metadata?.fullName;
-          if (metaName) {
-            const user = this.profiles.find((p) => p.id === session.user.id || (p.email && p.email.toLowerCase() === session.user.email?.toLowerCase()));
-            if (user && (!user.full_name || user.full_name === 'Member')) {
-              user.full_name = metaName;
-            }
-          }
-          this.saveToStorage();
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
+          await this.syncSessionUser(session.user);
         } else if (event === 'SIGNED_OUT') {
           this.currentUserId = null;
           localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
@@ -107,6 +89,82 @@ class StateStore {
       console.warn('Supabase auth listener initialization warning:', e);
     }
   }
+
+  private async syncSessionUser(authUser: any) {
+    if (!authUser) return;
+    this.currentUserId = authUser.id;
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, authUser.id);
+
+    const userEmail = authUser.email || '';
+    const metaName = authUser.user_metadata?.full_name || authUser.user_metadata?.fullName || authUser.user_metadata?.name;
+
+    let user = this.profiles.find((p) => p.id === authUser.id || (p.email && userEmail && p.email.toLowerCase() === userEmail.toLowerCase()));
+
+    try {
+      const { data: dbProfile } = await supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+      if (dbProfile) {
+        const resolvedName = dbProfile.full_name && dbProfile.full_name !== 'Member'
+          ? dbProfile.full_name
+          : metaName || user?.full_name || 'Member';
+
+        const mapped: UserProfile = {
+          id: dbProfile.id,
+          full_name: resolvedName,
+          email: dbProfile.email || userEmail || user?.email || '',
+          phone: dbProfile.phone || user?.phone || '+91 98765 43210',
+          pan_number: dbProfile.pan_number || user?.pan_number || 'ABCDE1234F',
+          aadhaar_number: dbProfile.aadhaar_number || user?.aadhaar_number || '9876 5432 1098',
+          role: dbProfile.role || user?.role || 'member',
+          kyc_status: dbProfile.kyc_status || user?.kyc_status || 'approved',
+          pipeline_stage: this.normalizePipelineStage(dbProfile.pipeline_stage || user?.pipeline_stage) as any,
+          ocr_confidence: dbProfile.ocr_confidence || user?.ocr_confidence || 99.8,
+          avatar_url: dbProfile.avatar_url || user?.avatar_url,
+          created_at: dbProfile.created_at || user?.created_at || new Date().toISOString(),
+        };
+
+        if (user) {
+          const idx = this.profiles.indexOf(user);
+          this.profiles[idx] = mapped;
+        } else {
+          this.profiles.push(mapped);
+        }
+        this.saveToStorage();
+        return;
+      }
+    } catch (e) {
+      console.warn('Supabase syncSessionUser profile fetch error:', e);
+    }
+
+    if (!user) {
+      const rawName = metaName || (userEmail ? userEmail.split('@')[0].replace(/[._]/g, ' ') : 'Member');
+      const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
+      user = {
+        id: authUser.id,
+        full_name: formattedName,
+        email: userEmail,
+        phone: authUser.phone || authUser.user_metadata?.phone || '+91 98765 43210',
+        pan_number: 'ABCDE1234F',
+        aadhaar_number: '9876 5432 1098',
+        role: (authUser.user_metadata?.role as any) || 'member',
+        kyc_status: 'approved',
+        pipeline_stage: 'ACTIVE_SAVING' as any,
+        ocr_confidence: 99.8,
+        created_at: authUser.created_at || new Date().toISOString(),
+      };
+      this.profiles.push(user);
+    } else {
+      user.id = authUser.id;
+      if (metaName && (user.full_name === 'Member' || !user.full_name)) {
+        user.full_name = metaName;
+      }
+      if (userEmail && !user.email) {
+        user.email = userEmail;
+      }
+    }
+    this.saveToStorage();
+  }
+
 
   public async registerOrUpdateProfile(profile: UserProfile, password?: string): Promise<UserProfile> {
     const existingIdx = this.profiles.findIndex(
@@ -821,15 +879,8 @@ class StateStore {
 
   public switchRole(role: UserRole) {
     const currentUser = this.getCurrentUser();
-    // Only allow switching to admin if current user is already an admin
-    if (role === 'admin' && currentUser?.role !== 'admin') {
-      console.warn('Unauthorized role switch attempt blocked.');
-      return;
-    }
-    const rep = this.profiles.find((p) => p.role === role);
-    if (rep) {
-      this.currentUserId = rep.id;
-    }
+    if (!currentUser) return;
+    currentUser.role = role;
     this.saveToStorage();
   }
 

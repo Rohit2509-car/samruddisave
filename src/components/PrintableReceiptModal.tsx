@@ -126,7 +126,7 @@ Verification   : Verified & Encrypted via Supabase
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div className="bg-white p-3.5 rounded-xl border border-[#E8EAF8]">
               <p className="text-[10px] font-bold text-[#6C7285] uppercase">Member Details</p>
-              <p className="font-bold text-[#1F1F24] mt-1 text-sm">{member?.full_name || 'karthickeyan M'}</p>
+              <p className="font-bold text-[#1F1F24] mt-1 text-sm">{member?.full_name || 'Valued Member'}</p>
               <p className="text-[11px] text-[#6C7285] font-mono mt-0.5">ID: {record.user_id}</p>
               <p className="text-[11px] text-[#6C7285] mt-0.5">{member?.phone || '+91 98765 43210'}</p>
             </div>
