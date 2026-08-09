@@ -276,14 +276,14 @@ class StateStore {
   public async fetchLatestFromSupabase() {
     try {
       await this.pushAllProfilesToSupabase();
-      const { data: dbProfiles, error: profileErr } = await supabase.from('profiles').select('*');
+
+      // 1. Fetch Profiles ordered by registration sequence timestamp
+      const { data: dbProfiles, error: profileErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: true });
       if (!profileErr && dbProfiles && dbProfiles.length > 0) {
         dbProfiles.forEach((dbP: any) => {
-          if (dbP.email?.toLowerCase() !== 'karthickeyan@gmail.com' && (dbP.id === '00000000-0000-0000-0000-000000000001' || dbP.id === 'user-member-1')) {
-            dbP.id = this.generateUUID();
-            supabase.from('profiles').update({ id: dbP.id }).eq('email', dbP.email);
-          }
-
           const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase() || p.id === dbP.id);
           const existingProfile = idx >= 0 ? this.profiles[idx] : null;
           const resolvedName = (dbP.full_name && dbP.full_name !== 'Member')
@@ -314,8 +314,83 @@ class StateStore {
         });
         this.profiles = this.deduplicateProfiles(this.profiles);
         this.sanitizeProfiles();
-        this.saveToStorage();
       }
+
+      // 2. Fetch Payments / Contributions
+      const { data: dbPayments, error: payErr } = await supabase.from('payments').select('*');
+      if (!payErr && dbPayments && dbPayments.length > 0) {
+        dbPayments.forEach((p: any) => {
+          const exists = this.contributions.some((c) => c.id === p.id || c.transaction_ref === p.transaction_ref);
+          if (!exists) {
+            const mappedContrib: ContributionRecord = {
+              id: p.id,
+              user_id: p.user_id,
+              membership_id: `m-${p.user_id.slice(-6)}`,
+              amount: Number(p.amount),
+              cycle_number: p.month_number || 1,
+              due_date: p.payment_date ? new Date(p.payment_date).toISOString().split('T')[0] : '2026-08-05',
+              paid_date: p.payment_date || new Date().toISOString(),
+              status: p.status || 'PAID',
+              transaction_ref: p.transaction_ref || `TXN_${p.id.slice(0, 8)}`,
+              payment_method: p.payment_mode || 'razorpay',
+              is_offline: Boolean(p.is_admin_cash),
+              reconciled_by_admin: p.recorded_by_admin_id,
+              admin_notes: p.notes,
+              escrow_batch_id: 'ESC_BATCH_2026',
+            };
+            this.contributions.push(mappedContrib);
+          }
+        });
+      }
+
+      // 3. Fetch Chit Groups
+      const { data: dbGroups, error: groupErr } = await supabase.from('chit_groups').select('*');
+      if (!groupErr && dbGroups && dbGroups.length > 0) {
+        this.chitGroups = dbGroups.map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          total_value: Number(g.total_value),
+          monthly_amount: Number(g.monthly_amount),
+          members_limit: g.members_limit,
+          duration_months: g.duration_months,
+          current_members_count: g.current_members_count,
+          status: g.status,
+          next_auction_date: g.next_auction_date,
+          created_at: g.created_at,
+        }));
+      }
+
+      // 4. Fetch Auctions
+      const { data: dbAuctions, error: aucErr } = await supabase.from('auctions').select('*');
+      if (!aucErr && dbAuctions && dbAuctions.length > 0) {
+        this.auctions = dbAuctions.map((a: any) => ({
+          id: a.id,
+          group_id: a.group_id,
+          group_name: this.chitGroups.find((g) => g.id === a.group_id)?.name || 'Chit Group',
+          auction_month: a.auction_month,
+          auction_date: a.auction_date,
+          winner_user_id: a.winner_user_id,
+          winner_name: this.profiles.find((p) => p.id === a.winner_user_id)?.full_name,
+          winning_discount_bid: Number(a.winning_discount_bid),
+          prize_amount: Number(a.prize_amount),
+          status: a.status,
+        }));
+      }
+
+      // 5. Fetch Bids
+      const { data: dbBids, error: bidErr } = await supabase.from('bids').select('*');
+      if (!bidErr && dbBids && dbBids.length > 0) {
+        this.bids = dbBids.map((b: any) => ({
+          id: b.id,
+          auction_id: b.auction_id,
+          user_id: b.user_id,
+          user_name: this.profiles.find((p) => p.id === b.user_id)?.full_name || 'Member',
+          bid_discount_amount: Number(b.bid_discount_amount),
+          created_at: b.created_at,
+        }));
+      }
+
+      this.saveToStorage();
     } catch (e) {
       console.warn('Supabase fetch fallback:', e);
     }
@@ -641,7 +716,14 @@ class StateStore {
   }
 
   public getProfiles(): UserProfile[] {
-    return [...this.profiles];
+    return [...this.profiles].sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (timeA !== timeB) {
+        return timeA - timeB; // Registration sequence: earliest registered first
+      }
+      return (a.id || '').localeCompare(b.id || '');
+    });
   }
 
   public getChitGroups(): ChitGroup[] {
