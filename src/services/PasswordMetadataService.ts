@@ -65,10 +65,12 @@ export class PasswordMetadataService {
       const payload: Partial<UserPasswordMetadata> = {
         user_id: userId,
         email: normalizedEmail,
+        password_last_changed_at: new Date().toISOString(),
         password_last_updated: new Date().toISOString(),
+        password_reset_required: false,
+        requires_password_change: false,
         failed_login_attempts: 0,
         is_locked: false,
-        requires_password_change: false,
       };
 
       if (passwordHash) {
