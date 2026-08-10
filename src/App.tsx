@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { stateStore } from './store/StateStore';
 import { TopHeader } from './components/TopHeader';
 import { Navbar } from './components/Navbar';
@@ -19,6 +20,9 @@ import { ReportsPage } from './pages/ReportsPage';
 
 import { SupportPortalPage } from './pages/support/SupportPortalPage';
 import { LoginPage } from './pages/LoginPage';
+import { SecurityPage } from './pages/SecurityPage';
+import { AccountSecurityPage } from './pages/AccountSecurityPage';
+import { GuidePage } from './pages/GuidePage';
 
 // Admin Portal Pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
@@ -66,6 +70,15 @@ export default function App() {
             <DashboardPage onNavigate={handleNavigate} />
           </RoleGuard>
         );
+
+      case '/guide':
+        return <GuidePage onNavigate={handleNavigate} />;
+
+      case '/security':
+        return <SecurityPage onNavigate={handleNavigate} />;
+
+      case '/account-security':
+        return <AccountSecurityPage onNavigate={handleNavigate} />;
 
       case '/pay':
         return (
@@ -131,16 +144,16 @@ export default function App() {
 
   if (isFullScreenApp) {
     return (
-      <div className="h-screen max-h-screen w-full overflow-hidden bg-[#F4F6F9] text-slate-800 font-sans selection:bg-blue-500/20 selection:text-blue-600">
+      <div className="min-h-screen w-full bg-[#F4F6F9] text-slate-800 font-sans selection:bg-blue-500/20 selection:text-blue-600">
         {renderCurrentView()}
       </div>
     );
   }
 
   return (
-    <div className="h-screen max-h-screen w-full overflow-hidden bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF]">
+    <div className="min-h-screen w-full bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] relative">
       {/* Fixed Top Navigation Bar Stack */}
-      <div className="shrink-0 z-40 w-full bg-white">
+      <div className="sticky top-0 z-40 w-full bg-white border-b border-[#E8EAF8] shadow-xs">
         {/* Sticky Top Header */}
         <TopHeader currentPath={currentPath} onNavigate={handleNavigate} />
 
@@ -148,11 +161,10 @@ export default function App() {
         <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
       </div>
 
-      {/* Independently Scrollable Main Content Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-between pb-6">
-        <main className="animate-in fade-in duration-200">
-          {renderCurrentView()}
-        </main>
+      {/* Main Content Area - Fully Scrollable */}
+      <main className="flex-1 w-full max-w-full animate-in fade-in duration-200">
+        {renderCurrentView()}
+      </main>
 
         {/* Footer */}
         <footer className="bg-white border-t border-[#E8EAF8] py-8 px-4 mt-12 text-center text-xs text-[#6C7285] space-y-3">
@@ -176,7 +188,6 @@ export default function App() {
             SamruddiSave is an RBI Escrow certified fixed micro-savings & maturity perks platform. All member principal contributions are deposited directly into HDFC Escrow Trustee Account #9182374619 under 256-bit encrypted audit trails.
           </p>
         </footer>
-      </div>
 
       {/* Mobile Bottom Dock Navigation */}
       <BottomNavDock currentPath={currentPath} onNavigate={handleNavigate} />

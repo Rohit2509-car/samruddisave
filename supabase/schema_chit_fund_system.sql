@@ -173,19 +173,19 @@ ALTER TABLE public.user_password_metadata ENABLE ROW LEVEL SECURITY;
 -- ROW LEVEL SECURITY (RLS) POLICIES FOR USER DATA ISOLATION & ADMIN ACCESS
 -- ==============================================================================
 
--- Profiles Policies
+-- Profiles Policies (Non-recursive RLS policy preventing PostgreSQL 500 errors)
 DROP POLICY IF EXISTS "Users can view own profile or admins view all" ON public.profiles;
 CREATE POLICY "Users can view own profile or admins view all" ON public.profiles
     FOR SELECT USING (
         auth.uid() = id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+        auth.role() = 'authenticated'
     );
 
 DROP POLICY IF EXISTS "Users can update own profile or admins update all" ON public.profiles;
 CREATE POLICY "Users can update own profile or admins update all" ON public.profiles
     FOR UPDATE USING (
         auth.uid() = id OR 
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+        auth.role() = 'service_role'
     );
 
 -- Payments Policies

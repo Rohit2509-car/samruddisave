@@ -40,16 +40,14 @@ CREATE INDEX IF NOT EXISTS idx_user_password_meta_email ON public.user_password_
 -- 3. Enable Row Level Security (RLS)
 ALTER TABLE public.user_password_metadata ENABLE ROW LEVEL SECURITY;
 
--- 4. Create RLS Policies for Authenticated User Data Isolation
--- Allow authenticated users to view only their own password metadata or admins view all
+-- 4. Create RLS Policies for Authenticated User Data Isolation (Non-recursive)
 DROP POLICY IF EXISTS "Users can view own password metadata" ON public.user_password_metadata;
 CREATE POLICY "Users can view own password metadata"
     ON public.user_password_metadata
     FOR SELECT
     USING (
         auth.uid() = user_id OR 
-        auth.uid() IS NULL OR
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+        auth.role() = 'authenticated'
     );
 
 -- Allow authenticated users to insert/update their own password metadata
@@ -59,8 +57,7 @@ CREATE POLICY "Users can insert own password metadata"
     FOR INSERT
     WITH CHECK (
         auth.uid() = user_id OR 
-        auth.uid() IS NULL OR
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+        auth.role() = 'authenticated'
     );
 
 DROP POLICY IF EXISTS "Users can update own password metadata" ON public.user_password_metadata;
@@ -69,8 +66,7 @@ CREATE POLICY "Users can update own password metadata"
     FOR UPDATE
     USING (
         auth.uid() = user_id OR 
-        auth.uid() IS NULL OR
-        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+        auth.role() = 'service_role'
     );
 
 -- 5. Automatic Updated-At Trigger

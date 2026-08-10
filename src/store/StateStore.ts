@@ -275,9 +275,7 @@ class StateStore {
 
   public async fetchLatestFromSupabase() {
     try {
-      await this.pushAllProfilesToSupabase();
-
-      // 1. Fetch Profiles ordered by registration sequence timestamp
+      // 1. Fetch Profiles ordered by registration sequence timestamp directly from Supabase DB
       const { data: dbProfiles, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
@@ -438,34 +436,26 @@ class StateStore {
         'priya.patel@example.com': '00000000-0000-0000-0000-000000000010',
       };
 
-      const dbRows = this.profiles.map((p) => {
-        let validId = p.id;
-        if (!this.isValidUUID(validId)) {
-          validId = emailUuidMap[p.email?.toLowerCase()] || this.generateUUID();
-          p.id = validId; // Ensure local profile has a valid unique UUID
+      const currentUserProfile = this.profiles.find((p) => p.id === this.currentUserId);
+      if (currentUserProfile && currentUserProfile.email) {
+        const { error } = await supabase.from('profiles').upsert({
+          id: currentUserProfile.id,
+          full_name: currentUserProfile.full_name,
+          email: currentUserProfile.email,
+          phone: currentUserProfile.phone || '+91 98765 43210',
+          pan_number: currentUserProfile.pan_number || 'ABCDE1234F',
+          aadhaar_number: currentUserProfile.aadhaar_number || '9876 5432 1098',
+          role: currentUserProfile.role || 'member',
+          kyc_status: currentUserProfile.kyc_status || 'approved',
+          pipeline_stage: this.normalizePipelineStage((currentUserProfile as any).pipeline_stage),
+          ocr_confidence: currentUserProfile.ocr_confidence || 99.8,
+        }, { onConflict: 'email' });
+        if (error && !error.message?.includes('policy')) {
+          console.warn('Supabase current profile sync status:', error.message);
         }
-        return {
-          id: validId,
-          full_name: p.full_name,
-          email: p.email,
-          phone: p.phone || '+91 98765 43210',
-          pan_number: p.pan_number || 'ABCDE1234F',
-          aadhaar_number: p.aadhaar_number || '9876 5432 1098',
-          role: p.role || 'member',
-          kyc_status: p.kyc_status || 'approved',
-          pipeline_stage: this.normalizePipelineStage((p as any).pipeline_stage),
-          ocr_confidence: p.ocr_confidence || 99.8,
-        };
-      });
-
-      const { error } = await supabase.from('profiles').upsert(dbRows, { onConflict: 'email' });
-      if (!error) {
-        console.log('Successfully synced all member profiles to Supabase DB!');
-      } else {
-        console.warn('Supabase profile upsert warning:', error.message);
       }
     } catch (e) {
-      console.warn('Supabase auto-seed warning:', e);
+      // Ignore background sync warning
     }
   }
 

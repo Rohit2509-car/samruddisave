@@ -26,7 +26,8 @@ import {
   DollarSign,
   Settings,
   UserCog,
-  Gavel
+  Gavel,
+  ArrowLeft
 } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { AuthModal } from './AuthModal';
@@ -77,8 +78,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
     { label: 'Pay', path: '/pay', icon: CreditCard },
     { label: 'Reports', path: '/reports', icon: FileText },
     { label: 'Gifts', path: '/hampers', icon: Gift },
-    { label: 'Guide', path: '/#how-it-works', icon: Activity },
-    { label: 'Security', path: '/#security', icon: ShieldCheck },
+    { label: 'Guide', path: '/guide', icon: Activity },
+    { label: 'Security', path: '/security', icon: ShieldCheck },
   ];
 
   const adminNavItems: NavItemType[] = [
@@ -104,6 +105,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
       if (item.path === '/admin') {
         return currentPath === '/admin' && (!activeHash || activeHash === '#' || activeHash === '#overview');
       }
+    }
+    if (item.path === '/security') {
+      return currentPath === '/security' || (currentPath === '/dashboard' && window.location.hash === '#security');
     }
     return currentPath === item.path;
   };
@@ -364,6 +368,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                           <Building2 className="w-4 h-4 text-purple-600" /> Escrow Disbursal Queue
                         </button>
                       )}
+
+                      <button
+                        onClick={() => handleNavClick('/security', 'Account Security')}
+                        className="w-full text-left px-4 py-2.5 hover:bg-[#F7F8FC] flex items-center gap-2 text-[#1F1F24] cursor-pointer min-h-[44px]"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-[#4F5DFF]" /> Account Security
+                      </button>
 
                       <button
                         onClick={() => handleNavClick('/support', 'Help & Support')}

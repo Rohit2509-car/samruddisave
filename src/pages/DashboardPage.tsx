@@ -35,17 +35,19 @@ import {
 } from 'lucide-react';
 import { UserProfileEditModal } from '../components/UserProfileEditModal';
 import { PrintableReceiptModal } from '../components/PrintableReceiptModal';
+import { SecuritySettingsView } from '../components/SecuritySettingsView';
 import { SavingsCirclesPage } from './SavingsCirclesPage';
 import { HamperSelectionPage } from './HamperSelectionPage';
 import { KYCPage } from './KYCPage';
 
-export type DashboardTabType = 'dashboard' | 'home' | 'circles' | 'pay' | 'hampers' | 'kyc';
+export type DashboardTabType = 'dashboard' | 'home' | 'circles' | 'pay' | 'hampers' | 'kyc' | 'security';
 
 interface DashboardPageProps {
   onNavigate: (path: string) => void;
+  initialTab?: DashboardTabType;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, initialTab }) => {
   const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
   const [membership, setMembership] = useState<Membership | undefined>(user ? stateStore.getUserMembership(user.id) : undefined);
   const [contributions, setContributions] = useState<ContributionRecord[]>(user ? stateStore.getUserContributions(user.id) : []);
@@ -56,12 +58,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTabType>(() => {
+    if (initialTab) return initialTab;
     const hash = window.location.hash.replace('#', '');
-    if (['dashboard', 'home', 'pay'].includes(hash)) {
+    if (['dashboard', 'home', 'pay', 'security'].includes(hash)) {
       return hash as DashboardTabType;
     }
     return 'dashboard';
   });
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['dashboard', 'home', 'pay', 'security'].includes(hash)) {
+        setActiveTab(hash as DashboardTabType);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [initialTab]);
 
   const handleTabSelect = (tab: DashboardTabType) => {
     if (['circles', 'hampers', 'kyc'].includes(tab)) return;
@@ -310,8 +327,9 @@ Thank you for saving with SamruddiSave Escrow!
         <nav className="flex-1 p-4 space-y-2 text-xs font-semibold overflow-y-auto">
           {[
             { id: 'dashboard' as DashboardTabType, label: 'Dashboard', icon: LayoutDashboard, disabled: false },
-            { id: 'circles' as DashboardTabType, label: 'Chit Groups', icon: Users, disabled: true },
             { id: 'pay' as DashboardTabType, label: 'Monthly Deposit', icon: CreditCard, disabled: false },
+            { id: 'security' as DashboardTabType, label: 'Security Settings', icon: ShieldCheck, disabled: false },
+            { id: 'circles' as DashboardTabType, label: 'Chit Groups', icon: Users, disabled: true },
             { id: 'hampers' as DashboardTabType, label: 'Gift Hampers', icon: Gift, disabled: true },
             { id: 'kyc' as DashboardTabType, label: 'KYC Verification', icon: FileCheck2, disabled: true },
           ].map((item) => {
@@ -914,7 +932,12 @@ Thank you for saving with SamruddiSave Escrow!
           </div>
         )}
 
-
+        {/* ACCOUNT SECURITY TAB */}
+        {activeTab === 'security' && (
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <SecuritySettingsView user={user} onNavigate={onNavigate} />
+          </div>
+        )}
 
       </main>
 

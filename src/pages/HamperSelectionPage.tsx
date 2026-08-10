@@ -10,7 +10,7 @@ interface HamperSelectionPageProps {
 }
 
 export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavigate }) => {
-  const [user, setUser] = useState<UserProfile>(stateStore.getCurrentUser());
+  const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
   const [selectedHamper, setSelectedHamper] = useState<GiftHamper | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -18,7 +18,7 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
     const unsubscribe = stateStore.subscribe(() => {
       setUser(stateStore.getCurrentUser());
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   const handleOpenDetail = (hamper: GiftHamper) => {
@@ -110,9 +110,9 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
               <div className="p-5 pt-0">
                 <button
                   onClick={() => handleOpenDetail(hamper)}
-                  className="w-full bg-[#F7F8FC] hover:bg-[#4F5DFF] text-[#1F1F24] hover:text-white font-bold py-3 px-4 rounded-xl border border-[#E8EAF8] transition-all text-xs flex items-center justify-center gap-2"
+                  className="w-full bg-[#F7F8FC] hover:bg-[#4F5DFF] text-[#1F1F24] hover:text-white font-bold py-3 px-4 rounded-xl border border-[#E8EAF8] transition-all text-xs flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
-                  <Eye className="w-4 h-4" /> View Included Gift Items
+                  <Eye className="w-4 h-4" /> View Details
                 </button>
               </div>
             </div>
@@ -125,7 +125,7 @@ export const HamperSelectionPage: React.FC<HamperSelectionPageProps> = ({ onNavi
         hamper={selectedHamper}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        isAllocated={selectedHamper ? user.allocated_hamper_id === selectedHamper.id : false}
+        isAllocated={selectedHamper && user ? user.allocated_hamper_id === selectedHamper.id : false}
       />
 
     </div>

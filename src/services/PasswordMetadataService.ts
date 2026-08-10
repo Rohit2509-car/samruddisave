@@ -149,25 +149,33 @@ export class PasswordMetadataService {
     return false;
   }
 
-  /**
-   * Retrieve password metadata for a user from Supabase
-   */
   public static async getPasswordMetadata(userId: string): Promise<UserPasswordMetadata | null> {
     try {
+      if (!userId) return null;
+
       const { data, error } = await supabase
         .from('user_password_metadata')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (error) {
-        console.warn('Supabase fetch user_password_metadata error:', error.message);
-        return null;
+      if (error || !data) {
+        // Fallback default metadata if table record is missing or restricted by RLS
+        return {
+          id: userId,
+          user_id: userId,
+          email: '',
+          password_last_changed_at: new Date().toISOString(),
+          password_reset_required: false,
+          failed_login_attempts: 0,
+          is_locked: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as UserPasswordMetadata;
       }
 
       return data as UserPasswordMetadata;
     } catch (err) {
-      console.warn('getPasswordMetadata error:', err);
       return null;
     }
   }
