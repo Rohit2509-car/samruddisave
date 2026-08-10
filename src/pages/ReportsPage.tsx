@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { stateStore } from '../store/StateStore';
 import { UserProfile, ContributionRecord, AuditLog } from '../types';
-import { FileText, Download, TrendingUp, DollarSign, Users, PieChart, ShieldCheck, Printer, Calendar } from 'lucide-react';
+import { FileText, Download, TrendingUp, DollarSign, Users, PieChart, ShieldCheck, Printer, Calendar, Lock } from 'lucide-react';
 
 interface ReportsPageProps {
   onNavigate: (path: string) => void;
 }
 
 export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
-  const [user] = useState<UserProfile>(stateStore.getCurrentUser());
-  const [contributions] = useState<ContributionRecord[]>(stateStore.getUserContributions(user.id));
+  const [user, setUser] = useState<UserProfile | null>(stateStore.getCurrentUser());
+  const [contributions, setContributions] = useState<ContributionRecord[]>(
+    user ? stateStore.getUserContributions(user.id) : []
+  );
   const [activeTab, setActiveTab] = useState<'summary' | 'payments' | 'cash_online' | 'overdue'>('summary');
 
-  const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'staff';
+  useEffect(() => {
+    const unsubscribe = stateStore.subscribe(() => {
+      const u = stateStore.getCurrentUser();
+      setUser(u);
+      if (u) {
+        setContributions(stateStore.getUserContributions(u.id));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const isAdmin = user ? (user.role === 'admin' || user.role === 'super_admin' || user.role === 'staff' || user.role === 'finance_admin') : false;
 
   const totalPaidAmount = contributions.filter(c => c.status === 'PAID').reduce((sum, c) => sum + c.amount, 0);
   const totalPaidCount = contributions.filter(c => c.status === 'PAID').length;
@@ -22,7 +35,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 space-y-8 print:p-0 print:m-0">
+    <div className="max-w-7xl mx-auto py-8 px-4 space-y-8 print:p-0 print:m-0 animate-in fade-in duration-200">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#E8EAF8] pb-6 print:hidden">
