@@ -35,12 +35,11 @@ import {
 } from 'lucide-react';
 import { UserProfileEditModal } from '../components/UserProfileEditModal';
 import { PrintableReceiptModal } from '../components/PrintableReceiptModal';
-import { SecuritySettingsView } from '../components/SecuritySettingsView';
 import { SavingsCirclesPage } from './SavingsCirclesPage';
 import { HamperSelectionPage } from './HamperSelectionPage';
 import { KYCPage } from './KYCPage';
 
-export type DashboardTabType = 'dashboard' | 'home' | 'circles' | 'pay' | 'hampers' | 'kyc' | 'security';
+export type DashboardTabType = 'dashboard' | 'home' | 'circles' | 'pay' | 'hampers' | 'kyc';
 
 interface DashboardPageProps {
   onNavigate: (path: string) => void;
@@ -79,6 +78,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, initia
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [initialTab]);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow || '';
+      };
+    }
+  }, [sidebarOpen]);
 
   const handleTabSelect = (tab: DashboardTabType) => {
     if (['circles', 'hampers', 'kyc'].includes(tab)) return;
@@ -282,23 +291,25 @@ Thank you for saving with SamruddiSave Escrow!
   };
 
   return (
-    <div className="bg-[#F4F6F9] flex h-screen max-h-screen w-full overflow-hidden text-slate-800 font-sans relative">
+    <div className="bg-[#F4F6F9] flex min-h-screen w-full text-slate-800 font-sans relative">
       
       {/* MOBILE BACKDROP OVERLAY */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden"
+          onTouchMove={(e) => e.preventDefault()}
+          onWheel={(e) => e.preventDefault()}
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden touch-none overscroll-contain"
         />
       )}
 
       {/* LEFT SIDEBAR NAVIGATION (Full Screen Authenticated Area) */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-screen h-full bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] lg:w-64 h-[100dvh] bg-[#1E2640] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 transition-transform duration-300 ease-in-out overscroll-contain touch-auto ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         
         {/* Brand Header (Website Logo - Clicking redirects to Public Landing Page) */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div
             className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-all"
             onClick={() => {
@@ -324,11 +335,10 @@ Thank you for saving with SamruddiSave Escrow!
         </div>
 
         {/* Sidebar Menu Items (Internal Navigation strictly inside Dashboard) */}
-        <nav className="flex-1 p-4 space-y-2 text-xs font-semibold overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2 text-xs font-semibold overflow-y-auto overscroll-contain">
           {[
             { id: 'dashboard' as DashboardTabType, label: 'Dashboard', icon: LayoutDashboard, disabled: false },
             { id: 'pay' as DashboardTabType, label: 'Monthly Deposit', icon: CreditCard, disabled: false },
-            { id: 'security' as DashboardTabType, label: 'Security Settings', icon: ShieldCheck, disabled: false },
             { id: 'circles' as DashboardTabType, label: 'Chit Groups', icon: Users, disabled: true },
             { id: 'hampers' as DashboardTabType, label: 'Gift Hampers', icon: Gift, disabled: true },
             { id: 'kyc' as DashboardTabType, label: 'KYC Verification', icon: FileCheck2, disabled: true },
@@ -388,7 +398,7 @@ Thank you for saving with SamruddiSave Escrow!
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 h-screen overflow-y-auto overflow-x-hidden flex flex-col min-w-0 lg:pl-64 transition-all duration-300">
+      <main className="flex-1 min-h-screen flex flex-col min-w-0 lg:pl-64 transition-all duration-300">
         
         {/* TOP APP BAR */}
         <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-30 shadow-2xs">
@@ -929,13 +939,6 @@ Thank you for saving with SamruddiSave Escrow!
         {activeTab === 'kyc' && (
           <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
             <KYCPage onNavigate={onNavigate} />
-          </div>
-        )}
-
-        {/* ACCOUNT SECURITY TAB */}
-        {activeTab === 'security' && (
-          <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <SecuritySettingsView user={user} onNavigate={onNavigate} />
           </div>
         )}
 

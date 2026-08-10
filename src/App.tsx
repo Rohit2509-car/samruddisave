@@ -152,8 +152,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full bg-[#F7F8FC] text-[#1F1F24] font-body flex flex-col justify-between selection:bg-[#4F5DFF]/20 selection:text-[#4F5DFF] relative">
-      {/* Fixed Top Navigation Bar Stack */}
-      <div className="sticky top-0 z-40 w-full bg-white border-b border-[#E8EAF8] shadow-xs">
+      {/* Completely Fixed & Stable Top Navigation Bar Stack */}
+      <div className="fixed top-0 left-0 right-0 z-40 w-full bg-white border-b border-[#E8EAF8] shadow-xs">
         {/* Sticky Top Header */}
         <TopHeader currentPath={currentPath} onNavigate={handleNavigate} />
 
@@ -161,8 +161,8 @@ export default function App() {
         <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
       </div>
 
-      {/* Main Content Area - Fully Scrollable */}
-      <main className="flex-1 w-full max-w-full animate-in fade-in duration-200">
+      {/* Main Content Area - Fully Scrollable with Top Padding to Prevent Overlap */}
+      <main className="flex-1 w-full max-w-full pt-[68px] sm:pt-[72px] animate-in fade-in duration-200">
         {renderCurrentView()}
       </main>
 

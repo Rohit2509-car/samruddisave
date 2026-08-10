@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { GiftHamper } from '../types';
 import { Gift, Sparkles, CheckCircle2, ShieldCheck, X } from 'lucide-react';
 
@@ -15,14 +15,37 @@ export const HamperDetailModal: React.FC<HamperDetailModalProps> = ({
   onClose,
   isAllocated,
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalWidth = document.body.style.width;
+
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+
+      return () => {
+        document.body.style.overflow = originalOverflow || '';
+        document.body.style.position = originalPosition || '';
+        document.body.style.width = originalWidth || '';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen || !hamper) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#E8EAF8] animate-in fade-in zoom-in-95 duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto overscroll-contain touch-none animate-in fade-in duration-200"
+    >
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-[#E8EAF8] animate-in zoom-in-95 duration-200 relative my-auto touch-auto overscroll-contain">
         
-        {/* Modal Banner Image */}
-        <div className="relative h-48 w-full bg-slate-900">
+        {/* Modal Banner Image Header */}
+        <div className="relative h-48 w-full bg-slate-900 shrink-0">
           <img
             src={hamper.image}
             alt={hamper.name}
@@ -32,7 +55,8 @@ export const HamperDetailModal: React.FC<HamperDetailModalProps> = ({
           
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors backdrop-blur-xs"
+            className="absolute top-4 right-4 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-colors backdrop-blur-xs cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center z-10"
+            aria-label="Close Modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -55,8 +79,8 @@ export const HamperDetailModal: React.FC<HamperDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-5">
+        {/* Scrollable Content Body */}
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs text-[#6C7285]">
           
           {isAllocated && (
             <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl flex items-center gap-3">
