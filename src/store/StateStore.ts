@@ -101,7 +101,16 @@ class StateStore {
     let user = this.profiles.find((p) => p.id === authUser.id || (p.email && userEmail && p.email.toLowerCase() === userEmail.toLowerCase()));
 
     try {
-      const { data: dbProfile } = await supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+      let { data: dbProfile } = await supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+      if (!dbProfile && userEmail) {
+        const { data: dbProfileByEmail } = await supabase.from('profiles').select('*').eq('email', userEmail.toLowerCase()).maybeSingle();
+        if (dbProfileByEmail) {
+          dbProfile = dbProfileByEmail;
+          await supabase.from('profiles').update({ id: authUser.id }).eq('email', userEmail.toLowerCase());
+          dbProfile.id = authUser.id;
+        }
+      }
+
       if (dbProfile) {
         const resolvedName = dbProfile.full_name && dbProfile.full_name !== 'Member'
           ? dbProfile.full_name
@@ -162,6 +171,26 @@ class StateStore {
         user.email = userEmail;
       }
     }
+
+    try {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        phone: user.phone,
+        pan_number: user.pan_number,
+        aadhaar_number: user.aadhaar_number,
+        role: user.role,
+        kyc_status: user.kyc_status,
+        pipeline_stage: user.pipeline_stage,
+        ocr_confidence: user.ocr_confidence,
+        avatar_url: user.avatar_url,
+        created_at: user.created_at,
+      });
+    } catch (err) {
+      console.warn('Supabase profiles sync error:', err);
+    }
+
     this.saveToStorage();
   }
 
@@ -434,6 +463,7 @@ class StateStore {
         'vikramaditya@example.com': '00000000-0000-0000-0000-000000000008',
         'meera.deshmukh@example.com': '00000000-0000-0000-0000-000000000009',
         'priya.patel@example.com': '00000000-0000-0000-0000-000000000010',
+        
       };
 
       const currentUserProfile = this.profiles.find((p) => p.id === this.currentUserId);
