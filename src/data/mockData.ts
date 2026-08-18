@@ -245,7 +245,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
   {
     id: '00000000-0000-0000-0000-000000000010',
     full_name: 'Priya Patel',
-    email: 'priya.patel@example.com',
+    email: 'priya@gmail.com',
     phone: '+91 97654 88776',
     pan_number: 'PRYPP7890P',
     aadhaar_number: '7890 1234 5678',

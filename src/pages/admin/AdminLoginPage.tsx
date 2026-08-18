@@ -96,6 +96,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
                 <Mail className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
                   type="email"
+                  autoComplete="username email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -113,6 +114,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate }) =>
                 <Key className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
                   type="password"
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

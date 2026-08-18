@@ -27,7 +27,8 @@ import {
   Settings,
   UserCog,
   Gavel,
-  ArrowLeft
+  ArrowLeft,
+  Wallet
 } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { AuthModal } from './AuthModal';
@@ -69,28 +70,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
   }, []);
 
   const isKYCPending = user?.role === 'member' && user?.kyc_status !== 'approved';
-  const isAdminPage = user?.role === 'admin' || currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login' || user?.role === 'employee' || user?.role === 'finance_admin';
+  const isAdminPage = currentPath.startsWith('/admin') || currentPath === '/console' || currentPath === '/admin-login' || currentPath === '/employee' || currentPath === '/finance';
   const isDashboardPage = currentPath === '/dashboard';
 
   const memberNavItems: NavItemType[] = [
     { label: 'Home', path: '/', icon: Home },
     { label: 'Plans', path: '/plans', icon: Calculator },
     { label: 'Pay', path: '/pay', icon: CreditCard },
-    { label: 'Reports', path: '/reports', icon: FileText },
-    { label: 'Gifts', path: '/hampers', icon: Gift },
-    { label: 'Guide', path: '/guide', icon: Activity },
-    { label: 'Security', path: '/security', icon: ShieldCheck },
   ];
 
   const adminNavItems: NavItemType[] = [
-    { label: 'KYC Queue', path: '/admin#kyc_queue', icon: UserCheck, badge: 'Queue' },
-    { label: 'Members', path: '/admin#members', icon: Users },
-    { label: 'Payments', path: '/admin#payments', icon: CreditCard },
-    { label: 'Ledger', path: '/admin#ledger', icon: FileText },
-    { label: 'Reports', path: '/admin#reports', icon: Activity },
-    { label: 'Hampers', path: '/admin#hampers', icon: Gift },
-    { label: 'Payouts', path: '/admin#payouts', icon: DollarSign },
-    { label: 'Support', path: '/support', icon: HelpCircle },
+    { label: 'Dashboard', path: '/admin#overview', icon: LayoutDashboard },
+    { label: 'Customer Management', path: '/admin#members', icon: Users },
+    { label: 'Monthly Deposits', path: '/admin#monthly_deposits', icon: CreditCard },
+    { label: 'Payments & Collections', path: '/admin#payments', icon: Wallet },
     { label: 'Settings', path: '/admin#settings', icon: Settings },
   ];
 
@@ -221,9 +214,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
           </div>
         </div>
 
-        {/* Center Section: Clean Navigation Bar with Section Names & Icons */}
+        {/* Center Section: Animated Clean Navigation Bar with Section Names & Icons */}
         <div className="hidden lg:flex items-center justify-center flex-1 min-w-0 mx-2">
-          <nav className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 bg-[#F7F8FC] p-1.5 rounded-full border border-[#E8EAF8] shadow-inner justify-center">
+          <nav className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 bg-[#F7F8FC]/90 backdrop-blur-md p-1.5 rounded-full border border-[#E8EAF8] shadow-sm justify-center transition-all duration-300">
             {currentNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = checkIsActive(item);
@@ -234,24 +227,29 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                   key={item.label}
                   onClick={() => handleNavClick(item.path, item.label, isLocked)}
                   disabled={isLocked}
-                  className={`group/navitem relative flex items-center gap-2 justify-center transition-all duration-200 cursor-pointer shrink-0 rounded-full min-h-[40px] px-4 text-xs font-bold ${
+                  className={`group/navitem relative flex items-center gap-2 justify-center transition-all duration-300 ease-out cursor-pointer shrink-0 rounded-full min-h-[40px] px-4.5 text-xs font-bold ${
                     isActive
-                      ? 'bg-[#4F5DFF] text-white shadow-md'
+                      ? 'bg-gradient-to-r from-[#4F5DFF] via-[#5B6AFF] to-[#707EFF] text-white shadow-md shadow-[#4F5DFF]/30 scale-[1.03] ring-2 ring-[#4F5DFF]/20'
                       : isLocked
                       ? 'text-slate-300 bg-transparent cursor-not-allowed'
-                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-xs'
+                      : 'text-[#6C7285] hover:bg-white hover:text-[#1F1F24] hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]'
                   }`}
                   aria-label={item.label}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 ${
-                    isActive ? 'text-white' : 'text-[#6C7285] group-hover/navitem:text-[#1F1F24]'
+                  <Icon className={`w-4 h-4 shrink-0 transition-all duration-300 ease-out group-hover/navitem:scale-115 group-hover/navitem:-translate-y-0.5 group-hover/navitem:rotate-3 ${
+                    isActive ? 'text-white drop-shadow-xs' : 'text-[#6C7285] group-hover/navitem:text-[#4F5DFF]'
                   }`} />
-                  <span className="whitespace-nowrap">
+                  <span className="whitespace-nowrap tracking-wide">
                     {item.label}
                   </span>
 
+                  {/* Active Animated Underline Glow Bar */}
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-3.5 right-3.5 h-0.5 bg-gradient-to-r from-white/70 via-white to-white/70 rounded-full animate-in fade-in zoom-in-75 duration-300 shadow-xs" />
+                  )}
+
                   {item.badge && !isActive && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
                   )}
 
                   {isLocked && (
@@ -450,17 +448,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                     key={item.label}
                     onClick={() => handleNavClick(item.path, item.label, isLocked)}
                     disabled={isLocked}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 ease-out cursor-pointer min-h-[44px] ${
                       isActive
-                        ? 'bg-[#4F5DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold'
+                        ? 'bg-gradient-to-r from-[#4F5DFF] to-[#6A6DFF] text-white shadow-md shadow-[#4F5DFF]/30 font-bold scale-[1.01]'
                         : isLocked
                         ? 'text-slate-300 bg-slate-50 cursor-not-allowed border border-slate-100'
-                        : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF]'
+                        : 'text-[#1F1F24] hover:bg-[#F7F8FC] hover:text-[#4F5DFF] hover:translate-x-1'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 shrink-0 ${
-                        isActive ? 'text-white' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
+                      <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 ${
+                        isActive ? 'text-white scale-110' : isLocked ? 'text-slate-300' : 'text-[#4F5DFF]'
                       }`} />
                       <span className="truncate">{item.label}</span>
                     </div>
@@ -476,8 +474,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ currentPath, onNavigate })
                           {item.badge}
                         </span>
                       )}
-                      <ChevronRight className={`w-4 h-4 ${
-                        isActive ? 'text-white' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
+                      <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${
+                        isActive ? 'text-white translate-x-0.5' : isLocked ? 'text-slate-200' : 'text-[#6C7285]'
                       }`} />
                     </div>
                   </button>

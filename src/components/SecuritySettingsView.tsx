@@ -258,6 +258,7 @@ export const SecuritySettingsView: React.FC<SecuritySettingsViewProps> = ({ user
                 <div className="relative">
                   <input
                     type={showCurrentPass ? 'text' : 'password'}
+                    autoComplete="current-password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Enter current password"
@@ -281,6 +282,7 @@ export const SecuritySettingsView: React.FC<SecuritySettingsViewProps> = ({ user
                 <div className="relative">
                   <input
                     type={showNewPass ? 'text' : 'password'}
+                    autoComplete="new-password"
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -323,6 +325,7 @@ export const SecuritySettingsView: React.FC<SecuritySettingsViewProps> = ({ user
                 <div className="relative">
                   <input
                     type={showConfirmPass ? 'text' : 'password'}
+                    autoComplete="new-password"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

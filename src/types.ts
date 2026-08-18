@@ -95,11 +95,13 @@ export interface UserPasswordMetadata {
   user_id: string;
   email: string;
   password_hash?: string;
+  password_last_changed_at?: string;
   password_last_updated?: string;
   failed_login_attempts?: number;
   is_locked?: boolean;
   lockout_until?: string | null;
   requires_password_change?: boolean;
+  password_reset_required?: boolean;
   created_at?: string;
   updated_at?: string;
 }

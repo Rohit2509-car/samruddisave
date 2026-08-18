@@ -279,6 +279,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
                 <Mail className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
                   type="email"
+                  autoComplete="username email"
                   required
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
@@ -303,6 +304,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
                 <Lock className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -375,6 +377,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
               <label className="block text-[#1F1F24] font-bold mb-1">Full Name</label>
               <input
                 type="text"
+                autoComplete="name"
                 required
                 value={regFullName}
                 onChange={(e) => setRegFullName(e.target.value)}
@@ -387,6 +390,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
               <label className="block text-[#1F1F24] font-bold mb-1">Mobile Number</label>
               <input
                 type="tel"
+                autoComplete="tel"
                 required
                 value={regMobile}
                 onChange={(e) => setRegMobile(e.target.value)}
@@ -399,6 +403,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
               <label className="block text-[#1F1F24] font-bold mb-1">Email Address</label>
               <input
                 type="email"
+                autoComplete="email"
                 required
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
@@ -412,6 +417,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ defaultMode = 'login', onN
               <div className="relative">
                 <input
                   type={showRegPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   required
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}

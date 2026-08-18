@@ -285,6 +285,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <User className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
                   type="text"
+                  name="username"
+                  autoComplete="username email"
                   required
                   placeholder="Enter Email, Phone, or Member ID..."
                   value={loginIdentifier}
@@ -300,6 +302,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <Lock className="w-4 h-4 text-[#6C7285] absolute left-3.5 top-3.5" />
                 <input
                   type="password"
+                  name="current-password"
+                  autoComplete="current-password"
                   required
                   placeholder="••••••••"
                   value={loginPassword}

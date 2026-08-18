@@ -90,6 +90,28 @@ class StateStore {
     }
   }
 
+  public static maskSensitiveString(str?: string, type: 'pan' | 'aadhaar' | 'bank' | 'general' = 'general'): string {
+    if (!str) return '••••';
+    const s = str.trim();
+    if (type === 'pan') {
+      if (s.length >= 10) return `${s.slice(0, 3)}*****${s.slice(-2)}`;
+      return '••••••••••';
+    }
+    if (type === 'aadhaar') {
+      const clean = s.replace(/\s+/g, '');
+      if (clean.length >= 12) return `•••• •••• ${clean.slice(-4)}`;
+      return '•••• •••• ••••';
+    }
+    if (type === 'bank') {
+      if (s.length >= 4) return `•••• •••• ${s.slice(-4)}`;
+      return '••••••••';
+    }
+    if (s.length > 4) {
+      return `${s.slice(0, 2)}••••${s.slice(-2)}`;
+    }
+    return '••••';
+  }
+
   private async syncSessionUser(authUser: any) {
     if (!authUser) return;
     this.currentUserId = authUser.id;
@@ -123,11 +145,13 @@ class StateStore {
           phone: dbProfile.phone || user?.phone || '+91 98765 43210',
           pan_number: dbProfile.pan_number || user?.pan_number || 'ABCDE1234F',
           aadhaar_number: dbProfile.aadhaar_number || user?.aadhaar_number || '9876 5432 1098',
-          role: dbProfile.role || user?.role || 'member',
+          role: dbProfile.role || 'member',
           kyc_status: dbProfile.kyc_status || user?.kyc_status || 'approved',
           pipeline_stage: this.normalizePipelineStage(dbProfile.pipeline_stage || user?.pipeline_stage) as any,
           ocr_confidence: dbProfile.ocr_confidence || user?.ocr_confidence || 99.8,
           avatar_url: dbProfile.avatar_url || user?.avatar_url,
+          onboarding_completed: Boolean(dbProfile.onboarding_completed),
+          wallet_balance: Number(dbProfile.wallet_balance || 0),
           created_at: dbProfile.created_at || user?.created_at || new Date().toISOString(),
         };
 
@@ -305,10 +329,17 @@ class StateStore {
   public async fetchLatestFromSupabase() {
     try {
       // 1. Fetch Profiles ordered by registration sequence timestamp directly from Supabase DB
-      const { data: dbProfiles, error: profileErr } = await supabase
+      let { data: dbProfiles, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: true });
+
+      if (profileErr) {
+        const fallbackRes = await supabase.from('profiles').select('*');
+        dbProfiles = fallbackRes.data;
+        profileErr = fallbackRes.error;
+      }
+
       if (!profileErr && dbProfiles && dbProfiles.length > 0) {
         dbProfiles.forEach((dbP: any) => {
           const idx = this.profiles.findIndex((p) => p.email?.toLowerCase() === dbP.email?.toLowerCase() || p.id === dbP.id);
@@ -462,8 +493,8 @@ class StateStore {
         'rajesh.kumar@example.com': '00000000-0000-0000-0000-000000000007',
         'vikramaditya@example.com': '00000000-0000-0000-0000-000000000008',
         'meera.deshmukh@example.com': '00000000-0000-0000-0000-000000000009',
-        'priya.patel@example.com': '00000000-0000-0000-0000-000000000010',
-        
+        'priya.patel@example.com': '00000000-0000-0000-0000-000000000010', 'priya@gmail.com': '00000000-0000-0000-0000-000000000010',
+        'sanjay_sharma_1985@example.com': '00000000-0000-0000-0000-000000000011',
       };
 
       const currentUserProfile = this.profiles.find((p) => p.id === this.currentUserId);
@@ -479,7 +510,7 @@ class StateStore {
           kyc_status: currentUserProfile.kyc_status || 'approved',
           pipeline_stage: this.normalizePipelineStage((currentUserProfile as any).pipeline_stage),
           ocr_confidence: currentUserProfile.ocr_confidence || 99.8,
-        }, { onConflict: 'email' });
+        });
         if (error && !error.message?.includes('policy')) {
           console.warn('Supabase current profile sync status:', error.message);
         }
@@ -1099,8 +1130,9 @@ class StateStore {
 
     // Persist Contribution and Membership to Supabase Database
     try {
+      const contribDbId = this.isValidUUID(newContrib.id) ? newContrib.id : this.generateUUID();
       supabase.from('contributions').insert({
-        id: newContrib.id,
+        id: contribDbId,
         user_id: newContrib.user_id,
         membership_id: newContrib.membership_id,
         amount: newContrib.amount,
@@ -1113,7 +1145,7 @@ class StateStore {
         escrow_batch_id: newContrib.escrow_batch_id,
         created_at: newContrib.created_at,
       }).then(({ error }) => {
-        if (error) console.warn('Supabase contributions insert warning:', error.message);
+        if (error) console.warn('Supabase contributions insert status:', error.message);
       });
 
       supabase.from('memberships').upsert({
@@ -1124,11 +1156,10 @@ class StateStore {
         current_streak: membership.current_streak,
         bonus_amount: membership.bonus_amount,
         status: membership.status,
-        due_day: membership.due_day,
         grace_days_remaining: membership.grace_days_remaining,
         next_due_date: membership.next_due_date,
       }).then(({ error }) => {
-        if (error) console.warn('Supabase memberships upsert warning:', error.message);
+        if (error && !error.message?.includes('schema')) console.warn('Supabase memberships upsert status:', error.message);
       });
     } catch (dbErr) {
       console.warn('Supabase deposit persistence warning:', dbErr);
@@ -1207,6 +1238,12 @@ class StateStore {
           kyc_status: status,
           pipeline_stage: this.normalizePipelineStage(profile.pipeline_stage),
         });
+        if (profile.email) {
+          await supabase.from('profiles').update({
+            kyc_status: status,
+            pipeline_stage: this.normalizePipelineStage(profile.pipeline_stage),
+          }).eq('email', profile.email.toLowerCase());
+        }
       } catch (e) {
         console.warn('Supabase profile update fallback:', e);
       }
